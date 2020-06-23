@@ -1,0 +1,5 @@
+{
+    "WatchDirs":[
+        {"Source":"./testSource","Destination":"./testDest"}
+    ]
+}

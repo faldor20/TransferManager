@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<GenerateLibraryOutput>True</GenerateLibraryOutput>
+		<TargetFramework>netcoreapp3.1</TargetFramework>
+	</PropertyGroup>
+ 	<ItemGroup>
+	<!-- 	<ProjectReference Include="C:/Users/Eli/Documents/programming/CSharp/FileTransferManager-master/IOExtensions/IOExtensions.csproj">
+			<Name>IOExtensions.csproj</Name>
+		</ProjectReference> -->
+        <ProjectReference Include="../Shared/Shared.csproj">
+			<Name>Shared.csproj</Name>
+		</ProjectReference>
+	</ItemGroup> 
+	<ItemGroup>
+		<Compile Include="Data.fs" />
+		<Compile Include="Mover.fs" />
+		<Compile Include="watcher.fs" />
+		<Compile Include="Manager.fs" />
+		<Compile Include="testing.fsx" />
+		<Compile Include="./Server/Views.fs" />
+		<Compile Include="./Server/SignalR.fs" />
+		<Compile Include="./Server/Controllers.fs" />
+		<Compile Include="./Server/Router.fs" />
+		<Compile Include="./Server/Server.fs" />
+
+
+		<Compile Include="testing.fs" />
+		<Compile Include="Program.fs" />
+	</ItemGroup>
+	<ItemGroup>
+		<!-- <PackageReference Include="FSharp.Data" Version="3.3.3" /> -->
+		<PackageReference Include="FileTransferManager" Version="1.0.5" />
+		<PackageReference Include="FSharp.Json" Version="0.4.0" />
+		<PackageReference Include="Saturn" Version="0.14.1" />
+		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
+		<PackageReference Update="FSharp.Core" Version="4.7.2" />
+	</ItemGroup>
+</Project>

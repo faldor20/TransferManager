@@ -1,0 +1,9 @@
+{
+    "WatchDirs":[
+        {"Source":"./testSource","Destination":"F:/"},
+        {"Source":"./testSource","Destination":"H:/testDest"},
+        {"Source":"./TO_BUN","Destination":"BUN"}
+
+    ]
+    
+}

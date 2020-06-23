@@ -1,0 +1,13 @@
+
+*/bin
+*/obj
+bin/
+obj/
+.fake
+.ionide
+Transfer/bin/Debug/netcoreapp3.1/fr/FSharp.Core.resources.dll
+*/bin/*
+/blaz/
+blazClient/
+"published apps"/
+published apps
