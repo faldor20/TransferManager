@@ -9,12 +9,13 @@ open FSharp.Json
 open System
 open IOExtensions
 module Manager =
-    type WatchDir = { Source: string; Destination: string }
-    type jsonData = { WatchDirs: WatchDir list }
+
+    
+    type jsonData = { WatchDirs: WatchDirSimple list }
 
     let mainLoop watchDir =
-        let tasks, dirs = iterFolders watchDir |> List.unzip
-        (tasks, dirs)
+        let tasks, updatedWatchDirs = GetNewTransfers watchDir 
+        (tasks, updatedWatchDirs)
 
 
     let sucessfullCompleteAction id source=
@@ -41,7 +42,13 @@ module Manager =
         let watchDirsExist= watchDirsUnfiltered.WatchDirs|> List.filter(fun dir->
             let destOkay= 
                 try 
-                    (DirectoryInfo dir.Destination).Exists
+                    match dir.IsFTP with
+                        | true-> 
+                            //split into head(ip ) and tail(dir)
+                            let ip::path=dir.Destination.Split '@'|>Array.toList
+                            use client=FluentFTP.FtpClient.Connect(Uri (ip))
+                            client.DirectoryExists(path.[0])
+                        |false-> (DirectoryInfo dir.Destination).Exists
                 with
                     |_->    printfn"Watch Destination: %s for source:%s does not exist, will not watch this directory" dir.Destination dir.Source
                             false
@@ -58,7 +65,10 @@ module Manager =
             watchDirsExist|> List.map (fun watchDir ->
                 { Dir = DirectoryInfo watchDir.Source
                   OutPutDir = DirectoryInfo watchDir.Destination
-                  TransferedList = List.empty })
+                  TransferedList = List.empty
+                  IsFTP=watchDir.IsFTP })
+
+
         watchDirsData|>List.iter(fun watchDir->printfn "Watching: %A" watchDir )
         let mutable currentTasks = list.Empty
         
@@ -69,18 +79,17 @@ module Manager =
             //the list will be a dictionary once the task is complete it s guid can be used to remove it
             while true do
                
-                let tasks, newWatchDir = mainLoop watchDirsData
+                let tasks, newWatchDirs = mainLoop watchDirsData
                 if  tasks.Length>0 then if tasks.[0].Length>0 then currentTasks <- currentTasks @ tasks
-                watchDirsData <- newWatchDir
+                watchDirsData <- newWatchDirs
                 
                 
-                let a = tasks|> List.map (fun item ->
-                            item|> Array.map (fun task ->
+                let a = tasks|> List.map (fun directoryGroup ->
+                            directoryGroup|> List.map (fun task ->
                                 async{
                                     let! transResult, id,ct = task
                                     do! Async.Sleep(50)
                                     let source = Data.data.[id].Source
-                                    
                                     match transResult with 
                                         |TransferResult.Success-> sucessfullCompleteAction id source
                                         |TransferResult.Cancelled-> CancelledCompleteAction id source
@@ -103,7 +112,7 @@ module Manager =
                                     
                                 }
                             ))
-                a|>List.iter (fun b->b|>Array.iter(fun ass-> ass |>Async.Start))
+                a|>List.iter (fun b->b|>List.iter(fun ass-> ass |>Async.Start))
                 
                 //printfn " current state=%A" Data.data
                 do!Async.Sleep(1000) 

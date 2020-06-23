@@ -3,14 +3,17 @@ namespace Transfer
 open System.IO
 open System.Threading.Tasks
 open Mover
-
+open FluentFTP
 module Watcher =
+(* type WatchDir=
+        |FTPWatchDir of WatchDir *FluentFTP.FtpClient
+        |FileWatchDir of WatchDir *)
     type WatchDir =
         { Dir: DirectoryInfo
           OutPutDir: DirectoryInfo
-          TransferedList: string list }
-
-    let MoveFile500Update = MoveFile 500.0
+          TransferedList: string list
+          IsFTP:bool;}
+    type WatchDirSimple = { Source: string; Destination: string; IsFTP:bool; }
 
 
 
@@ -22,22 +25,38 @@ module Watcher =
         files
         |> Array.filter (fun file -> not (ignoreList |> List.contains file.Name))
 
-    let iterFolders (watchDir: WatchDir list) =
-        let transfers =watchDir|> List.map (fun folder ->
-            let newFiles =folder.Dir.GetFiles()
-                        |> checkForNewFiles folder.TransferedList
-
-            let transfers =newFiles|> Array.map (fun file ->
-                    let handler data (guid) =if Data.data.ContainsKey guid then (Data.setTransferData data guid) else guid|>Data.setTransferData data 
-                    
-                    (MoveFile500Update  folder.OutPutDir.FullName file.FullName (System.Guid.NewGuid()) handler,file.Name)
-               
-                    )
-            let transferTasks, newWatchDirs = Array.unzip transfers
-
-            transferTasks,{ folder with TransferedList = folder.TransferedList @ (newWatchDirs |> Array.toList) }
+    let ActionNewFiles (newFilesForEachWatchDir:(FileInfo []*WatchDir)list) =
+        //We iterate through the list each pair contains watchdir and a list of the new files in that dir
+        let transfers =newFilesForEachWatchDir|> List.map (fun (files,watchDir) ->
+            //we iterate through the files creating a new movejob for each in turn returning the task and the filename of the file it is for
+            let tasksAndFiles= files|>Array.toList|> List.map(fun file -> 
+                let handler data (guid) =
+                    if Data.data.ContainsKey guid then (Data.setTransferData data guid) else guid|>Data.setTransferData data 
+                (MoveFile watchDir.IsFTP watchDir.OutPutDir.FullName file.FullName (System.Guid.NewGuid()) handler,file.Name) 
             )
+            
+            let tasks,processedFiles=tasksAndFiles|>List.unzip
+            //Return the tasks and a watchDir that includes the newly actioned files in its ignoreList
+            tasks,{ watchDir with TransferedList = watchDir.TransferedList @ (processedFiles ) }
+        )
+        //seperate out the tasks and watchdirs
+        let transferTasks, updatedwatchDirs = List.unzip transfers
+        transferTasks,updatedwatchDirs
+
+        
+    let iterFolders (watchDirs: WatchDir list) =
+        watchDirs|> List.map (fun folder ->
+            let newFiles=folder.Dir.GetFiles()
+                        |> checkForNewFiles folder.TransferedList
+            (newFiles,folder)
+            )
+        
+
+    let GetNewTransfers watchDirs=
+        let unActionedFiles= iterFolders watchDirs
+        let transfers= ActionNewFiles unActionedFiles ;
         transfers
+    
     (*   let iterFolders2 (folders:WatchDir list)=
         folders|>List.map (fun folder->
            folder.Dir.GetFiles()|> ) *)
