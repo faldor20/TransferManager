@@ -32,7 +32,7 @@ module Server=
       services.AddGiraffe() |> ignore
 
     let app = application {
-        url ("http://127.0.0.1:" + port.ToString() + "/")
+        url ("http://*:" + port.ToString() + "/")
         
         use_router Routers.appRouter
         memory_cache

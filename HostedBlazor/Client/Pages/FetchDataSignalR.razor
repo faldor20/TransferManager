@@ -9,9 +9,10 @@
 @using Microsoft.Extensions.DependencyInjection;
 @using System.Threading
 @using SharedData
+@inject HttpClient Http
 @* @using static SharedData.Data; *@
 <h1>Transfer Monitoring</h1>
-
+<p>Connected to transfer server at: @transferServerUrl</p>
 
 @if (status==Status.Loading)
 {
@@ -76,14 +77,16 @@ else
 }
 @code {
 	private TransferData[] CopyTasks = null;
-
-    
+    public string transferServerUrl;
 	private Status status = Status.Loading;
 	private HubConnection hubConnection;
 	protected override async Task OnInitializedAsync()
-	{
+	{   
+        transferServerUrl= await Http.GetStringAsync("WeatherForecast");
+        Console.WriteLine( "data="+transferServerUrl);
+     
 		hubConnection = new HubConnectionBuilder()
-			.WithUrl("http://localhost:8085/datahub")
+			.WithUrl(transferServerUrl+"/datahub")
 			.AddJsonProtocol()
 			.Build();
 
