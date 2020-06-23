@@ -8,8 +8,14 @@ open Transfer.Data
 open System.Threading.Tasks
 open FSharp.Control.Tasks
 open SharedData;
+open FluentFTP
 module Mover =
-    let MoveFile updateSpeed destination source (guid:Guid) eventHandler =
+    let TransferResult (ftpResult:FtpStatus)=
+        match ftpResult with
+        |FtpStatus.Failed->TransferResult.Failed
+        |FtpStatus.Success->TransferResult.Success
+        
+    let MoveFile isFTP destination source (guid:Guid) eventHandler =
         let stopWatch = new Stopwatch()
         
         let startTime= DateTime.Now
@@ -17,9 +23,10 @@ module Mover =
         setTransferData { Percentage = 0.0; FileSize=0.0; FileRemaining=0.0; Speed = 0.0;Destination = destination;Source = source; StartTime=startTime; id=guid; Status=TransferStatus.Waiting} guid
        
         let mutable lastTransfered = int64 0
-     
+        let fileSize=(new FileInfo(source)).Length
+        let fileSizeMB=(float(fileSize/int64 1000))/1000.0
         stopWatch.Start()
-        let outputStats  =Action<TransferProgress> (fun progress->
+        let outputStatsFileTrans  =Action<TransferProgress> (fun progress->
            
             if stopWatch.ElapsedMilliseconds>int64 500 then 
                 let speed =(double(progress.Transferred- lastTransfered)/  double(1000*1000))/ (double stopWatch.ElapsedMilliseconds / double 1000)
@@ -37,7 +44,21 @@ module Mover =
                                   Status=TransferStatus.Copying} guid
       
                               )
-
+        let ftpProgress:Progress<FtpProgress>  =new Progress<FtpProgress>(fun prog ->
+            if stopWatch.ElapsedMilliseconds>int64 500 then 
+                let speed =prog.TransferSpeed/1000.0/1000.0
+                eventHandler    { Percentage = prog.Progress
+                                  FileSize= fileSizeMB
+                                  Speed = float (MathF.Round((float32 speed),2))
+                                  FileRemaining=float((fileSize- prog.TransferredBytes)/int64 1000/int64 1000)
+                                  Destination = destination
+                                  Source = source
+                                  id=guid
+                                  StartTime=startTime
+                                  Status=TransferStatus.Copying} guid
+      
+                              )
+        
         (* let timer = new System.Timers.Timer(updateSpeed)
         timer.AutoReset <- true
         timer.Elapsed.Add outputStats
@@ -73,15 +94,32 @@ module Mover =
             }
 
             
-            
+        
         async {
            
                //TODO: this is a total hack and i dhouls be able to find a better way
-               
+            
             let task=async{
                 do! isAvailabe
-                let task= FileTransferManager.CopyWithProgressAsync(source, destination, outputStats,false,ct.Token)
-                return! Async.AwaitTask task
+                
+                let runFtp=async{
+                    let ip::path=destination.Split '@'|>Array.toList
+                    use client= FluentFTP.FtpClient.Connect(Uri ip)
+                    let task=client.UploadFileAsync (source,path.[0],FtpRemoteExists.Overwrite,false,FtpVerify.Throw,ftpProgress,ct.Token)
+                    try 
+                        let! a=(Async.AwaitTask task)
+                        return TransferResult a
+                    with 
+                    |OperationCanceledException-> return IOExtensions.TransferResult.Cancelled
+                                
+                   
+                }
+                let result= 
+                    match isFTP with
+                        |true-> runFtp
+                        |false->  Async.AwaitTask (FileTransferManager.CopyWithProgressAsync(source, destination, outputStatsFileTrans,false,ct.Token))
+                return! result 
+                
             }
             printfn "starting copy from %s to %s"source destination
             let! result= task

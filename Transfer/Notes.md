@@ -1,6 +1,13 @@
 # Progress:
 
 TODO: 
+
+1. get ftp running.
+
+    1.figure out wiat to do with the destinationinfo check that happens to see if it is a valid dir. maybe do an ftp connection with a try catch arround
+
+
+
 write some proper test for the DATA portion
 write the frontend
 make  generate exmaple json function if the watchdirs.json cannot be found

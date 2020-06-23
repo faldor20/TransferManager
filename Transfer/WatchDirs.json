@@ -1,8 +1,10 @@
 {
     "WatchDirs":[
+        //FTp: 10.0.0.1@/my/directory/file
+        //Share:
         {"Source":"./testSource","Destination":"F:/"},
         {"Source":"./testSource","Destination":"H:/testDest"},
-        {"Source":"./TO_BUN","Destination":"BUN"}
+        {"Source":"./TO_BUN","Destination":"10.0.0.10@/BUN","IsFTP":false}
 
     ]
     
