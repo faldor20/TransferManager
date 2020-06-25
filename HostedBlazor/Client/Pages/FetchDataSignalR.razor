@@ -65,10 +65,13 @@ else
                     etaString="Not Started";
                 }
                 var fileName= task.Source.Split('\\')[^1];
+                string destination;
+                if(task.Destination.Contains('@'))destination= task.Destination.Split('@')[1];
+                else destination=task.Destination;
                 <BSAlert Color="@type">
                     <p><h3><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(task.FileSize)MB</h3>  </p> 
 
-                    <h4> <BSBadge Color="Color.Secondary">From</BSBadge> | @task.Source.Remove(task.Source.Length- fileName.Length) | <BSBadge Color="Color.Secondary">--></BSBadge>  | @(task.Destination.Split('@')[1]) |</h4>
+                    <h4> <BSBadge Color="Color.Secondary">From</BSBadge> | @task.Source.Remove(task.Source.Length- fileName.Length) | <BSBadge Color="Color.Secondary">--></BSBadge>  | @destination |</h4>
                     <div>@task.Percentage % Complete
                         <div class="progress">
                             <div class="progress-bar" role="progressbar" style="width: @task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
