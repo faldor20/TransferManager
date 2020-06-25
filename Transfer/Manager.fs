@@ -15,9 +15,6 @@ module Manager =
     
     type jsonData = { WatchDirs: WatchDirSimple list }
 
-    let mainLoop watchDir =
-        let tasks, updatedWatchDirs = GetNewTransfers watchDir 
-        (tasks, updatedWatchDirs)
     let mainLoop2 watchDir =
         let tasks = GetNewTransfers2 watchDir 
         tasks
