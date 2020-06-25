@@ -24,7 +24,7 @@ module Scheduler =
         async {
             guid|>setTransferData
                     { Percentage = 0.0
-                      FileSize = 0.0
+                      FileSize = float(FileInfo(source).Length/int64 1000/int64 1000)
                       FileRemaining = 0.0
                       Speed = 0.0
                       Destination = destination
@@ -33,7 +33,7 @@ module Scheduler =
                       id = guid
                       Status = TransferStatus.Waiting } 
             let ct = new CancellationTokenSource()
-            
+            printfn "Scheduled transfer from %s To-> %s" source destination
             CancellationTokens.Add(guid, ct)
             do! isAvailabe source
             return Mover.MoveFile isFTP destination source guid eventHandler ct

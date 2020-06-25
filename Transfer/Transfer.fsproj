@@ -35,6 +35,7 @@
 		<PackageReference Include="FluentFTP" Version="32.4.3" />
 		<PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.24" />
 		<PackageReference Include="FSharp.Json" Version="0.4.0" />
+		<PackageReference Include="Legivel" Version="0.4.3" />
 		<PackageReference Include="Saturn" Version="0.14.1" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
 		<PackageReference Update="FSharp.Core" Version="4.7.2" />
