@@ -1,4 +1,4 @@
-﻿@page "/FetchDataSignalR"
+﻿@page "/"
 @using System.Collections.Generic
 @using blaz.Data
 @using System.Threading.Tasks;
@@ -9,6 +9,7 @@
 @using Microsoft.Extensions.DependencyInjection;
 @using System.Threading
 @using SharedData
+
 @inject HttpClient Http
 @* @using static SharedData.Data; *@
 <h1>Transfer Monitoring</h1>
@@ -29,9 +30,10 @@ else
     <table class="table">
 
         <div>   
-            @foreach (var task in CopyTasks)
-            {
+            
 
+       @foreach (var task in CopyTasks)
+            {
 				var type=task.Status switch 
                 {
                     TransferStatus.Complete => Color.Success,
@@ -49,7 +51,7 @@ else
                     TransferStatus.Failed=>"Failed",
                 };
                 var etaSecs=(double)(task.FileRemaining/task.Speed);
-                string etaString="Not Started";
+                string etaString;
                 if(etaSecs>3600){
                    etaString= ">1 hour";  
                 }
@@ -58,23 +60,29 @@ else
                     etaString= eta.Minutes+":"+eta.Seconds;
                 }
                 else if(task.Status==TransferStatus.Complete) etaString="Done";
+                else
+                {
+                    etaString="Not Started";
+                }
                 var fileName= task.Source.Split('\\')[^1];
                 <BSAlert Color="@type">
-                    <h3>@title @fileName</h3>
-                    <h4>From | @task.Source.Remove(task.Source.Length- fileName.Length) | -> | @task.Destination |</h4>
+                    <p><h3><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(task.FileSize)MB</h3>  </p> 
+
+                    <h4> <BSBadge Color="Color.Secondary">From</BSBadge> | @task.Source.Remove(task.Source.Length- fileName.Length) | <BSBadge Color="Color.Secondary">--></BSBadge>  | @(task.Destination.Split('@')[1]) |</h4>
                     <div>@task.Percentage % Complete
                         <div class="progress">
                             <div class="progress-bar" role="progressbar" style="width: @task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
                     </div>
                     
-                    <div>@task.Speed MB/s    |   ETA @etaString  <BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Cancel(task.id))">Cancel</BSButton>  </div>
+                    <div>@task.Speed MB/s    |   ETA @etaString  @if(task.Status== TransferStatus.Copying){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Cancel(task.id))">Cancel</BSButton>}  </div>
                 </BSAlert>
             }
             
         </div>
     </table>
 }
+
 @code {
 	private TransferData[] CopyTasks = null;
     public string transferServerUrl;
