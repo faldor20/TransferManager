@@ -10,7 +10,7 @@ module Watcher =
         |FileWatchDir of WatchDir *)
     type WatchDir =
         { Dir: DirectoryInfo
-          OutPutDir: DirectoryInfo
+          OutPutDir: string
           TransferedList: string list
           IsFTP:bool;}
     type WatchDirSimple = { Source: string; Destination: string; IsFTP:bool; }
@@ -32,7 +32,7 @@ module Watcher =
             let tasksAndFiles= files|>Array.toList|> List.map(fun file -> 
                 let handler data (guid) =
                     if Data.data.ContainsKey guid then (Data.setTransferData data guid) else guid|>Data.setTransferData data 
-                (MoveFile watchDir.IsFTP watchDir.OutPutDir.FullName file.FullName (System.Guid.NewGuid()) handler,file.Name) 
+                (MoveFile watchDir.IsFTP watchDir.OutPutDir file.FullName (System.Guid.NewGuid()) handler,file.Name) 
             )
             
             let tasks,processedFiles=tasksAndFiles|>List.unzip

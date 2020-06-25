@@ -19,13 +19,13 @@ module Manager =
 
 
     let sucessfullCompleteAction id source=
-        printfn "finished copying %A" source
+        printfn " successfully finished copying %A" source
         Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Complete; Percentage=100.0 } id
     let FailedCompleteAction id source=
-        printfn "finished copying %A" source
+        printfn "failed copying %A" source
         Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Failed; } id
     let CancelledCompleteAction id source=
-        printfn "finished copying %A" source
+        printfn "canceled copying %A" source
         Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Cancelled; } id
 
     let startUp =
@@ -41,17 +41,26 @@ module Manager =
         
         let watchDirsExist= watchDirsUnfiltered.WatchDirs|> List.filter(fun dir->
             let destOkay= 
+                let printError error= printfn "Watch Destination: %s for source:%s %s" dir.Destination dir.Source error
                 try 
                     match dir.IsFTP with
                         | true-> 
                             //split into head(ip ) and tail(dir)
                             let ip::path=dir.Destination.Split '@'|>Array.toList
-                            use client=FluentFTP.FtpClient.Connect(Uri (ip))
-                            client.DirectoryExists(path.[0])
+                            use client=new FluentFTP.FtpClient( ip,21,"quantel","***REMOVED***")
+                            client.Connect()
+                            let exists=client.DirectoryExists(path.[0])
+                            if not exists then printError "could not be found on server" 
+                            exists
+                            true
                         |false-> (DirectoryInfo dir.Destination).Exists
                 with
-                    |_->    printfn"Watch Destination: %s for source:%s does not exist, will not watch this directory" dir.Destination dir.Source
-                            false
+                    |(:? IOException)->  
+                        printError "does not exist, will not watch this directory" 
+                        false
+                    | :? FluentFTP.FtpException-> 
+                        printError "cannot be connected to" 
+                        false
             let sourceOkay =
                 try 
                     (DirectoryInfo dir.Source).Exists
@@ -64,7 +73,7 @@ module Manager =
         let mutable watchDirsData =
             watchDirsExist|> List.map (fun watchDir ->
                 { Dir = DirectoryInfo watchDir.Source
-                  OutPutDir = DirectoryInfo watchDir.Destination
+                  OutPutDir = watchDir.Destination
                   TransferedList = List.empty
                   IsFTP=watchDir.IsFTP })
 
@@ -88,7 +97,6 @@ module Manager =
                             directoryGroup|> List.map (fun task ->
                                 async{
                                     let! transResult, id,ct = task
-                                    do! Async.Sleep(50)
                                     let source = Data.data.[id].Source
                                     match transResult with 
                                         |TransferResult.Success-> sucessfullCompleteAction id source

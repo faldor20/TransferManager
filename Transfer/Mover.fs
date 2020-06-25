@@ -46,7 +46,11 @@ module Mover =
                               )
         let ftpProgress:Progress<FtpProgress>  =new Progress<FtpProgress>(fun prog ->
             if stopWatch.ElapsedMilliseconds>int64 500 then 
-                let speed =prog.TransferSpeed/1000.0/1000.0
+                let speed =(double(prog.TransferredBytes- lastTransfered)/  double(1000*1000))/ (double stopWatch.ElapsedMilliseconds / double 1000)
+                //let speed =prog.TransferSpeed/1000.0/1000.0
+                lastTransfered<-prog.TransferredBytes
+                stopWatch.Reset()
+                stopWatch.Start()
                 eventHandler    { Percentage = prog.Progress
                                   FileSize= fileSizeMB
                                   Speed = float (MathF.Round((float32 speed),2))
@@ -67,6 +71,7 @@ module Mover =
             Action<TransferProgress>(fun prog -> progress <- prog) *)
         let ct = new Threading.CancellationTokenSource()
         Data.CancellationTokens.Add(guid,ct);
+        
         let isAvailabe=
            async{ 
                 let mutable currentFile = new FileInfo(source);
@@ -88,29 +93,32 @@ module Mover =
                         using(currentFile.Open(FileMode.Open, FileAccess.Read, FileShare.None)) (fun stream-> stream.Close())
                         unavailable<-false
                     with
-                        |_->  Task.Delay(1000).Wait()
-                              unavailable<-true
+                        |IOException->  Task.Delay(1000).Wait()
+                                        unavailable<-true
                 
             }
 
             
-        
+        let fileName= 
+            let a=source.Split('\\')
+            a.[a.Length-1]
         async {
            
                //TODO: this is a total hack and i dhouls be able to find a better way
-            
+            do! isAvailabe
             let task=async{
-                do! isAvailabe
+                
                 
                 let runFtp=async{
                     let ip::path=destination.Split '@'|>Array.toList
-                    use client= FluentFTP.FtpClient.Connect(Uri ip)
-                    let task=client.UploadFileAsync (source,path.[0],FtpRemoteExists.Overwrite,false,FtpVerify.Throw,ftpProgress,ct.Token)
+                    use client=new FluentFTP.FtpClient( ip,21,"quantel","***REMOVED***")
+                    client.Connect()
+                    let task= Async.AwaitTask(client.UploadFileAsync (source,(path.[0]+fileName),FtpRemoteExists.Overwrite,false,FtpVerify.Throw,ftpProgress ,ct.Token ))
                     try 
-                        let! a=(Async.AwaitTask task)
+                        let! a= task
                         return TransferResult a
                     with 
-                    |OperationCanceledException-> return IOExtensions.TransferResult.Cancelled
+                    | :? OperationCanceledException-> return IOExtensions.TransferResult.Cancelled
                                 
                    
                 }
@@ -123,7 +131,7 @@ module Mover =
             }
             printfn "starting copy from %s to %s"source destination
             let! result= task
-
+            printfn "finished copy from %s to %s"source destination
             return (result,guid,ct)
             
         }

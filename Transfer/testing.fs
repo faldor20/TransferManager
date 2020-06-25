@@ -4,7 +4,10 @@ open System
 open System.Threading
 module Testing=
     let a=1
-    1
+
+   (*  let client= FluentFTP.FtpClient.Connect("***REMOVED***")
+    client.Connect()
+    client.DirectoryExists("/hvy_bun_news/Transfer/") *)
 (*     let moveTest  out source=
             async{
             let handler (data:Data.TransferData) guid=

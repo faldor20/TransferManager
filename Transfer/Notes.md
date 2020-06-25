@@ -1,10 +1,8 @@
 # Progress:
 
 TODO: 
-
-1. get ftp running.
-
-    1.figure out wiat to do with the destinationinfo check that happens to see if it is a valid dir. maybe do an ftp connection with a try catch arround
+1. look at queing:
+    limit number of simultaneous transfers to each location to one. that way we make the files being sent get there much quicker
 
 
 
@@ -32,3 +30,9 @@ i think i need to do copying and then deletion assuming all tasks related to it 
 
 ## make a fork of ioextension library and add a cencelation token to the moveasync function
     we can use this to allow cancelling a transfer
+
+
+
+# ssential steps
+
+to allow ftp i had to go inot advanced user settings in the shared folder and alow ftpuser
