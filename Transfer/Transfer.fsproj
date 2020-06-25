@@ -15,6 +15,7 @@
 	<ItemGroup>
 		<Compile Include="Data.fs" />
 		<Compile Include="Mover.fs" />
+        <Compile Include="Scheduler.fs" />
 		<Compile Include="watcher.fs" />
 		<Compile Include="Manager.fs" />
 		<Compile Include="testing.fsx" />
@@ -32,6 +33,7 @@
 		<!-- <PackageReference Include="FSharp.Data" Version="3.3.3" /> -->
 		<PackageReference Include="FileTransferManager" Version="1.0.5" />
 		<PackageReference Include="FluentFTP" Version="32.4.3" />
+		<PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.24" />
 		<PackageReference Include="FSharp.Json" Version="0.4.0" />
 		<PackageReference Include="Saturn" Version="0.14.1" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />

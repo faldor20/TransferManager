@@ -1,8 +1,19 @@
 namespace Transfer
 open System.Collections.Generic
 open System;
+open System.Threading
+open System.IO
 open SharedData;
+open IOExtensions;
 module Data=
+    type ScheduledTransfer=Async<Async<TransferResult*Guid*CancellationToken>>
+    type WatchDir =
+        { Dir: DirectoryInfo
+          OutPutDir: string
+          TransferedList: string list
+          IsFTP:bool;
+          ScheduledTasks:ScheduledTransfer list}
+    type WatchDirSimple = { Source: string; Destination: string; IsFTP:bool; }
     type TransferData={
           Percentage:float 
           FileSize :float

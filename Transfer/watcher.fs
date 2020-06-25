@@ -1,19 +1,17 @@
 namespace Transfer
 
 open System.IO
+open System.Collections.Generic
 open System.Threading.Tasks
 open Mover
 open FluentFTP
+open Data;
+open FSharp.Control
 module Watcher =
 (* type WatchDir=
         |FTPWatchDir of WatchDir *FluentFTP.FtpClient
         |FileWatchDir of WatchDir *)
-    type WatchDir =
-        { Dir: DirectoryInfo
-          OutPutDir: string
-          TransferedList: string list
-          IsFTP:bool;}
-    type WatchDirSimple = { Source: string; Destination: string; IsFTP:bool; }
+    
 
 
 
@@ -24,18 +22,20 @@ module Watcher =
         //i allso need a way to cull the old list if a file is deleted
         files
         |> Array.filter (fun file -> not (ignoreList |> List.contains file.Name))
+    let handler data (guid) =
+        if Data.data.ContainsKey guid then (Data.setTransferData data guid) else guid|>Data.setTransferData data 
 
     let ActionNewFiles (newFilesForEachWatchDir:(FileInfo []*WatchDir)list) =
         //We iterate through the list each pair contains watchdir and a list of the new files in that dir
         let transfers =newFilesForEachWatchDir|> List.map (fun (files,watchDir) ->
             //we iterate through the files creating a new movejob for each in turn returning the task and the filename of the file it is for
-            let tasksAndFiles= files|>Array.toList|> List.map(fun file -> 
-                let handler data (guid) =
-                    if Data.data.ContainsKey guid then (Data.setTransferData data guid) else guid|>Data.setTransferData data 
-                (MoveFile watchDir.IsFTP watchDir.OutPutDir file.FullName (System.Guid.NewGuid()) handler,file.Name) 
-            )
+            let tasks=asyncSeq{ 
+                for file in files do
+                    let task= (Scheduler.scheduleTransfer watchDir.IsFTP watchDir.OutPutDir file.FullName (System.Guid.NewGuid()) handler)
+                    yield task
+            }
             
-            let tasks,processedFiles=tasksAndFiles|>List.unzip
+            let processedFiles=files|>Array.map(fun item->item.Name)|>Array.toList
             //Return the tasks and a watchDir that includes the newly actioned files in its ignoreList
             tasks,{ watchDir with TransferedList = watchDir.TransferedList @ (processedFiles ) }
         )
@@ -57,6 +57,29 @@ module Watcher =
         let transfers= ActionNewFiles unActionedFiles ;
         transfers
     
-    (*   let iterFolders2 (folders:WatchDir list)=
-        folders|>List.map (fun folder->
-           folder.Dir.GetFiles()|> ) *)
+    
+//======================
+// Here we have the new version of the scheduling code that uses async sequences
+//====================
+
+
+
+    let checkForNewFiles2 (ignoreList: string []) (folder:DirectoryInfo) =
+        folder.GetFiles()|>Array.map(fun i-> i.FullName)|> Array.except ignoreList
+    
+
+    let ActionNewFiles2 (watchDir:WatchDir) =
+        asyncSeq{ 
+                let mutable ignoreList= Array.empty  //We iterate through the list each pair contains watchdir and a list of the new files in that dir 
+                while true do
+                let newFiles=checkForNewFiles2 ignoreList watchDir.Dir
+                for file in newFiles do
+                    let task = (Scheduler.scheduleTransfer watchDir.IsFTP watchDir.OutPutDir file (System.Guid.NewGuid()) handler)
+                    yield task
+                ignoreList<- ignoreList|> Array.append newFiles
+                do! Async.Sleep(500);
+        }
+
+    let GetNewTransfers2 watchDirs=
+        let tasks=watchDirs|>List.map ActionNewFiles2
+        tasks

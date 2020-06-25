@@ -1,7 +1,8 @@
 {
     "WatchDirs":[
         
-        {"Source":"./testSource","Destination":"***REMOVED***@***REMOVED***Transfers/SSC to BUN/","IsFTP":true}
+        //{"Source":"./testSource","Destination":"***REMOVED***@***REMOVED***Transfers/SSC to BUN/","IsFTP":true}
+        {"Source":"./testSource","Destination":"H:/testDest","IsFTP":false}
 
     ]
     
