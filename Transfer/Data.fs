@@ -25,7 +25,7 @@ module Data=
           StartTime:DateTime
           id:Guid 
         } 
-    let mutable CancellationTokens= Dictionary<Guid,System.Threading.CancellationTokenSource>()
+    let mutable CancellationTokens=new Dictionary<Guid,System.Threading.CancellationTokenSource>()
     let mutable data=Map.empty<System.Guid,TransferData>
     let getTransferData ()= data
     let setTransferData newData key=data<- data.Add (key,newData)
