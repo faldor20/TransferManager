@@ -35,9 +35,9 @@ module Mover =
                 lastTransfered<-progress.Transferred
                 stopWatch.Reset()
                 stopWatch.Start()
-                eventHandler    { Percentage = float (MathF.Round(float32 progress.Percentage,2))
+                eventHandler    { Percentage = float  progress.Percentage
                                   FileSize= float(progress.Total/ int64 1000 )/1000.0
-                                  Speed = float (MathF.Round((float32 speed),2))
+                                  Speed = float  speed
                                   FileRemaining=float((progress.Total- progress.Transferred)/int64 1000/int64 1000)
                                   Destination = destination
                                   Source = source
@@ -55,7 +55,7 @@ module Mover =
                 stopWatch.Start()
                 eventHandler    { Percentage = prog.Progress
                                   FileSize= fileSizeMB
-                                  Speed = float (MathF.Round((float32 speed),2))
+                                  Speed = float speed
                                   FileRemaining=float((fileSize- prog.TransferredBytes)/int64 1000/int64 1000)
                                   Destination = destination
                                   Source = source
