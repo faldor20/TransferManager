@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp3.1</TargetFramework>
+        <BlazorWebAssemblyEnableLinking  Condition="'$(Configuration)'!='Release'">false</BlazorWebAssemblyEnableLinking>
   </PropertyGroup>
 
   <ItemGroup>

@@ -31,7 +31,8 @@ module Scheduler =
                       Source = source
                       StartTime = DateTime.Now
                       id = guid
-                      Status = TransferStatus.Waiting } 
+                      Status = TransferStatus.Waiting 
+                      EndTime=DateTime.Now} 
             let ct = new CancellationTokenSource()
             printfn "Scheduled transfer from %s To-> %s" source destination
             CancellationTokens.Add(guid, ct)

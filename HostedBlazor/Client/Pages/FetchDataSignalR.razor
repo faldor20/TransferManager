@@ -53,16 +53,16 @@ else
                 var etaSecs=(double)(task.FileRemaining/task.Speed);
                 string etaString;
                 if(etaSecs>3600){
-                   etaString= ">1 hour";  
+                   etaString= "ETA "+ ">1 hour";  
                 }
-                else if(etaSecs>0.1){
+                else if(etaSecs>1){
                     var eta= TimeSpan.FromSeconds(etaSecs);
-                    etaString= eta.Minutes+":"+eta.Seconds;
+                    etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
                 }
-                else if(task.Status==TransferStatus.Complete) etaString="Done";
+                else if(task.Status==TransferStatus.Complete) etaString="Took: "+((task.EndTime-task.StartTime).ToString("hh\\:mm\\:ss"));
                 else
                 {
-                    etaString="Not Started";
+                    etaString="ETA "+"Not Started";
                 }
                 var fileName= task.Source.Split('\\')[^1];
                 string destination;
@@ -78,7 +78,7 @@ else
                         </div>
                     </div>
                     
-                    <div>@task.Speed MB/s    |   ETA @etaString  @if(task.Status== TransferStatus.Copying){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Cancel(task.id))">Cancel</BSButton>}  </div>
+                    <div>@task.Speed MB/s    |  @etaString  @if(task.Status== TransferStatus.Copying){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Cancel(task.id))">Cancel</BSButton>}  </div>
                 </BSAlert>
             }
             

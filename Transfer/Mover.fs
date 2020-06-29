@@ -43,7 +43,8 @@ module Mover =
                                   Source = source
                                   id=guid
                                   StartTime=startTime
-                                  Status=TransferStatus.Copying} guid
+                                  Status=TransferStatus.Copying
+                                  EndTime=DateTime.Now} guid
                               )
         let ftpProgress:Progress<FtpProgress>  =new Progress<FtpProgress>(fun prog ->
             if stopWatch.ElapsedMilliseconds>int64 500 then 
@@ -60,7 +61,8 @@ module Mover =
                                   Source = source
                                   id=guid
                                   StartTime=startTime
-                                  Status=TransferStatus.Copying} guid
+                                  Status=TransferStatus.Copying
+                                  EndTime=DateTime.Now} guid
       
                               )
         

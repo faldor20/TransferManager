@@ -23,13 +23,13 @@ module Manager =
 
     let sucessfullCompleteAction id source=
         printfn " successfully finished copying %A" source
-        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Complete; Percentage=100.0 } id
+        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} id
     let FailedCompleteAction id source=
         printfn "failed copying %A" source
-        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Failed; } id
+        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Failed; EndTime=DateTime.Now} id
     let CancelledCompleteAction id source=
         printfn "canceled copying %A" source
-        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Cancelled; } id
+        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Cancelled; EndTime=DateTime.Now} id
 
     let startUp =
         let configText = try File.ReadAllText("./WatchDirs.yaml")
@@ -90,7 +90,14 @@ module Manager =
                    
         let schedules = mainLoop2  watchDirsData
 
+        let resetWatch= 
+            async{
+                while true do
+                    if DateTime.Now.TimeOfDay=TimeSpan.Zero then Data.reset()
+                    do!Async.Sleep(1000*60)
         
+            }
+        Async.Start(resetWatch)
         
         let completeTransferTasks = asyncSeq{ 
             for directoryGroup in schedules do
@@ -125,6 +132,7 @@ module Manager =
                         
                     }
                 )}
+        
         completeTransferTasks|>AsyncSeq.iterAsyncParallel(id)
     
         

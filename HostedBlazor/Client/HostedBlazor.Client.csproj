@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+        <BlazorWebAssemblyEnableLinking  Condition="'$(Configuration)'!='Release'">false</BlazorWebAssemblyEnableLinking>
     <RazorLangVersion>3.0</RazorLangVersion>
   </PropertyGroup>
 

@@ -23,6 +23,7 @@ module Data=
           Source:string
           Status:TransferStatus
           StartTime:DateTime
+          EndTime:DateTime
           id:Guid 
         } 
     let mutable CancellationTokens=new Dictionary<Guid,System.Threading.CancellationTokenSource>()
@@ -32,4 +33,6 @@ module Data=
     let removeItem key=data.Remove key 
     let toSeq d = d |> Seq.map (fun (KeyValue(k,v)) -> (k,v))
     let getAsSeq= data|>toSeq
-    
+    let reset ()=
+        CancellationTokens<- new Dictionary<Guid,System.Threading.CancellationTokenSource>()
+        data<- Map.empty<System.Guid,TransferData>

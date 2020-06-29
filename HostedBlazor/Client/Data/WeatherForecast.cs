@@ -13,6 +13,7 @@
       public  string Source{get;set;}
       public TransferStatus Status{get;set;}
       public DateTime StartTime{get;set;}
+      public DateTime EndTime {get;set;}
       public Guid id {get;set;}
     }
     public enum Status
