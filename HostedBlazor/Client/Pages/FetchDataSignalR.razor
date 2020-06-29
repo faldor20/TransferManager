@@ -52,7 +52,7 @@ else
                 };
                 string speed=task.Status switch 
                 {
-                    TransferStatus.Complete =>"Average Speed ="+ (task.FileSize/(task.EndTime-task.StartTime).TotalSeconds).ToString("0.0"),
+                    TransferStatus.Complete =>"Average Speed = "+ (task.FileSize/(task.EndTime-task.StartTime).TotalSeconds).ToString("0.0"),
                     _ =>task.Speed.ToString("0.0"),
                 };
                 var etaSecs=(double)(task.FileRemaining/task.Speed);
