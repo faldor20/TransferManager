@@ -47,13 +47,13 @@ module Data=
                 
                 let Count=dataBase.[key1].Count
                 printfn "databaseCount for %s = %i" key1 Count
-                dataBase.[key1].Add( {newData with id=dataBase.[key1].Count })
+                dataBase.[key1].Add( {newData with ID=dataBase.[key1].Count })
                 let Count2=dataBase.[key1].Count
                 printfn "databaseCountAfter for %s = %i" key1 Count2
                 ((dataBase.[key1].Count)-1)
             else 
                 
-                dataBase<- dataBase.Add(key1,new ResizeArray<TransferData>([{newData with id= 0}])  )
+                dataBase<- dataBase.Add(key1,new ResizeArray<TransferData>([{newData with ID= 0}])  )
                 0
                  
             )

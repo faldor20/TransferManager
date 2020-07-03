@@ -32,14 +32,14 @@ module Scheduler =
                       Destination = destination
                       Source = source
                       StartTime = DateTime.Now
-                      id = 0
+                      ID = 0
+                      GroupName=groupName
                       Status = TransferStatus.Waiting 
                       EndTime=DateTime.Now} 
                       groupName 
             
             
             let ct = new CancellationTokenSource()
-            printfn "DB: %A" dataBase
             printfn "Scheduled transfer from %s To-> %s at index:%i" source destination index
             addCancellationToken groupName ct
             do! isAvailabe source

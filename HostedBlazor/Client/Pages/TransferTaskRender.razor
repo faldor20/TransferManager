@@ -7,8 +7,6 @@
 @inject DataGetter Getter
 @code{
     [Parameter]
-    public string groupName{get;set;}
-    [Parameter]
     public List<TransferData> CopyTasks{get;set;}
 }
 @* @{
@@ -66,7 +64,7 @@
                         </div>
                     </div>
                     
-                    <div>@speed MB/s    |  @etaString  @if(task.Status== TransferStatus.Copying){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(groupName,task.id))">Cancel</BSButton>}  </div>
+                    <div>@speed MB/s    |  @etaString  @if(task.Status== TransferStatus.Copying){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(task.GroupName,task.ID))">Cancel</BSButton>}  </div>
                 </BSAlert>
             }
 

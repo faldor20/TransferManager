@@ -46,11 +46,11 @@ else
                     Getter.CopyTasks.Values ,
                     new List<TransferData>(),
                     (accum,next)=> accum.Concat(next).ToList()).OrderBy(transData=>transData.StartTime).ToList();        
-                <TransferTaskRender groupName="All" copyTasks="@orderedTasks"/>
+                <TransferTaskRender copyTasks="@orderedTasks"/>
             }
             else if(Getter.CopyTasks.ContainsKey(Name))
             {
-                <TransferTaskRender groupName="@Name" copyTasks="@Getter.CopyTasks[Name]"/>
+                <TransferTaskRender copyTasks="@Getter.CopyTasks[Name]"/>
             } 
             else
             {

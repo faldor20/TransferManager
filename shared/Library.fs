@@ -18,7 +18,8 @@ module SharedTypes =
          Status:TransferStatus
          StartTime:DateTime
          EndTime:DateTime
-         id:int 
+         ID:int 
+         GroupName:string
        }
     
      

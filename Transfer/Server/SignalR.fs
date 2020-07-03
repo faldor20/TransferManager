@@ -17,11 +17,12 @@ module SingnalR=
         let toDictionary (map : Map<_, _>) : Dictionary<_, _> = Dictionary(map)
         member this.GetTransferData()=
             let data =Data.dataBase
-            printfn "recieved data request";
+          
             this.Clients.All.SendAsync("ReceiveData",toDictionary(data))
         member this.GetConfirmation()=
             this.Clients.All.SendAsync("Testing","hiya from the other side")
         member this.CancelTransfer groupName id=
+            printfn "recieved Cancellation request for item %i in group %s" id groupName;
             Data.CancellationTokens.[groupName].[id].Cancel()
 
 
