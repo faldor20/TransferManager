@@ -108,14 +108,18 @@ module Manager =
                 //as soon as the file is detected
                 let schedules,groupName=directoryGroup
                 let scheduledTasks=schedules|>AsyncSeq.mapAsyncParallel(fun scheduleTask-> scheduleTask)
+
                 //This iterates though the transfer tasks. It is "iterAsync" and not parallel
                 //becuase we want the transfers to be started one after another
                 yield scheduledTasks|> AsyncSeq.iterAsync (fun task ->
                      async{
                         let! transResult, id,ct = task
+
                         let transData=dataBase.[groupName].[id]
-                        let source = Data.dataBase.[groupName].[id].Source
-                        printfn "DB: %A" dataBase
+                        let source = dataBase.[groupName].[id].Source
+
+                       //LOGGING: printfn "DB: %A" dataBase
+                       
                         match transResult with 
                             |TransferResult.Success-> sucessfullCompleteAction transData groupName id source
                             |TransferResult.Cancelled-> CancelledCompleteAction transData groupName id source

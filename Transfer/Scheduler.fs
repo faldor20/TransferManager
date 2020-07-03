@@ -20,7 +20,7 @@ module Scheduler =
                     unavailable <- true
         }
 
-    let scheduleTransfer groupName  isFTP destination source eventHandler =
+    let scheduleTransfer groupName  isFTP destination source =
         async {
             
             let index= 
@@ -43,5 +43,5 @@ module Scheduler =
             printfn "Scheduled transfer from %s To-> %s at index:%i" source destination index
             addCancellationToken groupName ct
             do! isAvailabe source
-            return Mover.MoveFile isFTP destination source groupName index eventHandler ct
+            return Mover.MoveFile isFTP destination source groupName index ct
         }
