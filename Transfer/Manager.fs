@@ -33,13 +33,15 @@ module Manager =
         Data.setTransferData { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now} groupName id
 
     let startUp =
-        let configText = try File.ReadAllText("./WatchDirs.yaml")
+        let configFile="./WatchDirs.yaml"
+        let configText = try File.ReadAllText(configFile)
                          with 
                             |IOException-> printfn "ERROR Could not find WatchDirs.yaml, that file must exist"
-                                           "Failed To open 'WatchDirs.json' file must exist for program to run "
+                                           "Failed To open 'WatchDirs.yaml' file must exist for program to run "
         let watchDirsUnfiltered = 
             match (Deserialize<yamlData> configText).[0] with
                |Success data -> printfn "Deserilaization Warnings: %A" data.Warn
+                                printfn "Config Data=: %A" data.Data
                                 data.Data
                |Error error ->failwith <|sprintf "Config file (%s) malformed, there is an error at %s becasue: %A" configText error.StopLocation.AsString error.Error
         // Here we check if the directry exists by getting dir and file info about the source and dest and
@@ -66,6 +68,9 @@ module Manager =
                     | :? FluentFTP.FtpException-> 
                         printError "cannot be connected to" 
                         false
+                    | _-> 
+                        printError "watchdir dest not accessable for an unknown reason" 
+                        false    
             let sourceOkay =
                 try 
                     (DirectoryInfo dir.Source).Exists
@@ -74,7 +79,7 @@ module Manager =
                          false
             (sourceOkay && destOkay)
         )
-        if watchDirsExist.Length=0 then  Console.Error.WriteLine("ERROR: no WatchDirs found in Json file. The program is usless without one")
+        if watchDirsExist.Length=0 then  printfn "ERROR: no WatchDirs existing could be found in yaml file. The program is usless without one"
         let mutable watchDirsData =
             watchDirsExist|> List.map (fun watchDir ->
                 { 

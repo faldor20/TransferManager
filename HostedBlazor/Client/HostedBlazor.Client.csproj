@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
-        <BlazorWebAssemblyEnableLinking Condition="'$(Configuration)'!='Release'">false</BlazorWebAssemblyEnableLinking>
+      <!--  <BlazorWebAssemblyEnableLinking Condition="'$(Configuration)'!='Release'">false</BlazorWebAssemblyEnableLinking>-->
     <RazorLangVersion>3.0</RazorLangVersion>
   </PropertyGroup>
 
@@ -19,7 +19,7 @@
     <PackageReference Include="BlazorStrap" Version="1.3.2" />
   </ItemGroup>
 <ItemGroup>
-<ProjectReference Include="..\..\shared\shared.fsproj" >
+<ProjectReference Include="..\..\shared\SharedData.fsproj" >
 <Name>SharedFs</Name>
 </ProjectReference>
 

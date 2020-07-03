@@ -8,7 +8,7 @@
 	<!-- 	<ProjectReference Include="C:/Users/Eli/Documents/programming/CSharp/FileTransferManager-master/IOExtensions/IOExtensions.csproj">
 			<Name>IOExtensions.csproj</Name>
 		</ProjectReference> -->
-        <ProjectReference Include="../Shared/Shared.fsproj">
+        <ProjectReference Include="../Shared/SharedData.fsproj">
 			<Name>Shared.csproj</Name>
 		</ProjectReference>
 	</ItemGroup> 
