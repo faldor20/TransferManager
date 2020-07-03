@@ -15,10 +15,11 @@ namespace HostedBlazor.Client
         public static async Task Main(string[] args)
         {
             var builder = WebAssemblyHostBuilder.CreateDefault(args);
-            builder.RootComponents.Add<App>("app");
-
+            builder.RootComponents.Add<App>("app"); 
+            Data.DataGetter.baseAddress =  new Uri(builder.HostEnvironment.BaseAddress) ;
             builder.Services.AddTransient(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-
+            builder.Services.AddSingleton<Data.DataGetter>();
+            
             await builder.Build().RunAsync();
         }
     }

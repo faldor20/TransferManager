@@ -8,7 +8,7 @@
 	<!-- 	<ProjectReference Include="C:/Users/Eli/Documents/programming/CSharp/FileTransferManager-master/IOExtensions/IOExtensions.csproj">
 			<Name>IOExtensions.csproj</Name>
 		</ProjectReference> -->
-        <ProjectReference Include="../Shared/Shared.csproj">
+        <ProjectReference Include="../Shared/Shared.fsproj">
 			<Name>Shared.csproj</Name>
 		</ProjectReference>
 	</ItemGroup> 
@@ -36,6 +36,7 @@
 		<PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.24" />
 		<PackageReference Include="FSharp.Json" Version="0.4.0" />
 		<PackageReference Include="Legivel" Version="0.4.3" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.5" />
 		<PackageReference Include="Saturn" Version="0.14.1" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
 		<PackageReference Update="FSharp.Core" Version="4.7.2" />

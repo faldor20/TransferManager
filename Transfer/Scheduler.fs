@@ -4,7 +4,7 @@ open System.IO
 open System.Threading
 open System
 open Transfer.Data
-open SharedData
+open SharedFs.SharedTypes
 module Scheduler =
     let isAvailabe source =
         async {
@@ -20,9 +20,11 @@ module Scheduler =
                     unavailable <- true
         }
 
-    let scheduleTransfer isFTP destination source (guid: Guid) eventHandler =
+    let scheduleTransfer groupName  isFTP destination source eventHandler =
         async {
-            guid|>setTransferData
+            
+            let index= 
+                addTransferData
                     { Percentage = 0.0
                       FileSize = float(FileInfo(source).Length/int64 1000/int64 1000)
                       FileRemaining = 0.0
@@ -30,12 +32,16 @@ module Scheduler =
                       Destination = destination
                       Source = source
                       StartTime = DateTime.Now
-                      id = guid
+                      id = 0
                       Status = TransferStatus.Waiting 
                       EndTime=DateTime.Now} 
+                      groupName 
+            
+            
             let ct = new CancellationTokenSource()
-            printfn "Scheduled transfer from %s To-> %s" source destination
-            CancellationTokens.Add(guid, ct)
+            printfn "DB: %A" dataBase
+            printfn "Scheduled transfer from %s To-> %s at index:%i" source destination index
+            addCancellationToken groupName ct
             do! isAvailabe source
-            return Mover.MoveFile isFTP destination source guid eventHandler ct
+            return Mover.MoveFile isFTP destination source groupName index eventHandler ct
         }

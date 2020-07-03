@@ -9,6 +9,7 @@ open FSharp.Json
 open System
 open IOExtensions
 open Data;
+open SharedFs.SharedTypes
 open Legivel.Serialization
 open FSharp.Control
 module Manager =
@@ -21,15 +22,15 @@ module Manager =
         let tasks = GetNewTransfers2 watchDir 
         tasks
 
-    let sucessfullCompleteAction id source=
+    let sucessfullCompleteAction transferData groupName id source=
         printfn " successfully finished copying %A" source
-        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} id
-    let FailedCompleteAction id source=
+        Data.setTransferData { (transferData) with Status=TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} groupName id
+    let FailedCompleteAction transferData groupName id source=
         printfn "failed copying %A" source
-        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Failed; EndTime=DateTime.Now} id
-    let CancelledCompleteAction id source=
+        Data.setTransferData { (transferData) with Status=TransferStatus.Failed; EndTime=DateTime.Now} groupName id 
+    let CancelledCompleteAction transferData groupName id source=
         printfn "canceled copying %A" source
-        Data.setTransferData { (Data.getTransferData().[id]) with Status=SharedData.TransferStatus.Cancelled; EndTime=DateTime.Now} id
+        Data.setTransferData { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now} groupName id
 
     let startUp =
         let configText = try File.ReadAllText("./WatchDirs.yaml")
@@ -76,7 +77,9 @@ module Manager =
         if watchDirsExist.Length=0 then  Console.Error.WriteLine("ERROR: no WatchDirs found in Json file. The program is usless without one")
         let mutable watchDirsData =
             watchDirsExist|> List.map (fun watchDir ->
-                { Dir = DirectoryInfo watchDir.Source
+                { 
+                  GroupName= watchDir.GroupName
+                  Dir = DirectoryInfo watchDir.Source
                   OutPutDir = watchDir.Destination
                   TransferedList = List.empty
                   IsFTP=watchDir.IsFTP
@@ -103,17 +106,20 @@ module Manager =
             for directoryGroup in schedules do
                 //This schedules the tasks it needs to be paralell because all transfers should be scheduled immidiatley
                 //as soon as the file is detected
-                let scheduledTasks=directoryGroup|>AsyncSeq.mapAsyncParallel(fun scheduleTask->scheduleTask)
+                let schedules,groupName=directoryGroup
+                let scheduledTasks=schedules|>AsyncSeq.mapAsyncParallel(fun scheduleTask-> scheduleTask)
                 //This iterates though the transfer tasks. It is "iterAsync" and not parallel
                 //becuase we want the transfers to be started one after another
                 yield scheduledTasks|> AsyncSeq.iterAsync (fun task ->
                      async{
                         let! transResult, id,ct = task
-                        let source = Data.data.[id].Source
+                        let transData=dataBase.[groupName].[id]
+                        let source = Data.dataBase.[groupName].[id].Source
+                        printfn "DB: %A" dataBase
                         match transResult with 
-                            |TransferResult.Success-> sucessfullCompleteAction id source
-                            |TransferResult.Cancelled-> CancelledCompleteAction id source
-                            |TransferResult.Failed-> FailedCompleteAction id source
+                            |TransferResult.Success-> sucessfullCompleteAction transData groupName id source
+                            |TransferResult.Cancelled-> CancelledCompleteAction transData groupName id source
+                            |TransferResult.Failed-> FailedCompleteAction transData groupName id source
                        
                         let rec del path iterCount= async{
                             if iterCount>10 
@@ -133,6 +139,6 @@ module Manager =
                     }
                 )}
         
-        completeTransferTasks|>AsyncSeq.iterAsyncParallel(id)
+        completeTransferTasks|>AsyncSeq.iterAsyncParallel(fun x ->x)
     
         

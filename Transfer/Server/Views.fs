@@ -5,7 +5,7 @@ open Giraffe
 
 open Transfer.Data
 open System.Collections.Generic
-open SharedData;
+open SharedFs.SharedTypes;
 module ViewGenerators=
     let generateTask (data:TransferData)=
         div[][

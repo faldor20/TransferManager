@@ -8,8 +8,8 @@ open FluentFTP
 open Data;
 open FSharp.Control
 module Watcher =
-    let handler data (guid) =
-        if Data.data.ContainsKey guid then (Data.setTransferData data guid) else guid|>Data.setTransferData data 
+    let handler data groupName (index) =
+        if Data.dataBase.ContainsKey groupName then if Data.dataBase.[groupName].Count>index then (Data.setTransferData data groupName index) else (groupName,index)||>Data.setTransferData data 
 //======================
 // Here we have the new version of the scheduling code that uses async sequences
 //====================
@@ -19,16 +19,17 @@ module Watcher =
     
 
     let ActionNewFiles2 (watchDir:WatchDir) =
-        asyncSeq{ 
+        (asyncSeq{ 
                 let mutable ignoreList= Array.empty  //We iterate through the list each pair contains watchdir and a list of the new files in that dir 
                 while true do
                 let newFiles=checkForNewFiles2 ignoreList watchDir.Dir
                 for file in newFiles do
-                    let task = (Scheduler.scheduleTransfer watchDir.IsFTP watchDir.OutPutDir file (System.Guid.NewGuid()) handler)
+                  
+                    let task = (Scheduler.scheduleTransfer watchDir.GroupName  watchDir.IsFTP watchDir.OutPutDir file  (handler))
                     yield task
                 ignoreList<- ignoreList|> Array.append newFiles
                 do! Async.Sleep(500);
-        }
+        },watchDir.GroupName)
 
     let GetNewTransfers2 watchDirs=
         let tasks=watchDirs|>List.map ActionNewFiles2

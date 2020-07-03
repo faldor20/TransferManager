@@ -22,14 +22,14 @@ module Routers=
     let helloView = router {
         getf "/%s" helloAction
     }
-    let copyView = router {
-        get "/" (htmlView (Views.Copies ((Transfer.Data.getAsSeq|>Seq.map(fun (a,b)->b)) |> Seq.toList ) ))
-    }
+    (* let copyView = router {
+      //  get "/" (htmlView (Views.Copies ((Transfer.Data.getAsSeq|>Seq.map(fun (a,b)->b)) |> Seq.toList ) ))
+    } *)
     let api= router{
         get "/" (json"this is an api")
         get "/transferdata" (fun next ctx ->
             task {
-                return! json Transfer.Data.data next ctx
+                return! json Transfer.Data.dataBase next ctx
             })
     }
 

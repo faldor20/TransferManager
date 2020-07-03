@@ -1,157 +1,53 @@
-﻿@page "/"
+﻿@page "/{Name}"
 @using System.Collections.Generic
 @using blaz.Data
-@using System.Threading.Tasks;
-@using Microsoft.AspNetCore.SignalR;
-@using Microsoft.AspNetCore.Components;
-@using Microsoft.AspNetCore.SignalR.Client;
 @using System;
-@using Microsoft.Extensions.DependencyInjection;
 @using System.Threading
-@using SharedData
+@using System.Threading.Tasks
+@using SharedFs
+@using HostedBlazor.Data
+@inject DataGetter Getter
+@code{
+    [Parameter]
+    public string Name { get; set; }
+protected override async Task OnInitializedAsync()
+    {
+          Getter.newData+=StateHasChanged;
+    }
+}
+@{
 
-@inject HttpClient Http
-@* @using static SharedData.Data; *@
+}
+
 <h1>Transfer Monitoring</h1>
-<p>Connected to transfer server at: @transferServerUrl</p>
+<p>Connected to transfer server at: @Getter.transferServerUrl</p>
 
-@if (status==Status.Loading)
+@if (Getter.status==Status.Loading)
 {
     <p><em>Loading...</em></p>
 }
-else if (status==Status.NoConnection){
+else if (Getter.status==Status.NoConnection){
 <p><em>Connot Connect to server</em></p>
 }
-else if (status==Status.DataError){
+else if (Getter.status==Status.DataError){
 <p><em>Data recieved is malformed</em></p>
 }
 else
 {
     <table class="table">
-
-        <div>   
-            
-
-       @foreach (var task in CopyTasks)
-            {
-				var type=task.Status switch 
+        <div>  
+            @if(Name=="All"){
+                @foreach (var pair in Getter.CopyTasks)
                 {
-                    TransferStatus.Complete => Color.Success,
-                    TransferStatus.Copying=>Color.Primary,
-                    TransferStatus.Waiting=>Color.Warning,
-                    TransferStatus.Cancelled=>Color.Dark,
-                    TransferStatus.Failed=>Color.Danger,
-                };
-                var title=task.Status switch 
-                {
-                    TransferStatus.Complete => "Complete",
-                    TransferStatus.Copying=>"Moving",
-                    TransferStatus.Waiting=>"Waiting to Start",
-                    TransferStatus.Cancelled=>"Canceled",
-                    TransferStatus.Failed=>"Failed",
-                };
-                string speed=task.Status switch 
-                {
-                    TransferStatus.Complete =>"Average Speed = "+ (task.FileSize/(task.EndTime-task.StartTime).TotalSeconds).ToString("0.0"),
-                    _ =>task.Speed.ToString("0.0"),
-                };
-                var etaSecs=(double)(task.FileRemaining/task.Speed);
-                string etaString;
-                if(etaSecs>3600){
-                   etaString= "ETA "+ ">1 hour";  
+                    <TransferTaskRender groupName="All" copyTasks="@pair.Value"/>
                 }
-                else if(etaSecs>1){
-                    var eta= TimeSpan.FromSeconds(etaSecs);
-                    etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
-                }
-                else if(task.Status==TransferStatus.Complete) etaString="Took: "+((task.EndTime-task.StartTime).ToString("hh\\:mm\\:ss"));
-                else
-                {
-                    etaString="ETA "+"Not Started";
-                }
-                var fileName= task.Source.Split('\\')[^1];
-                string destination;
-                if(task.Destination.Contains('@'))destination= task.Destination.Split('@')[1];
-                else destination=task.Destination;
-                <BSAlert Color="@type">
-                    <p><h3><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(task.FileSize)MB</h3></p> 
-
-                    <h4> <BSBadge Color="Color.Secondary">From</BSBadge> | @task.Source.Remove(task.Source.Length- fileName.Length) | <BSBadge Color="Color.Secondary">--></BSBadge>  | @destination |</h4>
-                    <div>@task.Percentage.ToString("0") % Complete | Started: @task.StartTime.ToString("dd/MMM  HH:mm:ss")
-                        <div class="progress">
-                            <div class="progress-bar" role="progressbar" style="width: @task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
-                    </div>
-                    
-                    <div>@speed MB/s    |  @etaString  @if(task.Status== TransferStatus.Copying){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Cancel(task.id))">Cancel</BSButton>}  </div>
-                </BSAlert>
             }
+            else
+            {
+                <TransferTaskRender groupName="@Name" copyTasks="@Getter.CopyTasks[Name]"/>
+            } 
             
         </div>
     </table>
 }
 
-@code {
-	private TransferData[] CopyTasks = null;
-    public string transferServerUrl;
-	private Status status = Status.Loading;
-	private HubConnection hubConnection;
-	protected override async Task OnInitializedAsync()
-	{   
-        transferServerUrl= await Http.GetStringAsync("WeatherForecast");
-        Console.WriteLine( "data="+transferServerUrl);
-     
-		hubConnection = new HubConnectionBuilder()
-			.WithUrl(transferServerUrl+"/datahub")
-			.AddJsonProtocol()
-			.Build();
-
-		hubConnection.On<TransferData[]>("ReceiveData", dataList =>
-		{
-			CopyTasks =dataList.OrderByDescending(transfer=> transfer.StartTime).ToArray();
-           
-           //LOGGING: Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
-			 
-			status = Status.Connected;
-			StateHasChanged();
-		});
-		hubConnection.On<string>("Testing", confirmed => { Console.WriteLine(confirmed); status = Status.Connected; });
-		await hubConnection.StartAsync();
-
-		await ContinuousSend();
-	}
-    Task Cancel(Guid id)=>
-        hubConnection.SendAsync("CancelTransfer",id);
-	Task Send() =>
-		hubConnection.SendAsync("GetTransferData");
-	Task Confirm() =>
-		hubConnection.SendAsync("GetConfirmation");
-
-	async Task ContinuousSend()
-	{
-
-		while (true)
-		{
-			if (IsConnected)
-			{
-				//	await Confirm();
-				await Send();
-
-			}
-            else
-            {
-                Console.WriteLine("notconnected via SignalR");
-            }
-			await Task.Delay(500);
-		}
-
-	}
-
-	public bool IsConnected =>
-		hubConnection.State == HubConnectionState.Connected;
-
-	public void Dispose()
-	{
-		_ = hubConnection.DisposeAsync();
-	}
-}

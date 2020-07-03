@@ -8,7 +8,7 @@ open IOExtensions
 open Transfer.Data
 open System.Threading.Tasks
 open FSharp.Control.Tasks
-open SharedData;
+open SharedFs.SharedTypes;
 open FluentFTP
 module Mover =
     let TransferResult (ftpResult:FtpStatus)=
@@ -16,7 +16,7 @@ module Mover =
         |FtpStatus.Failed->TransferResult.Failed
         |FtpStatus.Success->TransferResult.Success
         
-    let MoveFile isFTP destination source (guid:Guid) eventHandler (ct:CancellationTokenSource) =
+    let MoveFile isFTP destination source groupName (guid:int) eventHandler (ct:CancellationTokenSource) =
         let stopWatch = new Stopwatch()
         
         let startTime= DateTime.Now
@@ -44,7 +44,7 @@ module Mover =
                                   id=guid
                                   StartTime=startTime
                                   Status=TransferStatus.Copying
-                                  EndTime=DateTime.Now} guid
+                                  EndTime=DateTime.Now} groupName guid
                               )
         let ftpProgress:Progress<FtpProgress>  =new Progress<FtpProgress>(fun prog ->
             if stopWatch.ElapsedMilliseconds>int64 500 then 
@@ -62,7 +62,7 @@ module Mover =
                                   id=guid
                                   StartTime=startTime
                                   Status=TransferStatus.Copying
-                                  EndTime=DateTime.Now} guid
+                                  EndTime=DateTime.Now} groupName guid
       
                               )
         

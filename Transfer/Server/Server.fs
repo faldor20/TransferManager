@@ -11,6 +11,7 @@ open Microsoft.AspNetCore.Hosting;
 open Microsoft.Extensions.Hosting;
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection;
+open Microsoft.AspNetCore.SignalR.Protocol;
 open Transfer
 module Server=
     let tryGetEnv key = 
@@ -42,7 +43,7 @@ module Server=
             builder.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()|>ignore 
             ()) *)
         service_config (fun services->
-            services.AddSignalR().AddJsonProtocol()|>ignore
+            services.AddSignalR().AddMessagePackProtocol()|>ignore
             ( services.AddCors((fun options -> options.AddPolicy("CorsPolicy",(fun builder ->
                     builder.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin()|>ignore
                     ()

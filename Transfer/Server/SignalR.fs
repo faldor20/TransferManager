@@ -14,13 +14,15 @@ module SingnalR=
 
     type DataHub()=
         inherit Hub()
+        let toDictionary (map : Map<_, _>) : Dictionary<_, _> = Dictionary(map)
         member this.GetTransferData()=
-            let data =Data.data|> Map.toArray|>Array.map(fun (key,item)-> item )
-            this.Clients.All.SendAsync("ReceiveData",data)
+            let data =Data.dataBase
+            printfn "recieved data request";
+            this.Clients.All.SendAsync("ReceiveData",toDictionary(data))
         member this.GetConfirmation()=
             this.Clients.All.SendAsync("Testing","hiya from the other side")
-        member this.CancelTransfer(id:Guid)=
-            Data.CancellationTokens.[id].Cancel()
+        member this.CancelTransfer groupName id=
+            Data.CancellationTokens.[groupName].[id].Cancel()
 
 
   (*    type TransferProgressService (hubContext :IHubContext<DataHub, IClientApi>) =

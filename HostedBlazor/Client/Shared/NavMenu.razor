@@ -1,4 +1,7 @@
-﻿<div class="top-row pl-4 navbar navbar-dark">
+﻿@using HostedBlazor.Data;
+@using blaz.Data;
+@inject DataGetter Getter
+<div class="top-row pl-4 navbar navbar-dark">
     <a class="navbar-brand" href="">File Transfer Monitor</a>
     <button class="navbar-toggler" @onclick="ToggleNavMenu">
         <span class="navbar-toggler-icon"></span>
@@ -8,10 +11,19 @@
 <div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
     <ul class="nav flex-column">
         <li class="nav-item px-3">
-            <NavLink class="nav-link" href="/">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> TransferMonitor
+            <NavLink class="nav-link" href="/All">
+                <span class="oi oi-list-rich" aria-hidden="true"></span> All
             </NavLink>
         </li>
+       @if(Getter.status==Status.Connected){ @foreach (var group in Getter.CopyTasks)
+        {
+            string url= "/"+group.Key;
+            <li class="nav-item px-3">
+                <NavLink class="nav-link" href="@url">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> @group.Key
+                </NavLink>
+            </li>
+        }}
        @*  <li class="nav-item px-3">
             <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
                 <span class="oi oi-home" aria-hidden="true"></span> Home
@@ -35,7 +47,11 @@
     private bool collapseNavMenu = true;
 
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
+    protected override async Task OnInitializedAsync()
+    {
+        //TODO: this shoudl really only triger when the sie of the mian dictionary gets longer
+          Getter.newData+=StateHasChanged;
+    }
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
