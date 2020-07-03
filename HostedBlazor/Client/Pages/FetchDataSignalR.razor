@@ -1,17 +1,21 @@
 ﻿@page "/{Name}"
+@page "/"
 @using System.Collections.Generic
 @using blaz.Data
 @using System;
 @using System.Threading
 @using System.Threading.Tasks
-@using SharedFs
+@using static SharedFs.SharedTypes;
+@using System.Linq
 @using HostedBlazor.Data
 @inject DataGetter Getter
+@inject NavigationManager UriHelper  
 @code{
     [Parameter]
     public string Name { get; set; }
 protected override async Task OnInitializedAsync()
     {
+        Name=Name??"All";
           Getter.newData+=StateHasChanged;
     }
 }
@@ -37,15 +41,21 @@ else
     <table class="table">
         <div>  
             @if(Name=="All"){
-                @foreach (var pair in Getter.CopyTasks)
-                {
-                    <TransferTaskRender groupName="All" copyTasks="@pair.Value"/>
-                }
+                  
+                var orderedTasks= Enumerable.Aggregate(
+                    Getter.CopyTasks.Values ,
+                    new List<TransferData>(),
+                    (accum,next)=> accum.Concat(next).ToList()).OrderBy(transData=>transData.StartTime).ToList();        
+                <TransferTaskRender groupName="All" copyTasks="@orderedTasks"/>
             }
-            else
+            else if(Getter.CopyTasks.ContainsKey(Name))
             {
                 <TransferTaskRender groupName="@Name" copyTasks="@Getter.CopyTasks[Name]"/>
             } 
+            else
+            {
+                UriHelper.NavigateTo("/All");
+            }
             
         </div>
     </table>
