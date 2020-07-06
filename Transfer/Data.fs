@@ -18,7 +18,7 @@ module Data=
           TransferedList: string list
           IsFTP:bool;
           ScheduledTasks:ScheduledTransfer list}
-
+    //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
     type WatchDirSimple = { GroupName:string; Source: string; Destination: string; IsFTP:bool; }
      
    
