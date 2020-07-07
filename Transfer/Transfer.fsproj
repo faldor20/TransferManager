@@ -36,6 +36,7 @@
 		<PackageReference Include="FileTransferManager" Version="1.0.5" />
 		<PackageReference Include="FluentFTP" Version="32.4.3" />
 		<PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.24" />
+		<PackageReference Include="FSharp.Control.Reactive" Version="4.4.2" />
 		<PackageReference Include="FSharp.Json" Version="0.4.0" />
 		<PackageReference Include="Legivel" Version="0.4.3" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.5" />

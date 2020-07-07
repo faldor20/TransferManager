@@ -1,10 +1,43 @@
 namespace Transfer
-open Mover
 open System
 open System.Threading
+open FSharp.Control.Reactive
+open FSharp.Control
+//open System.Reactive
 module Testing=
     let a=1
 
+
+   
+
+    let randomwait time=
+        async{
+            printfn "started waiting : %i"time
+            do! Async.Sleep(time*1000);
+            printfn "waited %i" time
+            return time
+        }
+
+    let stream=
+        asyncSeq{
+            for i=10 downto 1 do
+                let waitTime= i
+                yield randomwait waitTime
+        }
+    let res=
+        let event= new Event<int>()
+        let task=stream 
+                |> AsyncSeq.iterAsyncParallel (fun x-> 
+                    async{ 
+                            let! x'=x
+                            event.Trigger x'
+                            })
+        (task,event)
+    let run =    
+        let task,event= res
+        event|> Observable.subscribe (fun x->printfn "print Time %i"x)
+        0
+        
    (*  let client= FluentFTP.FtpClient.Connect("***REMOVED***")
     client.Connect()
     client.DirectoryExists("/hvy_bun_news/Transfer/") *)
