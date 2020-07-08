@@ -15,11 +15,11 @@ module Main=
     let main argv =
         printfn"Begining"
         
-        (* 
-        startUp
-       // let a=Task.Run(fun()-> Async.RunSynchronously startUp)
+        
+        //startUp
+        let a=Task.Run(fun()-> Async.RunSynchronously startUp)
         let b=Task.Run(fun()-> run  Server.Server.app)
        // a.Wait()
-        b.Wait() *)
-        Testing.run
+        b.Wait()  
+        //Testing.run
         0

@@ -17,14 +17,19 @@ module Testing=
             printfn "waited %i" time
             return time
         }
-
+    let scheduler time=
+        async{
+            do! Async.Sleep(5000)
+            printfn "scheduled : %i"time
+            return randomwait time
+        }
     let stream=
         asyncSeq{
             for i=10 downto 1 do
                 let waitTime= i
-                yield randomwait waitTime
+                yield scheduler waitTime
         }
-    let res=
+   (*  let res=
         let event= new Event<int>()
         let task=stream 
                 |> AsyncSeq.iterAsyncParallel (fun x-> 
@@ -32,10 +37,18 @@ module Testing=
                             let! x'=x
                             event.Trigger x'
                             })
-        (task,event)
+        (task,event) *)
     let run =    
-        let task,event= res
-        event|> Observable.subscribe (fun x->printfn "print Time %i"x)
+        let task=
+            stream 
+               |>AsyncSeq.mapAsyncParallel id
+               |>AsyncSeq.toObservable // This runs all our randomWait tasks at once
+               |>Observable.bind(fun x -> Observable.ofAsync x)
+               |> Observable.iter (fun time ->
+                    Async.RunSynchronously( Async.Sleep (10000/ time))
+                    printfn "printing for time : %i" time
+                    )
+        Observable.wait task|>ignore
         0
         
    (*  let client= FluentFTP.FtpClient.Connect("***REMOVED***")

@@ -21,8 +21,8 @@ module Watcher =
     let ActionNewFiles2 (watchDir:WatchDir) =
     
         (asyncSeq{ 
-                let mutable ignoreList= Array.empty  //We iterate through the list each pair contains watchdir and a list of the new files in that dir 
-                while true do
+            let mutable ignoreList= Array.empty  //We iterate through the list each pair contains watchdir and a list of the new files in that dir 
+            while true do
                 let newFiles=checkForNewFiles2 ignoreList watchDir.Dir
                 for file in newFiles do
                     let task = (Scheduler.scheduleTransfer watchDir.GroupName  watchDir.IsFTP watchDir.OutPutDir file )
@@ -37,12 +37,12 @@ module Watcher =
                 let mutable ignoreList= Array.empty  //We iterate through the list each pair contains watchdir and a list of the new files in that dir 
                 
                 while true do
-                Async.Sleep(500);
-                let newFiles=checkForNewFiles2 ignoreList watchDir.Dir
-                for file in newFiles do
-                    let task = (Scheduler.scheduleTransfer watchDir.GroupName  watchDir.IsFTP watchDir.OutPutDir file )
-                    yield task
-                ignoreList<- ignoreList|> Array.append newFiles
+                    Async.RunSynchronously(Async.Sleep(500))
+                    let newFiles=checkForNewFiles2 ignoreList watchDir.Dir
+                    for file in newFiles do
+                        let task = (Scheduler.scheduleTransfer watchDir.GroupName  watchDir.IsFTP watchDir.OutPutDir file )
+                        yield task
+                    ignoreList<- ignoreList|> Array.append newFiles
                 
         },watchDir.GroupName)
 

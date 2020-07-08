@@ -27,40 +27,42 @@ module Manager =
         Data.setTransferData { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now} groupName id
     
     let processTask groupName task=
+
+        let transResult, id = Async.RunSynchronously task
+
+        let transData=dataBase.[groupName].[id]
+        let source = dataBase.[groupName].[id].Source
+
+       //LOGGING: printfn "DB: %A" dataBase
+       
+        match transResult with 
+            |TransferResult.Success-> sucessfullCompleteAction transData groupName id source
+            |TransferResult.Cancelled-> CancelledCompleteAction transData groupName id source
+            |TransferResult.Failed-> FailedCompleteAction transData groupName id source
+            |_-> printfn "unknonw enum for transresult"
+       
+        let rec del path iterCount= async{
+            if iterCount>10 
+            then 
+                printfn"Error: Could not delete file at after trying for a minute : %s " path
+                return ()
+            else
+                try 
+                    File.Delete(path) 
+                with 
+                    |_-> do! Async.Sleep(1000)
+                         printfn "Error Couldn't delete file, probably in use somehow"
+                         do! del path (iterCount+1)
+            }
         async{
-            let! transResult, id,ct = task
-
-            let transData=dataBase.[groupName].[id]
-            let source = dataBase.[groupName].[id].Source
-
-           //LOGGING: printfn "DB: %A" dataBase
-           
-            match transResult with 
-                |TransferResult.Success-> sucessfullCompleteAction transData groupName id source
-                |TransferResult.Cancelled-> CancelledCompleteAction transData groupName id source
-                |TransferResult.Failed-> FailedCompleteAction transData groupName id source
-           
-            let rec del path iterCount= async{
-                if iterCount>10 
-                then 
-                    printfn"Error: Could not delete file at after trying for a minute : %s " path
-                    return ()
-                else
-                    try 
-                        File.Delete(path) 
-                    with 
-                        |_-> do! Async.Sleep(1000)
-                             printfn "Error Couldn't delete file, probably in use somehow"
-                             do! del path (iterCount+1)
-                }
             do! del source 0  
-                    }
+            }
     
 
     let startUp =
         let mutable watchDirsData= ConfigReader.ReadFile "./WatchDirs.yaml"
                    
-        let schedules = GetNewTransfers3  watchDirsData
+        let schedulesInWatchDirs = GetNewTransfers2  watchDirsData
 
         let resetWatch= 
             async{
@@ -70,22 +72,19 @@ module Manager =
         
             }
         Async.Start(resetWatch)
-        
-         
-        for schedules,groupName in schedules do
-            //This schedules the tasks it needs to be paralell because all transfers should be scheduled immidiatley
-            //as soon as the file is detected
-           
-(*                 let scheduledTasks=schedules|>AsyncSeq.iterAsyncParallel(fun scheduleTask-> 
-            sch
-            
-            ) *)
+    
+        printfn "%i schedule groups" schedulesInWatchDirs.Length
+
+        let observables= schedulesInWatchDirs|>List.map(fun (schedules,groupName)->
+            printfn "Setting up observables for group: %s" groupName
             let res=
                 schedules
-                    |>Observable.map(fun schedule->Async.RunSynchronously schedule)
-                    |>Observable.map(fun a-> (processTask groupName a))
-            res.Subscribe((fun x->Async.RunSynchronously x))
-            //This iterates though the transfer tasks. It is "iterAsync" and not parallel
-            //becuase we want the transfers to be started one after another
-
+                    |>AsyncSeq.toObservable
+                    |>Observable.bind Observable.ofAsync
+                    |>Observable.iter(fun x->
+                        Async.Start( processTask groupName x))
+            res
+            )
+        let outPut=observables|>Observable.mergeSeq
+        outPut|>Observable.wait
         

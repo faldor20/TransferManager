@@ -16,6 +16,7 @@ module Mover =
         match ftpResult with
         |FtpStatus.Failed->TransferResult.Failed
         |FtpStatus.Success->TransferResult.Success
+        |_-> failwith "ftpresult return unhandled enum value"
         
     let MoveFile isFTP (destination:string) source groupName (guid:int) (ct:CancellationTokenSource) =
         let progressCallback= Gethandler isFTP destination source groupName guid
@@ -47,5 +48,5 @@ module Mover =
             printfn "starting copy from %s to %s"source destination
             let! result= task
             printfn "finished copy from %s to %s"source destination
-            return (result,guid,ct)
+            return (result,guid)
         }
