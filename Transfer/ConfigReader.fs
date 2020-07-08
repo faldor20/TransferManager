@@ -15,8 +15,8 @@ module ConfigReader=
     let ReadFile configFilePath=
             let configText = try File.ReadAllText(configFilePath)
                              with 
-                                |IOException-> printfn "ERROR Could not find WatchDirs.yaml, that file must exist"
-                                               "Failed To open 'WatchDirs.yaml' file must exist for program to run "
+                                | :? IOException->  printfn "ERROR Could not find WatchDirs.yaml, that file must exist"
+                                                    "Failed To open 'WatchDirs.yaml' file must exist for program to run "
             let watchDirsUnfiltered = 
                 match (Deserialize<YamlData> configText).[0] with
                    |Success data -> printfn "Deserilaization Warnings: %A" data.Warn
