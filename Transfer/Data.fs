@@ -68,11 +68,13 @@ module Data=
         else 0
         //}
     let addCancellationToken key token=
-        if CancellationTokens.ContainsKey key then
-            CancellationTokens.[key].Add(token)
-        else 
-            CancellationTokens.Add(key,new ResizeArray<CancellationTokenSource>([token]))
-
+        lock CancellationTokens (fun()->
+            if CancellationTokens.ContainsKey key then
+                CancellationTokens.[key].Add(token)
+            else 
+                let res=CancellationTokens.TryAdd(key,(new ResizeArray<CancellationTokenSource>([token])))
+                if not res then printfn"[ERROR]Something went wrong creating token list for %s " key
+        )
     let reset ()=
         CancellationTokens<- new Dictionary<string,CancellationTokenSource ResizeArray>()
         dataBase<- Map.empty<string,TransferData ResizeArray>

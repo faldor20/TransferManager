@@ -8,8 +8,9 @@ open SharedFs.SharedTypes
 module Scheduler =
     //This will return once the file is not beig acessed by other programs.
     //it returns false if the file is discovered to be deleted before that point.
-    let isAvailable source =
+    let isAvailable (source:string) =
         async {
+            let fileName= source.Split("\\")|>Array.last
             let mutable currentFile = new FileInfo(source)
             let mutable unavailable = true
             let mutable fileExists=false
@@ -20,11 +21,16 @@ module Scheduler =
                     fileExists<-true
                     unavailable<-false
                 with 
-                    | :? FileNotFoundException->
+                    | :? FileNotFoundException | :? DirectoryNotFoundException  ->
+                        printfn "%s deleted while waiting to be available" fileName
                         fileExists<-false
                         unavailable<-false
                     | :? IOException ->
                         do! Async.Sleep(1000)
+                    | ex  ->
+                        printfn "file failed with %A" ex.Message
+                        unavailable<- false
+                        fileExists<-false
             return fileExists
         }
         //i think this has some kind of overflow still
@@ -70,7 +76,7 @@ module Scheduler =
             let ct = new CancellationTokenSource()
             printfn "Scheduled transfer from %s To-> %s at index:%i" source destination index
             addCancellationToken groupName ct
-            let! fileAvailable= isAvailable2 source
+            let! fileAvailable= isAvailable source
             if fileAvailable then
                 printfn "Transfer file at: %s is available" source 
                 return Mover.MoveFile isFTP destination source groupName index ct

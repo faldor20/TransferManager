@@ -77,13 +77,12 @@ module Manager =
 
         let observables= schedulesInWatchDirs|>List.map(fun (schedules,groupName)->
             printfn "Setting up observables for group: %s" groupName
-            let res=
-                schedules
-                    |>AsyncSeq.toObservable
-                    |>Observable.bind Observable.ofAsync
-                    |>Observable.iter(fun x->
-                        Async.Start( processTask groupName x))
-            res
+            schedules
+                |>AsyncSeq.toObservable
+                |>Observable.bind Observable.ofAsync
+                |>Observable.iter(fun transferTask ->
+                    Async.Start( processTask groupName transferTask))
+          
             )
         let outPut=observables|>Observable.mergeSeq
         outPut|>Observable.wait
