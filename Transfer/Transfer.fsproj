@@ -13,12 +13,14 @@
 		</ProjectReference>
 	</ItemGroup> 
 	<ItemGroup>
+
 		<Compile Include="Data.fs" />
         <Compile Include="./ConfigReader.fs" />
         <Compile Include="./Mover/Progresshandlers.fs" />
 		<Compile Include="./Mover/Mover.fs" />
         <Compile Include="Scheduler.fs" />
 		<Compile Include="watcher.fs" />
+        <Compile Include="TransferHandling.fs" />
 		<Compile Include="Manager.fs" />
 		<Compile Include="testing.fsx" />
 		<Compile Include="./Server/Views.fs" />

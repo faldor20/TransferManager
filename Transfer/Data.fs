@@ -78,3 +78,13 @@ module Data=
     let reset ()=
         CancellationTokens<- new Dictionary<string,CancellationTokenSource ResizeArray>()
         dataBase<- Map.empty<string,TransferData ResizeArray>
+
+    let resetWatch= 
+        async{
+            while true do
+                if DateTime.Now.TimeOfDay=TimeSpan.Zero then
+                    reset()
+                    printfn "Reset list of jobs"
+                do!Async.Sleep(1000*60)
+
+        }

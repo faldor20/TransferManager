@@ -13,68 +13,25 @@ open FSharp.Control.Reactive
 open SharedFs.SharedTypes
 open Legivel.Serialization
 open FSharp.Control
+open TransferHandling
 module Manager =
 
-    
-    let sucessfullCompleteAction transferData groupName id source=
-        printfn " successfully finished copying %A" source
-        Data.setTransferData { (transferData) with Status=TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} groupName id
-    let FailedCompleteAction transferData groupName id source=
-        printfn "failed copying %A" source
-        Data.setTransferData { (transferData) with Status=TransferStatus.Failed; EndTime=DateTime.Now} groupName id 
-    let CancelledCompleteAction transferData groupName id source=
-        printfn "canceled copying %A" source
-        Data.setTransferData { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now} groupName id
-    
-    let processTask groupName task=
-
-        let transResult, id = Async.RunSynchronously task
-
-        let transData=dataBase.[groupName].[id]
-        let source = dataBase.[groupName].[id].Source
-
-       //LOGGING: printfn "DB: %A" dataBase
-       
-        match transResult with 
-            |TransferResult.Success-> sucessfullCompleteAction transData groupName id source
-            |TransferResult.Cancelled-> CancelledCompleteAction transData groupName id source
-            |TransferResult.Failed-> FailedCompleteAction transData groupName id source
-            |_-> printfn "unknonw enum for transresult"
-       
-        let rec del path iterCount= async{
-            if iterCount>10 
-            then 
-                printfn"Error: Could not delete file at after trying for a minute : %s " path
-                return ()
-            else
-                try 
-                    File.Delete(path) 
-                with 
-                    |_-> do! Async.Sleep(1000)
-                         printfn "Error Couldn't delete file, probably in use somehow"
-                         do! del path (iterCount+1)
-            }
-        async{
-            do! del source 0  
-            }
-    
 
     let startUp =
+        //Read config file to get information about transfer source dest pairs
         let mutable watchDirsData= ConfigReader.ReadFile "./WatchDirs.yaml"
-                   
+        //create a asyncstream that yields new schedule jobs when 
+        //a new file is detected in a watched source
         let schedulesInWatchDirs = GetNewTransfers2  watchDirsData
-
-        let resetWatch= 
-            async{
-                while true do
-                    if DateTime.Now.TimeOfDay=TimeSpan.Zero then Data.reset()
-                    do!Async.Sleep(1000*60)
         
-            }
+        //Start the task that clears the history of transfers at 00:00
         Async.Start(resetWatch)
     
-        printfn "%i schedule groups" schedulesInWatchDirs.Length
-
+        //Convert the asyncseq to an observable. This is like start all the schedule tasks in
+        //paralell but then only interacting with the sequentially as they complete.
+        //This is done becuase the sceduling must be started as soon as a new file is found
+        //but because we only want one transfer to happen at a time the transfer tasks that
+        // are finished shceduling need to be processed sequentially
         let observables= schedulesInWatchDirs|>List.map(fun (schedules,groupName)->
             printfn "Setting up observables for group: %s" groupName
             schedules
@@ -84,6 +41,9 @@ module Manager =
                     Async.Start( processTask groupName transferTask))
           
             )
+        //Merge the observable seqence of each group together
         let outPut=observables|>Observable.mergeSeq
+        //"Start" the observables(This reall ust stops he thread from ever 
+        //completing allowing the observable to contine running)
         outPut|>Observable.wait
         
