@@ -34,7 +34,7 @@ namespace HostedBlazor.Data {
 
              hubConnection.On<Dictionary<string,List<TransferData>>> ("ReceiveData", dataList => {
                 //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
-                var res= dataList.Select(pair => (pair.Key,pair.Value.Select (data=> {data.StartTime= data.StartTime.ToLocalTime(); return data;}).ToList()));
+                var res= dataList.Select(pair => (pair.Key,pair.Value.Select (data=> {data.StartTime= data.StartTime.ToLocalTime();data.EndTime= data.EndTime.ToLocalTime(); return data;}).ToList()));
                 CopyTasks=res.ToDictionary(x => x.Key, x => x.Item2);
                //Logging: Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
 
