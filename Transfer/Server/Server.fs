@@ -35,7 +35,6 @@ module Server=
     let app = application {
         url ("http://*:" + port.ToString() + "/")
         
-        use_router Routers.appRouter
         memory_cache
         use_gzip
         
