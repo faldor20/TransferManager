@@ -23,7 +23,7 @@
             "Password": "***REMOVED***",
           },
         "TranscodeData":
-          { "TranscodeExtensions": ["mp4", "mxf"], "FfmpegArgs": "" },
+          { "TranscodeExtensions": ["mp4", "mxf"], "FfmpegArgs": "","OutputFileExtension": "mp4" },
       },
       {
         "DirData":

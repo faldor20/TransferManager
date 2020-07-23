@@ -6,7 +6,7 @@ open Data.Types
 module VideoMover=
 
     /// outPath should either be a straight filepath or an FTp path 
-    let Transcode ffmpegArgs (ftpInfo:FTPData option) progressHandler (filePath:string)  (outPath:string) ct=
+    let Transcode ffmpegInfo (ftpInfo:FTPData option) progressHandler (filePath:string)  (outPath:string) ct=
         async{
         let mpeg = new Engine("./ffmpeg.exe")
         let fileName= IO.Path.GetFileName( filePath)
@@ -29,7 +29,11 @@ module VideoMover=
         mpeg.Data.Add dataHandler *)
 
         // We woudn't normally be abe to use mp4 becuase i isn't streamable but with the right flags we can make it work
-        let correctPath=IO.Path.ChangeExtension((outPath+fileName),"mp4") 
+        
+        let correctPath=
+            match ffmpegInfo.OutputFileExtension with 
+            |Some x->IO.Path.ChangeExtension((outPath+fileName),x) 
+            |None->IO.Path.ChangeExtension((outPath+fileName),"mp4") 
         let out=
             match ftpInfo with
             |Some x-> "ftp://"+ x.User+":"+x.Password+"@"+x.Host+correctPath 
@@ -38,7 +42,7 @@ module VideoMover=
 
         let defaultArgs=" -c:v h264 -crf 20 -pix_fmt + -preset faster -flags +ildct+ilme  "
         let usedFFmpegArgs=
-            match ffmpegArgs with
+            match ffmpegInfo.FfmpegArgs with
             |Some x->x
             |None->defaultArgs
         let args="-i "+"\""+filePath+"\""+usedFFmpegArgs+"\""+out+"\"" 

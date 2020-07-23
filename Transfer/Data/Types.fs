@@ -14,8 +14,9 @@ module Types=
         {
             TranscodeExtensions:string list;
             FfmpegArgs:string option;
+            OutputFileExtension:string option;
         }
-    let TranscodeData  transcodeExtensions ffmpegArgs = {TranscodeExtensions= transcodeExtensions; FfmpegArgs=ffmpegArgs}
+    let TranscodeData  transcodeExtensions ffmpegArgs outputFileExtension = {TranscodeExtensions= transcodeExtensions; FfmpegArgs=ffmpegArgs;OutputFileExtension =outputFileExtension}
     type FTPData={
         User:string
         Password:string

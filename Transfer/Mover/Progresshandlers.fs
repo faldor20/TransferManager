@@ -13,11 +13,10 @@ open SharedFs.SharedTypes;
 open FluentFTP
 open FFmpeg.NET
 module ProgressHandlers=
-    type FFmpegargs= string option
     type ProgressHandler=
         | FtpProg of Progress<FtpProgress>*FTPData
         | FileProg of Action<TransferProgress>
-        | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*FFmpegargs
+        | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*TranscodeData
     let Gethandler moveData filePath transcode (index:int) =    
         let stopWatch = new Stopwatch()
         let groupName=moveData.DirData.GroupName
@@ -75,7 +74,7 @@ module ProgressHandlers=
                 stopWatch.Reset()
                 stopWatch.Start()
         //TODO: put another option here for transcode without ftp
-        if transcode then (TranscodeProg (transcodeProgress, moveData.TranscodeData.Value.FfmpegArgs))
+        if transcode then (TranscodeProg (transcodeProgress, moveData.TranscodeData.Value))
         else if moveData.FTPData.IsSome then FtpProg (ftpProgress, moveData.FTPData.Value)
         else (FileProg outputStatsFileTrans)
          

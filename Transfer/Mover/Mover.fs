@@ -43,7 +43,7 @@ module Mover =
                     match progressCallback with
                         |FtpProg (cb,ftpData)           -> runFtp ftpData cb
                         |FileProg cb                    -> Async.AwaitTask (FileTransferManager.CopyWithProgressAsync(filePath, destination, cb,false,ct.Token))
-                        |TranscodeProg (cb, ffmpegArgs)  -> VideoMover.Transcode ffmpegArgs moveData.FTPData cb filePath destination ct.Token
+                        |TranscodeProg (cb, ffmpegInfo)  -> VideoMover.Transcode ffmpegInfo moveData.FTPData cb filePath destination ct.Token
                 return! result 
             }
         async {
