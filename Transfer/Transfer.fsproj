@@ -8,15 +8,16 @@
 	<!-- 	<ProjectReference Include="C:/Users/Eli/Documents/programming/CSharp/FileTransferManager-master/IOExtensions/IOExtensions.csproj">
 			<Name>IOExtensions.csproj</Name>
 		</ProjectReference> -->
-        <ProjectReference Include="../Shared/SharedData.fsproj">
-			<Name>Shared.csproj</Name>
-		</ProjectReference>
+        <ProjectReference Include="../Shared/SharedData.fsproj" />
 	</ItemGroup> 
 	<ItemGroup>
 
 		<Compile Include="Data.fs" />
         <Compile Include="./ConfigReader.fs" />
+        <Compile Include="./FTParser.fs" />
+
         <Compile Include="./Mover/Progresshandlers.fs" />
+        <Compile Include="./Mover/VideoMover.fs" />
 		<Compile Include="./Mover/Mover.fs" />
         <Compile Include="Scheduler.fs" />
 		<Compile Include="watcher.fs" />
@@ -45,5 +46,6 @@
 		<PackageReference Include="Saturn" Version="0.14.1" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
 		<PackageReference Update="FSharp.Core" Version="4.7.2" />
+		<PackageReference Include="xFFmpeg.NET" Version="3.4.0" />
 	</ItemGroup>
 </Project>

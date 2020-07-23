@@ -18,19 +18,19 @@ module Mover =
         |FtpStatus.Success->TransferResult.Success
         |_-> failwith "ftpresult return unhandled enum value"
         
-    let MoveFile isFTP (destination:string) source groupName (guid:int) (ct:CancellationTokenSource) =
-        let progressCallback= Gethandler isFTP destination source groupName guid
+    let MoveFile (filePath:string) moveData index transcode (ct:CancellationTokenSource) =
         
-        let fileName= 
-            let a=source.Split('\\')
-            a.[a.Length-1]
+        let {DestinationDir=destination; GroupName= groupName}=moveData.DirData
+        let isFTP=moveData.FTPData.IsSome
+        let progressCallback= Gethandler moveData filePath transcode index
+        
+        let fileName= Path.GetFileName filePath
 
         let task=async{
-                let runFtp callBack=async{
-                    let ip::path=destination.Split '@'|>Array.toList
-                    use client=new FtpClient( ip,21,"quantel","***REMOVED***")
+                let runFtp ftpData callBack=async{
+                    use client=new FtpClient()
                     client.Connect()
-                    let task= Async.AwaitTask(client.UploadFileAsync (source,(path.[0]+fileName),FtpRemoteExists.Overwrite,false,FtpVerify.Throw,  callBack   ,ct.Token ))
+                    let task= Async.AwaitTask(client.UploadFileAsync (filePath,(destination+fileName),FtpRemoteExists.Overwrite,false,FtpVerify.Throw,  callBack ,ct.Token ))
                     try 
                         let! a= task
                         return TransferResult a
@@ -39,14 +39,23 @@ module Mover =
                 }
                 
                 let result= 
+                    //The particular transfer action to take has allready been decided by the progress callback
                     match progressCallback with
-                        |FtpProg cb-> runFtp cb
-                        |FileProg cb->  Async.AwaitTask (FileTransferManager.CopyWithProgressAsync(source, destination, cb,false,ct.Token))
+                        |FtpProg (cb,ftpData)           -> runFtp ftpData cb
+                        |FileProg cb                    -> Async.AwaitTask (FileTransferManager.CopyWithProgressAsync(filePath, destination, cb,false,ct.Token))
+                        |TranscodeProg (cb, ffmpegArgs)  -> VideoMover.Transcode ffmpegArgs moveData.FTPData cb filePath destination ct.Token
                 return! result 
             }
         async {
-            printfn "starting copy from %s to %s"source destination
+            let transType=
+                match progressCallback with 
+                |FtpProg-> "FTP Transfer"
+                |FileProg->"File transfer"
+                |TranscodeProg-> "FFmpeg transcode"
+            
+            printfn "starting %s from %s to %s" transType filePath destination
             let! result= task
-            printfn "finished copy from %s to %s"source destination
-            return (result,guid)
+            
+            printfn "finished copy from %s to %s"filePath destination
+            return (result,index)
         }

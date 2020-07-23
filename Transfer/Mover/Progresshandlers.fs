@@ -10,17 +10,26 @@ open System.Threading.Tasks
 open FSharp.Control.Tasks
 open SharedFs.SharedTypes;
 open FluentFTP
+open FFmpeg.NET
 module ProgressHandlers=
-    type ProgressHandlers=
-        | FtpProg of Progress<FtpProgress>
+    type FFmpegargs= string option
+    type ProgressHandler=
+        | FtpProg of Progress<FtpProgress>*FTPData
         | FileProg of Action<TransferProgress>
-    let Gethandler isFtp destination source groupName (index:int) =    
+        | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*FFmpegargs
+    let Gethandler moveData filePath transcode (index:int) =    
         let stopWatch = new Stopwatch()
-            
-        let startTime= DateTime.Now
+        let groupName=moveData.DirData.GroupName
+       
         let mutable lastTransfered = int64 0
-        let mutable fileSize=(new FileInfo(source)).Length;
+        let mutable fileSize=(new FileInfo(filePath)).Length;
         let mutable fileSizeMB=(float(fileSize/int64 1000))/1000.0
+        (groupName, index)||>setTransferData 
+            {dataBase.[groupName].[index] with
+                StartTime=DateTime.Now
+                FileSize=fileSizeMB
+                Status=TransferStatus.Copying
+         }
         stopWatch.Start()
 
         let setData  percentage transferred =
@@ -31,10 +40,8 @@ module ProgressHandlers=
             (groupName, index)||>setTransferData 
                         {dataBase.[groupName].[index] with 
                                 Percentage = percentage
-                                FileSize= fileSizeMB
                                 Speed = float speed
                                 FileRemaining=float((fileSize- transferred)/int64 1000/int64 1000)
-                                Status=TransferStatus.Copying
                                 EndTime=DateTime.Now}
 
         let outputStatsFileTrans  =Action<TransferProgress> (fun progress->
@@ -46,6 +53,28 @@ module ProgressHandlers=
             if stopWatch.ElapsedMilliseconds>int64 500 then 
                 setData prog.Progress prog.TransferredBytes
             )
-            
-        if isFtp then (FtpProg ftpProgress)
+        let transcodeProgress sourceDuration (eventArgs:Events.ConversionProgressEventArgs) = 
+            if stopWatch.ElapsedMilliseconds>int64 500 then
+                let byterate= (float eventArgs.Bitrate)/8.0
+                let speed= if eventArgs.Fps.HasValue then ((byterate/1000.0) *(eventArgs.Fps.Value/24.0)) else 0.0
+                let size= if eventArgs.SizeKb.HasValue then float eventArgs.SizeKb.Value/1000.0 else fileSizeMB 
+                let remaining= byterate * float (sourceDuration- eventArgs.ProcessedDuration).Seconds
+                //printfn "transferData for %s: %A"(Path.GetFileName filePath) eventArgs
+                stopWatch.Reset()
+                stopWatch.Start()
+                (groupName, index)||> setTransferData 
+                    {
+                    (getTransferData groupName index) with 
+                        Speed=speed
+                        Percentage= (eventArgs.ProcessedDuration/sourceDuration)*100.0
+                        EndTime=DateTime.Now
+                        FileRemaining= remaining
+                        FileSize= size
+                    }
+                stopWatch.Reset()
+                stopWatch.Start()
+        //TODO: put another option here for transcode without ftp
+        if transcode then (TranscodeProg (transcodeProgress, moveData.TranscodeData.Value.FfmpegArgs))
+        else if moveData.FTPData.IsSome then FtpProg (ftpProgress, moveData.FTPData.Value)
         else (FileProg outputStatsFileTrans)
+         

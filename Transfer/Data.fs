@@ -7,31 +7,47 @@ open System.IO
 open SharedFs.SharedTypes;
 open IOExtensions;
 module Data=
-
     type ScheduledTransfer=Async<Async<TransferResult*int*CancellationToken>>
    
+   
+    type TranscodeData=
+        {
+            TranscodeExtensions:string list;
+            FfmpegArgs:string option;
+        }
+    let TranscodeData  transcodeExtensions ffmpegArgs = {TranscodeExtensions= transcodeExtensions; FfmpegArgs=ffmpegArgs}
+    type FTPData={
+        User:string
+        Password:string
+        Host:string
+    }
+    let FTPData  user password host= {User= user; Password=password; Host=host}
+    type DirectoryData={
+        GroupName:string
+        SourceDir: string
+        DestinationDir: string
+    }
+    let DirectoryData groupName source destination ={GroupName=groupName;SourceDir=source;DestinationDir=destination;}
+    type MovementData={
+        DirData:DirectoryData
+        FTPData:FTPData option;
+        TranscodeData:TranscodeData option;
+    }
     type WatchDir =
         { 
-          GroupName:string
-          Dir: DirectoryInfo
-          OutPutDir: string
+          MovementData:MovementData
           TransferedList: string list
-          IsFTP:bool;
-          ScheduledTasks:ScheduledTransfer list}
-    //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
-    type WatchDirSimple = { GroupName:string; Source: string; Destination: string; IsFTP:bool; }
-     
-   
+          ScheduledTasks:ScheduledTransfer list;
+          }
+
       
-     
-     
-     
+    
    
     type TransferTaskDatabase=Dictionary<string,SortedDictionary<int,TransferData>>
     let nexId=ref 0
     let mutable CancellationTokens=new Dictionary<string,CancellationTokenSource ResizeArray>()
     let mutable dataBase=Map.empty<string,TransferData ResizeArray>
-    let getTransferData ()= dataBase
+    let getTransferData group index= dataBase.[group].[index]
     let setTransferData newData key1 index=
         if dataBase.ContainsKey key1 then 
             if dataBase.[key1].Count > index then
@@ -82,9 +98,11 @@ module Data=
     let resetWatch= 
         async{
             while true do
-                if DateTime.Now.TimeOfDay=TimeSpan.Zero then
+                let hour=DateTime.Now.Hour
+                if hour=1 then
                     reset()
                     printfn "Reset list of jobs"
-                do!Async.Sleep(1000*60)
+                printfn "waiting for hour 1 to reset currently hour= %i" hour   
+                do!Async.Sleep(1000*60*59)
 
         }

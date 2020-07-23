@@ -16,10 +16,13 @@ module Main=
         printfn"Begining"
         
         
-        //startUp
+       
         let a=Task.Run(fun()-> Async.RunSynchronously startUp)
         let b=Task.Run(fun()-> run  Server.Server.app)
-       // a.Wait()
-        b.Wait()  
-        //Testing.run
+
+        b.Wait()
+        a.Wait()  
+
+      
+        //Testing.test
         0

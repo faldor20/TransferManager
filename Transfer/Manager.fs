@@ -36,7 +36,7 @@ module Manager =
             printfn "Setting up observables for group: %s" groupName
             schedules
                 |>AsyncSeq.toObservable
-                |>Observable.bind Observable.ofAsync
+                |>Observable.bind (fun x-> Observable.ofAsync x)
                 |>Observable.iter(fun transferTask ->
                     Async.Start( processTask groupName transferTask))
           

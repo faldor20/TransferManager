@@ -54,34 +54,37 @@ module Scheduler =
                 }
             return! loop(FileInfo(source))
         }
-    let scheduleTransfer groupName  isFTP destination source =
+    let scheduleTransfer filePath moveData transcode =
         async {
-            
+            let {DestinationDir=dest;GroupName=groupName}:DirectoryData=moveData.DirData
             let index= 
                 addTransferData
                     { Percentage = 0.0
-                      FileSize = float(FileInfo(source).Length/int64 1000/int64 1000)
+                      FileSize = float(FileInfo(filePath).Length/int64 1000/int64 1000)
                       FileRemaining = 0.0
                       Speed = 0.0
-                      Destination = destination
-                      Source = source
-                      StartTime = DateTime.Now
+                      Destination = dest
+                      Source = filePath
+                      StartTime = new DateTime()
                       ID = 0
                       GroupName=groupName
                       Status = TransferStatus.Waiting 
-                      EndTime=DateTime.Now} 
+                      EndTime=new DateTime()} 
                       groupName 
             
             
             let ct = new CancellationTokenSource()
-            printfn "Scheduled transfer from %s To-> %s at index:%i" source destination index
+            let transType=
+                ""  |>fun s->if transcode then s+" transcode"else s
+                    |>fun s->if moveData.FTPData.IsSome then s+" ftp" else s
+            printfn "Scheduled%s transfer from %s To-> %s at index:%i" transType filePath dest index
             addCancellationToken groupName ct
-            let! fileAvailable= isAvailable source
+            let! fileAvailable= isAvailable filePath
             if fileAvailable then
-                printfn "Transfer file at: %s is available" source 
-                return Mover.MoveFile isFTP destination source groupName index ct
+                printfn "Transfer file at: %s is available" filePath
+                return Mover.MoveFile filePath moveData index transcode  ct
             else
-                printfn "Transfer file at: %s was deleted" source 
+                printfn "Transfer file at: %s was deleted" filePath 
                 setTransferData {dataBase.[groupName].[index] with Status=TransferStatus.Failed} groupName index
                 return async{ return (IOExtensions.TransferResult.Failed,index)}
         }

@@ -33,6 +33,12 @@ i think i need to do copying and then deletion assuming all tasks related to it 
 
 
 
+
 # ssential steps
 
 to allow ftp i had to go inot advanced user settings in the shared folder and alow ftpuser
+
+
+
+
+#
