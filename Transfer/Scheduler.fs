@@ -3,7 +3,8 @@ namespace Transfer
 open System.IO
 open System.Threading
 open System
-open Transfer.Data
+open Transfer.Data.DataBase
+open Transfer.Data.Types
 open SharedFs.SharedTypes
 module Scheduler =
     //This will return once the file is not beig acessed by other programs.

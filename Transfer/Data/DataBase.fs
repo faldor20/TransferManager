@@ -1,53 +1,19 @@
-namespace Transfer
+namespace Transfer.Data
 open System.Collections.Generic
 open System.Collections.Specialized
 open System;
+open Types
 open System.Threading
 open System.IO
 open SharedFs.SharedTypes;
 open IOExtensions;
-module Data=
-    type ScheduledTransfer=Async<Async<TransferResult*int*CancellationToken>>
-   
-   
-    type TranscodeData=
-        {
-            TranscodeExtensions:string list;
-            FfmpegArgs:string option;
-        }
-    let TranscodeData  transcodeExtensions ffmpegArgs = {TranscodeExtensions= transcodeExtensions; FfmpegArgs=ffmpegArgs}
-    type FTPData={
-        User:string
-        Password:string
-        Host:string
-    }
-    let FTPData  user password host= {User= user; Password=password; Host=host}
-    type DirectoryData={
-        GroupName:string
-        SourceDir: string
-        DestinationDir: string
-    }
-    let DirectoryData groupName source destination ={GroupName=groupName;SourceDir=source;DestinationDir=destination;}
-    type MovementData={
-        DirData:DirectoryData
-        FTPData:FTPData option;
-        TranscodeData:TranscodeData option;
-    }
-    type WatchDir =
-        { 
-          MovementData:MovementData
-          TransferedList: string list
-          ScheduledTasks:ScheduledTransfer list;
-          }
-
-      
-    
-   
+module DataBase=
     type TransferTaskDatabase=Dictionary<string,SortedDictionary<int,TransferData>>
-    let nexId=ref 0
     let mutable CancellationTokens=new Dictionary<string,CancellationTokenSource ResizeArray>()
     let mutable dataBase=Map.empty<string,TransferData ResizeArray>
+
     let getTransferData group index= dataBase.[group].[index]
+
     let setTransferData newData key1 index=
         if dataBase.ContainsKey key1 then 
             if dataBase.[key1].Count > index then
@@ -57,6 +23,7 @@ module Data=
                 dataBase.[key1].Add(newData)
         else 
             dataBase<- dataBase.Add(key1,new ResizeArray<TransferData>([newData])  )
+
     let addTransferData newData key1=
       lock dataBase (fun  ()->   
             if dataBase.ContainsKey key1 then 
@@ -74,8 +41,11 @@ module Data=
                  
             )
     let removeItem key=dataBase.Remove key 
+
     let toSeq d = d |> Seq.map (fun (KeyValue(k,v)) -> (k,v))
+
     let getAsSeq= dataBase|>toSeq
+
     let GetCount key=
        // lock(dataBase){
        if dataBase.ContainsKey key then

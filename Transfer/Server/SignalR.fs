@@ -6,7 +6,8 @@ open System.Threading;
 open System.Threading.Tasks;
 open Microsoft.AspNetCore.SignalR
 open Microsoft.Extensions.Hosting
-open Data;
+open Transfer.Data;
+open Data.Types;
 open FSharp.Json;
 module SingnalR=
    (*  type IClientApi = 
@@ -16,14 +17,14 @@ module SingnalR=
         inherit Hub()
         let toDictionary (map : Map<_, _>) : Dictionary<_, _> = Dictionary(map)
         member this.GetTransferData()=
-            let data =Data.dataBase
+            let data =DataBase.dataBase
           
             this.Clients.All.SendAsync("ReceiveData",toDictionary(data))
         member this.GetConfirmation()=
             this.Clients.All.SendAsync("Testing","hiya from the other side")
         member this.CancelTransfer groupName id=
             printfn "recieved Cancellation request for item %i in group %s" id groupName;
-            Data.CancellationTokens.[groupName].[id].Cancel()
+            DataBase.CancellationTokens.[groupName].[id].Cancel()
 
 
   (*    type TransferProgressService (hubContext :IHubContext<DataHub, IClientApi>) =

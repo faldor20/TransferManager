@@ -1,5 +1,5 @@
 namespace Transfer
-open Data
+open Data.DataBase
 open SharedFs.SharedTypes
 open IOExtensions
 open System.IO
@@ -9,13 +9,13 @@ module TransferHandling=
 
     let sucessfullCompleteAction transferData groupName id source=
         printfn " successfully finished copying %A" source
-        Data.setTransferData { (transferData) with Status=TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} groupName id
+        setTransferData { (transferData) with Status=TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} groupName id
     let FailedCompleteAction transferData groupName id source=
         printfn "failed copying %A" source
-        Data.setTransferData { (transferData) with Status=TransferStatus.Failed; EndTime=DateTime.Now} groupName id 
+        setTransferData { (transferData) with Status=TransferStatus.Failed; EndTime=DateTime.Now} groupName id 
     let CancelledCompleteAction transferData groupName id source=
         printfn "canceled copying %A" source
-        Data.setTransferData { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now} groupName id
+        setTransferData { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now} groupName id
     
     let processTask groupName task=
 

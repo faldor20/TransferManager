@@ -11,8 +11,8 @@
         <ProjectReference Include="../Shared/SharedData.fsproj" />
 	</ItemGroup> 
 	<ItemGroup>
-
-		<Compile Include="Data.fs" />
+        <Compile Include="./Data/Types.fs" />
+		<Compile Include="./Data/DataBase.fs" />
         <Compile Include="./ConfigReader.fs" />
         <Compile Include="./FTParser.fs" />
 
@@ -24,10 +24,8 @@
         <Compile Include="TransferHandling.fs" />
 		<Compile Include="Manager.fs" />
 		<Compile Include="testing.fsx" />
-		<Compile Include="./Server/Views.fs" />
+		
 		<Compile Include="./Server/SignalR.fs" />
-		<Compile Include="./Server/Controllers.fs" />
-		<Compile Include="./Server/Router.fs" />
 		<Compile Include="./Server/Server.fs" />
 
 

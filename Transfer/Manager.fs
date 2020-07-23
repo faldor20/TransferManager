@@ -8,7 +8,7 @@ open FSharp.Data
 open FSharp.Json
 open System
 open IOExtensions
-open Data;
+open Data.DataBase;
 open FSharp.Control.Reactive
 open SharedFs.SharedTypes
 open Legivel.Serialization
