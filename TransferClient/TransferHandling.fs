@@ -1,4 +1,4 @@
-namespace Transfer
+namespace TransferClient
 open Data.DataBase
 open SharedFs.SharedTypes
 open IOExtensions

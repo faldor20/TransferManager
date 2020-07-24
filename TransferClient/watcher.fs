@@ -1,4 +1,4 @@
-namespace Transfer
+namespace TransferClient
 
 open System.IO
 open System.Collections.Generic

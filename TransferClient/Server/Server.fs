@@ -1,4 +1,4 @@
-namespace Transfer.Server
+namespace TransferClient.Server
 open System
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
@@ -12,7 +12,7 @@ open Microsoft.Extensions.Hosting;
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection;
 open Microsoft.AspNetCore.SignalR.Protocol;
-open Transfer
+open TransferClient
 module Server=
     let tryGetEnv key = 
         match Environment.GetEnvironmentVariable key with

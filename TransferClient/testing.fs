@@ -1,4 +1,4 @@
-namespace Transfer
+namespace TransferClient
 open System
 open System.Diagnostics
 open System.Threading

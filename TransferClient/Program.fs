@@ -1,5 +1,5 @@
 ﻿// Learn more about F# at http://fsharp.org
-namespace Transfer
+namespace TransferClient
 open System
 open System.Threading.Tasks
 open FSharp.Control.Tasks.V2

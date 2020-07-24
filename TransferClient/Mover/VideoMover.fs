@@ -1,4 +1,4 @@
-namespace Transfer
+namespace TransferClient
 open System
 open FFmpeg.NET
 open IOExtensions

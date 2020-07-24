@@ -1,4 +1,4 @@
-namespace Transfer
+namespace TransferClient
 module FTPParser=
     let splitAtLastOccurance (input:string) (splitter:string)= 
             let index= input.LastIndexOf splitter

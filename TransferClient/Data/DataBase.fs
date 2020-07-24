@@ -1,4 +1,4 @@
-namespace Transfer.Data
+namespace TransferClient.Data
 open System.Collections.Generic
 open System.Collections.Specialized
 open System;

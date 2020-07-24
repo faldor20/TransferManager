@@ -1,4 +1,4 @@
-namespace Transfer
+namespace TransferClient
 open System.Collections.Generic
 open System
 open Giraffe
@@ -6,25 +6,41 @@ open System.Threading;
 open System.Threading.Tasks;
 open Microsoft.AspNetCore.SignalR
 open Microsoft.Extensions.Hosting
-open Transfer.Data;
+open TransferClient.Data;
 open Data.Types;
 open FSharp.Json;
+open SharedFs.SharedTypes
 module SingnalR=
    (*  type IClientApi = 
       abstract member DataResponse : Dictionary<Guid,TransferData> -> Threading.Tasks.Task *)
-
+    type IClientApi = 
+      abstract member ReceiveData :Dictionary<string, List<TransferData>> -> System.Threading.Tasks.Task
+      abstract member Testing :string -> System.Threading.Tasks.Task
     type DataHub()=
-        inherit Hub()
+        inherit Hub<IClientApi>()
         let toDictionary (map : Map<_, _>) : Dictionary<_, _> = Dictionary(map)
+
         member this.GetTransferData()=
             let data =DataBase.dataBase
-          
-            this.Clients.All.SendAsync("ReceiveData",toDictionary(data))
+            this.Clients.All.ReceiveData(toDictionary(data))
         member this.GetConfirmation()=
-            this.Clients.All.SendAsync("Testing","hiya from the other side")
+            this.Clients.All.Testing("hiya from the other side")
         member this.CancelTransfer groupName id=
             printfn "recieved Cancellation request for item %i in group %s" id groupName;
             DataBase.CancellationTokens.[groupName].[id].Cancel()
+
+     
+    type TransferClientHub()=
+        inherit Hub()
+        let toDictionary (map : Map<_, _>) : Dictionary<_, _> = Dictionary(map)
+
+        member this.GetTransferData()=
+            let data =DataBase.dataBase
+            this.Clients.All.(toDictionary(data))
+        member this.BeginTransfer groupName transcodeData=
+            this.Clients.Client()("hiya from the other side")
+        member this.CancelTransfer groupName id=
+            this.Clients.Client(groupName).CancelTransfer id
 
 
   (*    type TransferProgressService (hubContext :IHubContext<DataHub, IClientApi>) =
