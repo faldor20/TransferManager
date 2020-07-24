@@ -1,8 +1,7 @@
-namespace TransferClient.Data
+namespace ClientManager.Data
 open System.Collections.Generic
 open System.Collections.Specialized
 open System;
-open Types
 open System.Threading
 open System.IO
 open SharedFs.SharedTypes;
@@ -10,8 +9,10 @@ open IOExtensions;
 module DataBase=
     type TransferTaskDatabase=Dictionary<string,SortedDictionary<int,TransferData>>
     let mutable CancellationTokens=new Dictionary<string,CancellationTokenSource ResizeArray>()
-    let mutable dataBase=Map.empty<string,TransferData ResizeArray>
+    let mutable dataBase=Dictionary<string,TransferData ResizeArray>()
 
+    
+    
     let getTransferData group index= dataBase.[group].[index]
 
     let setTransferData newData key1 index=
@@ -22,7 +23,7 @@ module DataBase=
                 printfn "ERROR: Adding index %i to group %s of length %i the addtransfer data method should have added this already" index key1 dataBase.[key1].Count
                 dataBase.[key1].Add(newData)
         else 
-            dataBase<- dataBase.Add(key1,new ResizeArray<TransferData>([newData])  )
+            dataBase.Add(key1,new ResizeArray<TransferData>([newData])  )
 
     let addTransferData newData key1=
       lock dataBase (fun  ()->   
@@ -36,10 +37,23 @@ module DataBase=
                 ((dataBase.[key1].Count)-1)
             else 
                 
-                dataBase<- dataBase.Add(key1,new ResizeArray<TransferData>([{newData with ID= 0}])  )
+                dataBase.Add(key1,new ResizeArray<TransferData>([{newData with ID= 0}])  )
                 0
                  
             )
+
+    let mutable IDHolders= new Dictionary<string, string ResizeArray >()
+    let registerClient clientId groupName =
+        IDHolders.TryAdd(groupName,List<string>())
+        dataBase.TryAdd(groupName,List<TransferData>())
+        ()
+    let getClient groupName id=
+        IDHolders.[groupName].[id]
+
+    let setNewTaskID  groupName DBid requester=
+        let id= IDHolders.[groupName].Count-1
+        IDHolders.[groupName].Add(requester)
+        if DBid<> id then printfn "[ERROR] Something has gone very wrong, the main database and the connectionId database are out of sync "        
     let addCancellationToken key token=
         lock CancellationTokens (fun()->
             if CancellationTokens.ContainsKey key then
@@ -48,10 +62,10 @@ module DataBase=
                 let res=CancellationTokens.TryAdd(key,(new ResizeArray<CancellationTokenSource>([token])))
                 if not res then printfn"[ERROR]Something went wrong creating token list for %s " key
         )
-        
+         
     let reset ()=
         CancellationTokens<- new Dictionary<string,CancellationTokenSource ResizeArray>()
-        dataBase<- Map.empty<string,TransferData ResizeArray>
+        dataBase<- Dictionary<string,TransferData ResizeArray>()
 
     let resetWatch= 
         async{
