@@ -1,4 +1,4 @@
-namespace TransferClient.Server
+namespace ClientManager.Server
 open System
 open Microsoft.AspNetCore.Builder
 open Microsoft.Extensions.DependencyInjection
@@ -12,7 +12,6 @@ open Microsoft.Extensions.Hosting;
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection;
 open Microsoft.AspNetCore.SignalR.Protocol;
-open TransferClient
 module Server=
     let tryGetEnv key = 
         match Environment.GetEnvironmentVariable key with
@@ -61,7 +60,7 @@ module Server=
                .UseRouting()
                
                .UseCors("CorsPolicy")
-               .UseEndpoints(fun routes -> (routes.MapHub<SingnalR.DataHub>("/datahub"))|>ignore) // SignalR
+               .UseEndpoints(fun routes -> (routes.MapHub<SignalR.DataHub>("/datahub"))|>ignore) // SignalR
             
         )
      
