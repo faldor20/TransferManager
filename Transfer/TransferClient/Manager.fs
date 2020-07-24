@@ -8,7 +8,6 @@ open FSharp.Data
 open FSharp.Json
 open System
 open IOExtensions
-open Data.DataBase;
 open FSharp.Control.Reactive
 open SharedFs.SharedTypes
 open Legivel.Serialization
@@ -24,8 +23,7 @@ module Manager =
         //a new file is detected in a watched source
         let schedulesInWatchDirs = GetNewTransfers2  watchDirsData
         
-        //Start the task that clears the history of transfers at 00:00
-        Async.Start(resetWatch)
+        
     
         //Convert the asyncseq to an observable. This is like start all the schedule tasks in
         //paralell but then only interacting with the sequentially as they complete.

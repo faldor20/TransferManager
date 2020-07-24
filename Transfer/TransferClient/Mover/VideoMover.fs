@@ -2,7 +2,7 @@ namespace TransferClient
 open System
 open FFmpeg.NET
 open IOExtensions
-open Data.Types
+open ClientManager.Data.Types
 module VideoMover=
 
     /// outPath should either be a straight filepath or an FTp path 

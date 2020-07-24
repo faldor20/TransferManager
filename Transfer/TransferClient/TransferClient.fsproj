@@ -5,14 +5,15 @@
 		<TargetFramework>netcoreapp3.1</TargetFramework>
 	</PropertyGroup>
  	<ItemGroup>
-	<!-- 	<ProjectReference Include="C:/Users/Eli/Documents/programming/CSharp/FileTransferManager-master/IOExtensions/IOExtensions.csproj">
-			<Name>IOExtensions.csproj</Name>
-		</ProjectReference> -->
-        <ProjectReference Include="../Shared/SharedData.fsproj" />
+
+        <ProjectReference Include="../../Shared/SharedData.fsproj" />
+		<ProjectReference Include="../ClientManager/ClientManager.fsproj" />
 	</ItemGroup> 
 	<ItemGroup>
-        <Compile Include="./Data/Types.fs" />
-		<Compile Include="./Data/DataBase.fs" />
+	
+		<Compile Include="./DataBase/TokenDatabase.fs" />
+		<Compile Include="./SignalR/SignalR.fs" />
+		<Compile Include="./SignalR/ManagerCalls.fs" />
         <Compile Include="./ConfigReader.fs" />
         <Compile Include="./FTParser.fs" />
 
@@ -25,8 +26,7 @@
 		<Compile Include="Manager.fs" />
 		<Compile Include="testing.fsx" />
 		
-		<Compile Include="./Server/SignalR.fs" />
-		<Compile Include="./Server/Server.fs" />
+
 
 
 		<Compile Include="testing.fs" />
@@ -40,6 +40,7 @@
 		<PackageReference Include="FSharp.Control.Reactive" Version="4.4.2" />
 		<PackageReference Include="FSharp.Json" Version="0.4.0" />
 		<PackageReference Include="Legivel" Version="0.4.3" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="0.4.3" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.5" />
 		<PackageReference Include="Saturn" Version="0.14.1" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />

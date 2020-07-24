@@ -5,7 +5,7 @@ open System.IO
 open System.Threading
 open System.Diagnostics
 open IOExtensions
-open TransferClient.Data.Types
+open ClientManager.Data.Types
 open System.Threading.Tasks
 open FSharp.Control.Tasks
 open SharedFs.SharedTypes;
