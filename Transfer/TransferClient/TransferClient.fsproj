@@ -11,9 +11,13 @@
 	</ItemGroup> 
 	<ItemGroup>
 	
-		<Compile Include="./DataBase/TokenDatabase.fs" />
 		<Compile Include="./SignalR/SignalR.fs" />
 		<Compile Include="./SignalR/ManagerCalls.fs" />
+        <Compile Include="./SignalR/Commands.fs" />
+        <Compile Include="./DataBase/LocalDB.fs" />
+        <Compile Include="./DataBase/ManagerSync.fs" />
+		 <Compile Include="./DataBase/TokenDatabase.fs" /> 
+    
         <Compile Include="./ConfigReader.fs" />
         <Compile Include="./FTParser.fs" />
 
@@ -25,7 +29,7 @@
         <Compile Include="TransferHandling.fs" />
 		<Compile Include="Manager.fs" />
 		<Compile Include="testing.fsx" />
-		
+		<Content Include="WatchDirs.yaml"/>
 
 
 
@@ -40,9 +44,8 @@
 		<PackageReference Include="FSharp.Control.Reactive" Version="4.4.2" />
 		<PackageReference Include="FSharp.Json" Version="0.4.0" />
 		<PackageReference Include="Legivel" Version="0.4.3" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="0.4.3" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.5" />
-		<PackageReference Include="Saturn" Version="0.14.1" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="2.4.1" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.6" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
 		<PackageReference Update="FSharp.Core" Version="4.7.2" />
 		<PackageReference Include="xFFmpeg.NET" Version="3.4.0" />

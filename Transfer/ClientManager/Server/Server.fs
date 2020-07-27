@@ -42,6 +42,7 @@ module Server=
             ()) *)
         service_config (fun services->
             services.AddSignalR().AddMessagePackProtocol()|>ignore
+            services.AddSingleton<ClientManager.Server.SignalR.ClientManager>()|>ignore;
             ( services.AddCors((fun options -> options.AddPolicy("CorsPolicy",(fun builder ->
                     builder.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin()|>ignore
                     ()
@@ -61,6 +62,7 @@ module Server=
                
                .UseCors("CorsPolicy")
                .UseEndpoints(fun routes -> (routes.MapHub<SignalR.DataHub>("/datahub"))|>ignore) // SignalR
+               .UseEndpoints(fun routes -> (routes.MapHub<SignalR.ClientManagerHub>("/ClientManagerHub"))|>ignore) // SignalR
             
         )
      

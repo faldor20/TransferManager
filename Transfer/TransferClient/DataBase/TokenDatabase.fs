@@ -1,4 +1,4 @@
-namespace ClientManager.Data
+namespace TransferClient
 open System.Collections.Generic
 open System.Threading
 module TokenDatabase=

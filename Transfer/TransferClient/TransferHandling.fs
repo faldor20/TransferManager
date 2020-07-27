@@ -1,36 +1,37 @@
 namespace TransferClient
-open ClientManager.Data.DataBase
 open SharedFs.SharedTypes
 open IOExtensions
 open System.IO
 open System
+open TransferClient.LocalDB
 module TransferHandling=
 
 
-    let sucessfullCompleteAction transferData groupName id source=
-        printfn " successfully finished copying %A" source
-        setTransferData { (transferData) with Status=TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} groupName id
-    let FailedCompleteAction transferData groupName id source=
-        printfn "failed copying %A" source
-        setTransferData { (transferData) with Status=TransferStatus.Failed; EndTime=DateTime.Now} groupName id 
-    let CancelledCompleteAction transferData groupName id source=
-        printfn "canceled copying %A" source
-        setTransferData { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now} groupName id
+    let sucessfullCompleteAction transferData source=
+        printfn " successfully finished copying %s" source
+        { (transferData) with Status=TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} 
+    let FailedCompleteAction transferData source=
+        printfn "failed copying %s" source
+        { (transferData) with Status=TransferStatus.Failed; EndTime=DateTime.Now} 
+    let CancelledCompleteAction transferData source=
+        printfn "canceled copying %s" source
+        { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
     
     let processTask groupName task=
 
         let transResult, id = Async.RunSynchronously task
 
-        let transData=dataBase.[groupName].[id]
-        let source = dataBase.[groupName].[id].Source
+        let transData=getTransferData groupName id
+        let source = transData.Source
 
        //LOGGING: printfn "DB: %A" dataBase
-       
-        match transResult with 
-            |TransferResult.Success-> sucessfullCompleteAction transData groupName id source
-            |TransferResult.Cancelled-> CancelledCompleteAction transData groupName id source
-            |TransferResult.Failed-> FailedCompleteAction transData groupName id source
-            |_-> printfn "unknonw enum for transresult"
+        let dataChange=
+            match transResult with 
+                |TransferResult.Success-> sucessfullCompleteAction transData source
+                |TransferResult.Cancelled-> CancelledCompleteAction transData source
+                |TransferResult.Failed-> FailedCompleteAction transData source
+                |_-> failwith "unknonw enum for transresult"
+        setTransferData dataChange groupName id
        
         let rec del path iterCount= async{
             if iterCount>10 

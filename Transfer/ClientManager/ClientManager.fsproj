@@ -14,7 +14,10 @@
 
     <Compile Include="./Data/Types.fs" />
 		<Compile Include="./Data/DataBase.fs" />
+        	<Compile Include="./Data/DatabaseSync.fs" />
     <Compile Include="./Server/SignalR.fs" />
+    		<Compile Include="./ManagerService.fs" />
+
 		<Compile Include="./Server/Server.fs" />
     <Compile Include="Program.fs" />
 

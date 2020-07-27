@@ -41,19 +41,26 @@ module DataBase=
                 0
                  
             )
-
+    
     let mutable IDHolders= new Dictionary<string, string ResizeArray >()
-    let registerClient clientId groupName =
-        IDHolders.TryAdd(groupName,List<string>())
-        dataBase.TryAdd(groupName,List<TransferData>())
+    
+    let registerClient groupName =
+        let a= IDHolders.TryAdd(groupName,List<string>()) 
+        let b=dataBase.TryAdd(groupName,List<TransferData>())
+        if a&&b then 
+            printfn "sucessfully registered group:%s" groupName
+        else
+            printfn "registered new client for group %s" groupName
         ()
     let getClient groupName id=
         IDHolders.[groupName].[id]
 
     let setNewTaskID  groupName DBid requester=
-        let id= IDHolders.[groupName].Count-1
+        let id= IDHolders.[groupName].Count
         IDHolders.[groupName].Add(requester)
-        if DBid<> id then printfn "[ERROR] Something has gone very wrong, the main database and the connectionId database are out of sync "        
+        if DBid<> id then printfn "[ERROR] Something has gone very wrong, the main database and the connectionId database are out of sync "     
+
+
     let addCancellationToken key token=
         lock CancellationTokens (fun()->
             if CancellationTokens.ContainsKey key then
@@ -78,3 +85,5 @@ module DataBase=
                 do!Async.Sleep(1000*60*59)
 
         }
+
+        

@@ -3,10 +3,10 @@ namespace TransferClient
 open System.IO
 open System.Threading
 open System
+open TransferClient.LocalDB
+open TransferClient.TokenDatabase
 open ClientManager.Data.Types
 open SharedFs.SharedTypes
-open ClientManager.Data.TokenDatabase
-open SignalR.ManagerCalls
 module Scheduler =
     //This will return once the file is not beig acessed by other programs.
     //it returns false if the file is discovered to be deleted before that point.
@@ -56,23 +56,23 @@ module Scheduler =
                 }
             return! loop(FileInfo(source))
         }
-    let scheduleTransfer filePath moveData transcode =
+    let scheduleTransfer  filePath moveData transcode =
         async {
             let {DestinationDir=dest;GroupName=groupName}:DirectoryData=moveData.DirData
-            let data=
-                { Percentage = 0.0
-                  FileSize = float(FileInfo(filePath).Length/int64 1000/int64 1000)
-                  FileRemaining = 0.0
-                  Speed = 0.0
-                  Destination = dest
-                  Source = filePath
-                  StartTime = new DateTime()
-                  ID = 0
-                  GroupName=groupName
-                  Status = TransferStatus.Waiting 
-                  EndTime=new DateTime()}
             let index= 
-                addTransferData data groupName 
+                addTransferData
+                    { Percentage = 0.0
+                      FileSize = float(FileInfo(filePath).Length/int64 1000/int64 1000)
+                      FileRemaining = 0.0
+                      Speed = 0.0
+                      Destination = dest
+                      Source = filePath
+                      StartTime = new DateTime()
+                      ID = 0
+                      GroupName=groupName
+                      Status = TransferStatus.Waiting 
+                      EndTime=new DateTime()} 
+                      groupName 
             
             
             let ct = new CancellationTokenSource()
@@ -87,6 +87,6 @@ module Scheduler =
                 return Mover.MoveFile filePath moveData index transcode  ct
             else
                 printfn "Transfer file at: %s was deleted" filePath 
-                setTransferData {data with Status=TransferStatus.Failed} groupName index
+                setTransferData {getTransferData groupName index with Status=TransferStatus.Failed} groupName index
                 return async{ return (IOExtensions.TransferResult.Failed,index)}
         }

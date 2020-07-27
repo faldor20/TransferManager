@@ -8,7 +8,7 @@ open Mover
 open Saturn
 module Main=
 
-    let webServer= new Task (fun () ->run Server.Server.app)
+    //let webServer= new Task (fun () ->run Server.Server.app)
         
     //let main2= new Task (fun()-> startUp)
     [<EntryPoint>]
@@ -18,9 +18,8 @@ module Main=
         
        
         let a=Task.Run(fun()-> Async.RunSynchronously startUp)
-        let b=Task.Run(fun()-> run  Server.Server.app)
-
-        b.Wait()
+        //let b=Task.Run(fun()-> run  Server.Server.app)
+       // b.Wait()
         a.Wait()  
 
       

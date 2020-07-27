@@ -23,7 +23,13 @@ module Manager =
         //a new file is detected in a watched source
         let schedulesInWatchDirs = GetNewTransfers2  watchDirsData
         
-        
+        let groups=watchDirsData|>List.map(fun x-> x.MovementData.DirData.GroupName)
+        let signalrCT=new Threading.CancellationTokenSource()
+        SignalR.Commands.MakeConnection groups signalrCT.Token
+
+        //Start the Syncing Service
+        //TODO: only start this if signalr connects sucesfully
+        let res= (Database.ManagerSync.DBsyncer 500)
     
         //Convert the asyncseq to an observable. This is like start all the schedule tasks in
         //paralell but then only interacting with the sequentially as they complete.

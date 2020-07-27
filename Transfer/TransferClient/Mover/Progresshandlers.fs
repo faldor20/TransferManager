@@ -9,10 +9,9 @@ open ClientManager.Data.Types
 open System.Threading.Tasks
 open FSharp.Control.Tasks
 open SharedFs.SharedTypes;
-open SignalR.ManagerCalls
+open TransferClient.LocalDB
 open FluentFTP
 open FFmpeg.NET
-open TransferClient.SignalR.ManagerCalls
 module ProgressHandlers=
     type ProgressHandler=
         | FtpProg of Progress<FtpProgress>*FTPData
@@ -21,7 +20,7 @@ module ProgressHandlers=
     let Gethandler moveData filePath transcode (index:int) =    
         let stopWatch = new Stopwatch()
         let groupName=moveData.DirData.GroupName
-        let mutable lastTransferData= Async.RunSynchronously (getTransferData groupName index)
+        let mutable lastTransferData= getTransferData groupName index
 
         let mutable lastTransfered = int64 0
         let mutable fileSize=(new FileInfo(filePath)).Length;
