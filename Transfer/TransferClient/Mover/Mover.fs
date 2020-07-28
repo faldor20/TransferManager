@@ -23,14 +23,11 @@ module Mover =
         
         let {DestinationDir=destination; GroupName= groupName}=moveData.DirData
         let isFTP=moveData.FTPData.IsSome
-        // We pass this in to the progressCallback so it  
-        let newDataHandler newTransData=
-            dbAccess.Set newTransData
-        let progressCallback= Gethandler moveData transcode (dbAccess.Get ()) newDataHandler
+        
         
         let fileName= Path.GetFileName filePath
 
-        let task=async{
+        let task progressHandler=async{
                 let runFtp ftpData callBack=async{
                     use client=new FtpClient()
                     client.Connect()
@@ -44,21 +41,32 @@ module Mover =
                 
                 let result= 
                     //The particular transfer action to take has allready been decided by the progress callback
-                    match progressCallback with
+                    match progressHandler with
                         |FtpProg (cb,ftpData)           -> runFtp ftpData cb
                         |FileProg cb                    -> Async.AwaitTask (FileTransferManager.CopyWithProgressAsync(filePath, destination, cb,false,ct.Token))
                         |TranscodeProg (cb, ffmpegInfo)  -> VideoMover.Transcode ffmpegInfo moveData.FTPData cb filePath destination ct.Token
                 return! result 
             }
         async {
+            // We pass this in to the progressCallback so it  
+            let transData= {dbAccess.Get() with StartTime=DateTime.Now}
+
+            let newDataHandler newTransData=
+                dbAccess.Set newTransData
+
+            let progressHandler= Gethandler moveData transcode transData newDataHandler
+
             let transType=
-                match progressCallback with 
+                match progressHandler with 
                 |FtpProg-> "FTP Transfer"
                 |FileProg->"File transfer"
                 |TranscodeProg-> "FFmpeg transcode"
-            
             printfn "starting %s from %s to %s" transType filePath destination
-            let! result= task
+
+            //We have to set the startTime here because we want the sartime to truly be when the task begins
+            dbAccess.Set {transData with StartTime=DateTime.Now}
+            
+            let! result= task progressHandler
             
             printfn "finished copy from %s to %s"filePath destination
             return (result,dbAccess)

@@ -62,9 +62,7 @@ module Scheduler =
         let fileSizeMB=(float(fileSize/int64 1000))/1000.0
 
         {currentTransferData with
-                StartTime=DateTime.Now
                 FileSize=fileSizeMB
-                Status=TransferStatus.Copying
         }
        
     let scheduleTransfer filePath moveData (dbAccess:DataBase.Types.DataBaseAcessFuncs) transcode =
@@ -77,7 +75,7 @@ module Scheduler =
                   Speed = 0.0
                   Destination = dest
                   Source = filePath
-                  StartTime = new DateTime()
+                  StartTime =  DateTime.Now
                   ID = 0
                   GroupName=groupName
                   Status = TransferStatus.Waiting 
