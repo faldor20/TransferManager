@@ -37,14 +37,17 @@ module LocalDB=
         safeAdd2 ChangeDB groupName index newData
         )
         localDB.[groupName].[index]<- newData 
-
+    ///Adds a new object to the database getting its index from the ClientManager
+    ///Sets the TransferObject ID to the index it is inserted at.
     let addTransferData  groupname newData=
         let index= Async.RunSynchronously<| ManagerCalls.addTransferData newData groupname
+        //we Set the ID to be the index so the Transdata can allways be refenced back too
+        let indexedData= {newData with ID=index}
         lock localDB (fun x->
             lock ChangeDB (fun x->
-                safeAdd2 ChangeDB groupname index newData
+                safeAdd2 ChangeDB groupname index indexedData
             )
-            safeAdd2 localDB groupname index{newData with ID= 0}
+            safeAdd2 localDB groupname index indexedData
         )
         index
     let AccessFuncs= {
