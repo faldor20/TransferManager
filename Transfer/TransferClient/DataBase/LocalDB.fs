@@ -4,6 +4,7 @@ open System.Collections.Generic
 open SharedFs.SharedTypes
 open System.Threading
 open TransferClient.SignalR
+open DataBase.Types
 module LocalDB=
 
     let safeAdd1 (dict:Dictionary<'a,'b>)  key1 newData=
@@ -31,18 +32,22 @@ module LocalDB=
     
     let getTransferData group index= localDB.[group].[index]
    
-    let setTransferData newData groupName index=
+    let setTransferData  groupName index newData=
         lock ChangeDB (fun x->
         safeAdd2 ChangeDB groupName index newData
         )
         localDB.[groupName].[index]<- newData 
 
-    let addTransferData newData key1=
-        let index= Async.RunSynchronously<| ManagerCalls.addTransferData newData key1
+    let addTransferData  groupname newData=
+        let index= Async.RunSynchronously<| ManagerCalls.addTransferData newData groupname
         lock localDB (fun x->
             lock ChangeDB (fun x->
-                safeAdd2 ChangeDB key1 index newData
+                safeAdd2 ChangeDB groupname index newData
             )
-            safeAdd2 localDB key1 index{newData with ID= 0}
+            safeAdd2 localDB groupname index{newData with ID= 0}
         )
         index
+    let AccessFuncs= {
+        Set=setTransferData;
+        Get=getTransferData;
+        Add=addTransferData}

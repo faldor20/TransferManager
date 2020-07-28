@@ -14,6 +14,7 @@
 		<Compile Include="./SignalR/SignalR.fs" />
 		<Compile Include="./SignalR/ManagerCalls.fs" />
         <Compile Include="./SignalR/Commands.fs" />
+        <Compile Include="./DataBase/Types.fs" /> 
         <Compile Include="./DataBase/LocalDB.fs" />
         <Compile Include="./DataBase/ManagerSync.fs" />
 		 <Compile Include="./DataBase/TokenDatabase.fs" /> 

@@ -11,18 +11,22 @@ open FSharp.Control.Tasks
 open SharedFs.SharedTypes;
 open FluentFTP
 open ProgressHandlers
+open TransferClient.DataBase.Types
 module Mover =
     let TransferResult (ftpResult:FtpStatus)=
         match ftpResult with
         |FtpStatus.Failed->TransferResult.Failed
         |FtpStatus.Success->TransferResult.Success
         |_-> failwith "ftpresult return unhandled enum value"
-        
-    let MoveFile (filePath:string) moveData index transcode (ct:CancellationTokenSource) =
+   
+    let MoveFile (filePath:string) moveData dbAccess transcode (ct:CancellationTokenSource) =
         
         let {DestinationDir=destination; GroupName= groupName}=moveData.DirData
         let isFTP=moveData.FTPData.IsSome
-        let progressCallback= Gethandler moveData filePath transcode index
+        // We pass this in to the progressCallback so it  
+        let newDataHandler newTransData=
+            dbAccess.Set newTransData
+        let progressCallback= Gethandler moveData transcode (dbAccess.Get ()) newDataHandler
         
         let fileName= Path.GetFileName filePath
 
@@ -57,5 +61,5 @@ module Mover =
             let! result= task
             
             printfn "finished copy from %s to %s"filePath destination
-            return (result,index)
+            return (result,dbAccess)
         }

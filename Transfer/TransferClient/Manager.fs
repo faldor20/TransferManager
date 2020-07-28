@@ -21,7 +21,7 @@ module Manager =
         let mutable watchDirsData= ConfigReader.ReadFile "./WatchDirs.yaml"
         //create a asyncstream that yields new schedule jobs when 
         //a new file is detected in a watched source
-        let schedulesInWatchDirs = GetNewTransfers2  watchDirsData
+        let schedulesInWatchDirs = GetNewTransfers2  watchDirsData LocalDB.AccessFuncs
         
         let groups=watchDirsData|>List.map(fun x-> x.MovementData.DirData.GroupName)
         let signalrCT=new Threading.CancellationTokenSource()
@@ -29,7 +29,7 @@ module Manager =
 
         //Start the Syncing Service
         //TODO: only start this if signalr connects sucesfully
-        let res= (Database.ManagerSync.DBsyncer 500)
+        let res= (DataBase.ManagerSync.DBsyncer 500)
     
         //Convert the asyncseq to an observable. This is like start all the schedule tasks in
         //paralell but then only interacting with the sequentially as they complete.
@@ -42,7 +42,7 @@ module Manager =
                 |>AsyncSeq.toObservable
                 |>Observable.bind (fun x-> Observable.ofAsync x)
                 |>Observable.iter(fun transferTask ->
-                    Async.Start( processTask groupName transferTask))
+                    Async.Start( processTask transferTask ))
           
             )
         //Merge the observable seqence of each group together

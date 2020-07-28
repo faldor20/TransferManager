@@ -3,10 +3,10 @@ namespace TransferClient
 open System.IO
 open System.Threading
 open System
-open TransferClient.LocalDB
 open TransferClient.TokenDatabase
 open ClientManager.Data.Types
 open SharedFs.SharedTypes
+open DataBase.Types
 module Scheduler =
     //This will return once the file is not beig acessed by other programs.
     //it returns false if the file is discovered to be deleted before that point.
@@ -56,25 +56,34 @@ module Scheduler =
                 }
             return! loop(FileInfo(source))
         }
-    let scheduleTransfer  filePath moveData transcode =
+    let getFileData filePath currentTransferData=
+        
+        let fileSize=(new FileInfo(filePath)).Length;
+        let fileSizeMB=(float(fileSize/int64 1000))/1000.0
+
+        {currentTransferData with
+                StartTime=DateTime.Now
+                FileSize=fileSizeMB
+                Status=TransferStatus.Copying
+        }
+       
+    let scheduleTransfer filePath moveData (dbAccess:DataBase.Types.DataBaseAcessFuncs) transcode =
         async {
             let {DestinationDir=dest;GroupName=groupName}:DirectoryData=moveData.DirData
-            let index= 
-                addTransferData
-                    { Percentage = 0.0
-                      FileSize = float(FileInfo(filePath).Length/int64 1000/int64 1000)
-                      FileRemaining = 0.0
-                      Speed = 0.0
-                      Destination = dest
-                      Source = filePath
-                      StartTime = new DateTime()
-                      ID = 0
-                      GroupName=groupName
-                      Status = TransferStatus.Waiting 
-                      EndTime=new DateTime()} 
-                      groupName 
-            
-            
+            let transData=
+                { Percentage = 0.0
+                  FileSize = 0.0
+                  FileRemaining = 0.0
+                  Speed = 0.0
+                  Destination = dest
+                  Source = filePath
+                  StartTime = new DateTime()
+                  ID = 0
+                  GroupName=groupName
+                  Status = TransferStatus.Waiting 
+                  EndTime=new DateTime()}
+            let index= dbAccess.Add  groupName transData
+
             let ct = new CancellationTokenSource()
             let transType=
                 ""  |>fun s->if transcode then s+" transcode"else s
@@ -82,11 +91,16 @@ module Scheduler =
             printfn "Scheduled%s transfer from %s To-> %s at index:%i" transType filePath dest index
             addCancellationToken groupName index ct
             let! fileAvailable= isAvailable filePath
+        
+            let transDataAccess= TransDataAcessFuncs dbAccess groupName index
+
             if fileAvailable then
                 printfn "Transfer file at: %s is available" filePath
-                return Mover.MoveFile filePath moveData index transcode  ct
+                dbAccess.Set groupName index (getFileData filePath (dbAccess.Get groupName index) )  
+                
+                return Mover.MoveFile filePath moveData transDataAccess transcode  ct
             else
                 printfn "Transfer file at: %s was deleted" filePath 
-                setTransferData {getTransferData groupName index with Status=TransferStatus.Failed} groupName index
-                return async{ return (IOExtensions.TransferResult.Failed,index)}
+                dbAccess.Set groupName index {dbAccess.Get groupName index with Status=TransferStatus.Failed} 
+                return async{ return (IOExtensions.TransferResult.Failed, transDataAccess)}
         }

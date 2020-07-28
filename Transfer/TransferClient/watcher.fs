@@ -19,7 +19,7 @@ module Watcher =
         DirectoryInfo( folder).GetFiles()|>Array.map(fun i-> i.FullName)|> Array.except ignoreList
     
 
-    let ActionNewFiles2 (watchDir:WatchDir) =
+    let ActionNewFiles2 dbAcess (watchDir:WatchDir)   =
         (asyncSeq{ 
             let mutable ignoreList= Array.empty  //We iterate through the list each pair contains watchdir and a list of the new files in that dir 
             while true do
@@ -31,7 +31,7 @@ module Watcher =
                         |Some x-> x.TranscodeExtensions|>List.contains extension
                         |None-> false
                     
-                    let task = Scheduler.scheduleTransfer file watchDir.MovementData transcode
+                    let task = Scheduler.scheduleTransfer file watchDir.MovementData dbAcess transcode
                     printfn "Created schedule task for file %s" (Path.GetFileName file)
                     yield task
                 ignoreList<- ignoreList|> Array.append newFiles
@@ -39,6 +39,6 @@ module Watcher =
         },watchDir.MovementData.DirData.GroupName)
 
    
-    let GetNewTransfers2 watchDirs=
-        let tasks=watchDirs|>List.map ActionNewFiles2
+    let GetNewTransfers2 watchDirs dbAccess=
+        let tasks=watchDirs|>List.map (ActionNewFiles2 dbAccess)
         tasks

@@ -17,23 +17,14 @@ module ProgressHandlers=
         | FtpProg of Progress<FtpProgress>*FTPData
         | FileProg of Action<TransferProgress>
         | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*TranscodeData
-    let Gethandler moveData filePath transcode (index:int) =    
-        let stopWatch = new Stopwatch()
-        let groupName=moveData.DirData.GroupName
-        let mutable lastTransferData= getTransferData groupName index
-
+    type NewDataHandler= TransferData->unit
+    let Gethandler moveData transcode currentTransData newDataHandler =    
+        let stopWatch =  Stopwatch()
+       
+        let mutable lastTransferData= currentTransData
+        let fileSizeMB= lastTransferData.FileSize
+        let fileSize= int64(lastTransferData.FileSize *1000.0*1000.0)
         let mutable lastTransfered = int64 0
-        let mutable fileSize=(new FileInfo(filePath)).Length;
-        let mutable fileSizeMB=(float(fileSize/int64 1000))/1000.0
-
-        lastTransferData<-
-            {lastTransferData with
-                StartTime=DateTime.Now
-                FileSize=fileSizeMB
-                Status=TransferStatus.Copying
-         }
-
-        (groupName, index)||>setTransferData lastTransferData
 
         stopWatch.Start()
 
@@ -48,7 +39,8 @@ module ProgressHandlers=
                                 Speed = float speed
                                 FileRemaining=float((fileSize- transferred)/int64 1000/int64 1000)
                                 EndTime=DateTime.Now}
-            (groupName, index)||>setTransferData lastTransferData
+            newDataHandler lastTransferData 
+            
 
         let outputStatsFileTrans  =Action<TransferProgress> (fun progress->
             if stopWatch.ElapsedMilliseconds>int64 500 then 
@@ -78,9 +70,8 @@ module ProgressHandlers=
                         FileRemaining= remaining
                         FileSize= size
                     }
-                (groupName, index)||> setTransferData lastTransferData
-                stopWatch.Reset()
-                stopWatch.Start()
+                newDataHandler lastTransferData 
+                
         //TODO: put another option here for transcode without ftp
         if transcode then (TranscodeProg (transcodeProgress, moveData.TranscodeData.Value))
         else if moveData.FTPData.IsSome then FtpProg (ftpProgress, moveData.FTPData.Value)

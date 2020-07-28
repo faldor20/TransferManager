@@ -3,7 +3,7 @@ open SharedFs.SharedTypes
 open IOExtensions
 open System.IO
 open System
-open TransferClient.LocalDB
+open DataBase.Types
 module TransferHandling=
 
 
@@ -17,11 +17,11 @@ module TransferHandling=
         printfn "canceled copying %s" source
         { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
     
-    let processTask groupName task=
+    let processTask task =
 
-        let transResult, id = Async.RunSynchronously task
+        let transResult, transDataAccess = Async.RunSynchronously task
 
-        let transData=getTransferData groupName id
+        let transData=transDataAccess.Get()
         let source = transData.Source
 
        //LOGGING: printfn "DB: %A" dataBase
@@ -31,7 +31,7 @@ module TransferHandling=
                 |TransferResult.Cancelled-> CancelledCompleteAction transData source
                 |TransferResult.Failed-> FailedCompleteAction transData source
                 |_-> failwith "unknonw enum for transresult"
-        setTransferData dataChange groupName id
+        transDataAccess.Set dataChange
        
         let rec del path iterCount= async{
             if iterCount>10 

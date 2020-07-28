@@ -1,4 +1,4 @@
-namespace TransferClient.Database
+namespace TransferClient.DataBase
 open TransferClient.SignalR.ManagerCalls
 open TransferClient
 open System.Collections.Generic
