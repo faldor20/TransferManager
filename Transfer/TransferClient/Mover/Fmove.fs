@@ -13,15 +13,20 @@ module FileMove =
 
     ///
     /// progress takes copyprogress and speed
-    let FCopy source destination progress (ct:CancellationToken) =
+    let FCopy (source:string) destination progress (ct:CancellationToken) =
         async{
+            let dest=
+                match File.GetAttributes destination with
+                |FileAttributes.Directory->
+                    destination+ (Path.GetFileName source)
+                |_-> destination
             let array_length = int (Math.Pow(2.0, 19.0))
             let dataArray: array<byte> = Array.zeroCreate (array_length)
             use  fsread=(new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.None, array_length)) 
 
             use bwread=(new BinaryReader(fsread)) 
 
-            use fswrite=(new FileStream(destination, FileMode.Create, FileAccess.Write, FileShare.None, array_length)) 
+            use fswrite=(new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None, array_length)) 
 
             use bwwrite=(new BinaryWriter(fswrite)) 
                             
