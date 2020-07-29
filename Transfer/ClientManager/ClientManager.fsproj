@@ -1,38 +1,37 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
-  </PropertyGroup>
-  <ItemGroup>
-          <ProjectReference Include="../../Shared/SharedData.fsproj" />
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>netcoreapp3.1</TargetFramework>
+    </PropertyGroup>
+    <ItemGroup>
+        <ProjectReference Include="../../Shared/SharedData.fsproj" />
 
-    <!-- <ProjectReference Include="..\TransferClient\TransferClient.fsproj">
+        <!-- <ProjectReference Include="..\TransferClient\TransferClient.fsproj">
       <Name>TransferClient.fsproj</Name>
     </ProjectReference> -->
-  </ItemGroup>
-  <ItemGroup>
+    </ItemGroup>
+    <ItemGroup>
 
-    <Compile Include="./Data/Types.fs" />
-		<Compile Include="./Data/DataBase.fs" />
-        	<Compile Include="./Data/DatabaseSync.fs" />
-    <Compile Include="./Server/SignalR.fs" />
-    		<Compile Include="./ManagerService.fs" />
 
-		<Compile Include="./Server/Server.fs" />
-    <Compile Include="Program.fs" />
+        <Compile Include="./Data/DataBase.fs" />
+        <Compile Include="./Data/DatabaseSync.fs" />
+        <Compile Include="./Server/SignalR.fs" />
 
-  </ItemGroup>
-  <ItemGroup>
-      <PackageReference Include="FileTransferManager" Version="1.0.5" />
-		<PackageReference Include="FluentFTP" Version="32.4.3" />
-		<PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.24" />
-		<PackageReference Include="FSharp.Control.Reactive" Version="4.4.2" />
-		<PackageReference Include="FSharp.Json" Version="0.4.0" />
-		<PackageReference Include="Legivel" Version="0.4.3" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.5" />
-		<PackageReference Include="Saturn" Version="0.14.1" />
-		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
-		<PackageReference Update="FSharp.Core" Version="4.7.2" />
-		<PackageReference Include="xFFmpeg.NET" Version="3.4.0" />
-  </ItemGroup>
+
+        <Compile Include="./Server/Server.fs" />
+        <Compile Include="Program.fs" />
+
+    </ItemGroup>
+    <ItemGroup>
+        <PackageReference Include="FluentFTP" Version="32.4.3" />
+        <PackageReference Include="FSharp.Control.AsyncSeq" Version="2.0.24" />
+        <PackageReference Include="FSharp.Control.Reactive" Version="4.4.2" />
+        <PackageReference Include="FSharp.Json" Version="0.4.0" />
+        <PackageReference Include="Legivel" Version="0.4.3" />
+        <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.5" />
+        <PackageReference Include="Saturn" Version="0.14.1" />
+        <PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
+        <PackageReference Update="FSharp.Core" Version="4.7.2" />
+        <PackageReference Include="xFFmpeg.NET" Version="3.4.0" />
+    </ItemGroup>
 </Project>

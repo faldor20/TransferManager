@@ -1,7 +1,6 @@
 namespace TransferClient.IO
 open System
 open FFmpeg.NET
-open ClientManager.Data.Types
 open Types
 module VideoMover=
 

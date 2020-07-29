@@ -5,7 +5,6 @@ open System.Collections.Generic
 open System.Threading.Tasks
 open IO.Types
 open FluentFTP
-open ClientManager.Data.Types;
 open FSharp.Control
 open FSharp.Control.Reactive.Builders
 module Watcher =

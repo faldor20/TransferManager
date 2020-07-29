@@ -5,7 +5,6 @@ open System;
 open System.Threading
 open System.IO
 open SharedFs.SharedTypes;
-open IOExtensions;
 module DataBase=
     type TransferTaskDatabase=Dictionary<string,SortedDictionary<int,TransferData>>
     let mutable CancellationTokens=new Dictionary<string,CancellationTokenSource ResizeArray>()
@@ -55,10 +54,10 @@ module DataBase=
     let getClient groupName id=
         IDHolders.[groupName].[id]
 
-    let setNewTaskID  groupName DBid requester=
+    let setNewTaskID  groupName dbId requester=
         let id= IDHolders.[groupName].Count
         IDHolders.[groupName].Add(requester)
-        if DBid<> id then printfn "[ERROR] Something has gone very wrong, the main database and the connectionId database are out of sync "     
+        if dbId<> id then printfn "[ERROR] Something has gone very wrong, the main database and the connectionId database are out of sync "     
 
 
     let addCancellationToken key token=

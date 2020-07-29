@@ -5,7 +5,6 @@ open FSharp.Data
 open FSharp.Json
 open System
 
-open ClientManager.Data.Types;
 open SharedFs.SharedTypes
 open Legivel.Serialization
 open FSharp.Control

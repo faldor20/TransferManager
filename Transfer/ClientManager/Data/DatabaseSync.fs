@@ -5,7 +5,6 @@ open System;
 open System.Threading
 open System.IO
 open SharedFs.SharedTypes;
-open IOExtensions;
 open ClientManager.Data.DataBase
 module DataBaseSync=
     let internal syncIndexLevel groupName (changes:Dictionary<int,TransferData>)=

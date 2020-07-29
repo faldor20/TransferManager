@@ -7,7 +7,6 @@ open System.Threading.Tasks;
 open Microsoft.AspNetCore.SignalR
 open Microsoft.Extensions.Hosting
 open ClientManager.Data;
-open ClientManager.Data.Types;
 open FSharp.Json;
 open SharedFs.SharedTypes
 open Microsoft.AspNetCore.Mvc
