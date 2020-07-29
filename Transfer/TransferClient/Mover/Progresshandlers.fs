@@ -4,7 +4,6 @@ open System
 open System.IO
 open System.Threading
 open System.Diagnostics
-open IOExtensions
 open TransferClient.IO.Types
 open System.Threading.Tasks
 open FSharp.Control.Tasks
@@ -15,7 +14,6 @@ open FFmpeg.NET
 module ProgressHandlers=
     type ProgressHandler=
         | FtpProg of Progress<FtpProgress>*FTPData
-        | FileProg of Action<TransferProgress>
         | FastFileProg of (FileMove.ProgressData->unit)
         | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*TranscodeData
     type NewDataHandler= TransferData->unit
@@ -44,10 +42,6 @@ module ProgressHandlers=
             newDataHandler lastTransferData 
             
 
-        let oldfileProgress  =Action<TransferProgress> (fun progress->
-            if stopWatch.ElapsedMilliseconds>int64 500 then 
-               setData (float progress.Percentage) progress.BytesTransferred
-               )
         let fastFileProgress  = (fun (progress:FileMove.ProgressData )->
             if stopWatch.ElapsedMilliseconds>int64 500 then 
                setData progress.Progress progress.BytesTransfered

@@ -61,7 +61,7 @@ module Mover =
             let transType=
                 match progressHandler with 
                 |FtpProg-> "FTP Transfer"
-                |FileProg->"File transfer"
+                |FastFileProg->"File transfer"
                 |TranscodeProg-> "FFmpeg transcode"
             printfn "starting %s from %s to %s" transType filePath destination
 
