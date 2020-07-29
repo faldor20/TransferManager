@@ -3,7 +3,7 @@ namespace TransferClient
 open System.IO
 open System.Collections.Generic
 open System.Threading.Tasks
-open Mover
+open IO.Types
 open FluentFTP
 open ClientManager.Data.Types;
 open FSharp.Control

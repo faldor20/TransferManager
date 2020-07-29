@@ -4,7 +4,6 @@ open System
 open System.Threading.Tasks
 open FSharp.Control.Tasks.V2
 open Manager
-open Mover
 open Saturn
 module Main=
 
@@ -16,12 +15,12 @@ module Main=
         printfn"Begining"
         
         
-       
+   (*     
         let a=Task.Run(fun()-> Async.RunSynchronously startUp)
         //let b=Task.Run(fun()-> run  Server.Server.app)
        // b.Wait()
         a.Wait()  
-
+ *)
       
-        //Testing.test
+        Testing.test
         0

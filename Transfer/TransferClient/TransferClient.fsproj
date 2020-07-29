@@ -3,6 +3,8 @@
 		<OutputType>Exe</OutputType>
 		<GenerateLibraryOutput>True</GenerateLibraryOutput>
 		<TargetFramework>netcoreapp3.1</TargetFramework>
+        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+        <PublishSingleFile>true</PublishSingleFile>
 	</PropertyGroup>
  	<ItemGroup>
 
@@ -15,6 +17,8 @@
 		<Compile Include="./SignalR/ManagerCalls.fs" />
         <Compile Include="./SignalR/Commands.fs" />
         <Compile Include="./DataBase/Types.fs" /> 
+         <Compile Include="./Mover/Types.fs" />
+        <Compile Include="./Mover/Fmove.fs" /> 
         <Compile Include="./DataBase/LocalDB.fs" />
         <Compile Include="./DataBase/ManagerSync.fs" />
 		 <Compile Include="./DataBase/TokenDatabase.fs" /> 
@@ -31,9 +35,6 @@
 		<Compile Include="Manager.fs" />
 		<Compile Include="testing.fsx" />
 		<Content Include="WatchDirs.yaml"/>
-
-
-
 		<Compile Include="testing.fs" />
 		<Compile Include="Program.fs" />
 	</ItemGroup>

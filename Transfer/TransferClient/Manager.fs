@@ -2,17 +2,17 @@ namespace TransferClient
 
 open System.IO
 open System.Threading.Tasks
-open Mover
+open TransferClient.IO
 open Watcher
 open FSharp.Data
 open FSharp.Json
 open System
-open IOExtensions
 open FSharp.Control.Reactive
 open SharedFs.SharedTypes
 open Legivel.Serialization
 open FSharp.Control
 open TransferHandling
+open IO.Types
 module Manager =
 
 

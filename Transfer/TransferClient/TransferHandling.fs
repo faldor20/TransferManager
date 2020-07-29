@@ -1,6 +1,6 @@
 namespace TransferClient
 open SharedFs.SharedTypes
-open IOExtensions
+open IO.Types
 open System.IO
 open System
 open DataBase.Types

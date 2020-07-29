@@ -1,11 +1,11 @@
-namespace TransferClient
+namespace TransferClient.IO
 open System.Runtime
 open System
 open System.IO
 open System.Threading
 open System.Diagnostics
 open IOExtensions
-open ClientManager.Data.Types
+open TransferClient.IO.Types
 open System.Threading.Tasks
 open FSharp.Control.Tasks
 open SharedFs.SharedTypes;
@@ -16,6 +16,7 @@ module ProgressHandlers=
     type ProgressHandler=
         | FtpProg of Progress<FtpProgress>*FTPData
         | FileProg of Action<TransferProgress>
+        | FastFileProg of (FileMove.ProgressData->unit)
         | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*TranscodeData
     type NewDataHandler= TransferData->unit
     let Gethandler moveData transcode currentTransData newDataHandler =    
@@ -43,11 +44,14 @@ module ProgressHandlers=
             newDataHandler lastTransferData 
             
 
-        let outputStatsFileTrans  =Action<TransferProgress> (fun progress->
+        let oldfileProgress  =Action<TransferProgress> (fun progress->
             if stopWatch.ElapsedMilliseconds>int64 500 then 
                setData (float progress.Percentage) progress.BytesTransferred
                )
-
+        let fastFileProgress  = (fun (progress:FileMove.ProgressData )->
+            if stopWatch.ElapsedMilliseconds>int64 500 then 
+               setData progress.Progress progress.BytesTransfered
+               )
         let ftpProgress:Progress<FtpProgress>  =new Progress<FtpProgress>(fun prog ->
             if stopWatch.ElapsedMilliseconds>int64 500 then 
                 setData prog.Progress prog.TransferredBytes
@@ -77,5 +81,5 @@ module ProgressHandlers=
         //TODO: put another option here for transcode without ftp
         if transcode then (TranscodeProg (transcodeProgress, moveData.TranscodeData.Value))
         else if moveData.FTPData.IsSome then FtpProg (ftpProgress, moveData.FTPData.Value)
-        else (FileProg outputStatsFileTrans)
+        else (FastFileProg fastFileProgress)
          

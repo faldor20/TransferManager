@@ -4,9 +4,10 @@ open System.IO
 open System.Threading
 open System
 open TransferClient.TokenDatabase
-open ClientManager.Data.Types
+open TransferClient.IO.Types
 open SharedFs.SharedTypes
 open DataBase.Types
+open TransferClient.IO
 module Scheduler =
     //This will return once the file is not beig acessed by other programs.
     //it returns false if the file is discovered to be deleted before that point.
@@ -100,5 +101,5 @@ module Scheduler =
             else
                 printfn "Transfer file at: %s was deleted" filePath 
                 dbAccess.Set groupName index {dbAccess.Get groupName index with Status=TransferStatus.Failed} 
-                return async{ return (IOExtensions.TransferResult.Failed, transDataAccess)}
+                return async{ return (Types.TransferResult.Failed, transDataAccess)}
         }

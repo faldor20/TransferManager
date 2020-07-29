@@ -4,11 +4,12 @@ open System.Threading.Tasks
 open FSharp.Data
 open FSharp.Json
 open System
-open IOExtensions
+
 open ClientManager.Data.Types;
 open SharedFs.SharedTypes
 open Legivel.Serialization
 open FSharp.Control
+open IO.Types
 module ConfigReader=
 
     //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.

@@ -1,8 +1,8 @@
-namespace TransferClient
+namespace TransferClient.IO
 open System
 open FFmpeg.NET
-open IOExtensions
 open ClientManager.Data.Types
+open Types
 module VideoMover=
 
     /// outPath should either be a straight filepath or an FTp path 
@@ -50,7 +50,7 @@ module VideoMover=
         printfn "call ffmpeg with args: %s" args
         let task=mpeg.ExecuteAsync( args,ct)
         let! fin= Async.AwaitTask task
-        if transferError then return TransferResult.Failed
+        if transferError then return  TransferResult.Failed
         else if ct.IsCancellationRequested then return TransferResult.Cancelled
         else return TransferResult.Success
         }

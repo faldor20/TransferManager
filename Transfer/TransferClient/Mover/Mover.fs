@@ -1,10 +1,9 @@
-namespace TransferClient
+namespace TransferClient.IO
 open System.Runtime
 open System
 open System.IO
 open System.Threading
 open System.Diagnostics
-open IOExtensions
 open ClientManager.Data.Types
 open System.Threading.Tasks
 open FSharp.Control.Tasks
@@ -12,8 +11,11 @@ open SharedFs.SharedTypes;
 open FluentFTP
 open ProgressHandlers
 open TransferClient.DataBase.Types
+open FileMove
+open Types
 module Mover =
-    let TransferResult (ftpResult:FtpStatus)=
+    
+    let ftpResToTransRes (ftpResult:FtpStatus)=
         match ftpResult with
         |FtpStatus.Failed->TransferResult.Failed
         |FtpStatus.Success->TransferResult.Success
@@ -34,17 +36,17 @@ module Mover =
                     let task= Async.AwaitTask(client.UploadFileAsync (filePath,(destination+fileName),FtpRemoteExists.Overwrite,false,FtpVerify.Throw,  callBack ,ct.Token ))
                     try 
                         let! a= task
-                        return TransferResult a
+                        return ftpResToTransRes a
                     with 
-                    | :? OperationCanceledException-> return IOExtensions.TransferResult.Cancelled
+                    | :? OperationCanceledException-> return TransferResult.Cancelled 
                 }
                 
                 let result= 
                     //The particular transfer action to take has allready been decided by the progress callback
                     match progressHandler with
                         |FtpProg (cb,ftpData)           -> runFtp ftpData cb
-                        |FileProg cb                    -> Async.AwaitTask (FileTransferManager.CopyWithProgressAsync(filePath, destination, cb,false,ct.Token))
-                        |TranscodeProg (cb, ffmpegInfo)  -> VideoMover.Transcode ffmpegInfo moveData.FTPData cb filePath destination ct.Token
+                        |FastFileProg cb                -> FCopy filePath destination cb ct.Token
+                        |TranscodeProg (cb, ffmpegInfo) -> VideoMover.Transcode ffmpegInfo moveData.FTPData cb filePath destination ct.Token
                 return! result 
             }
         async {
