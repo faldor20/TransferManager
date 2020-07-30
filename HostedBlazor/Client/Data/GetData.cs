@@ -21,10 +21,20 @@ namespace HostedBlazor.Data
         public static Uri baseAddress;
         HttpClient http = new HttpClient { BaseAddress = baseAddress };
         public Dictionary<string, Dictionary<string, List<TransferData>>> CopyTasks = null;
+        public List<(string group, string user, TransferData task)> AllTasks = null;
+        public bool first=true;
+        public Dictionary<string, Dictionary<string, List<TransferData>>> GroupTasks = null;
         public string transferServerUrl;
         public Status status = Status.Loading;
         public event Action newData;
         private HubConnection hubConnection;
+        /*   public void UpDateAllTasks(){
+              AllTasks=CopyTasks.SelectMany(
+                      group => group.Value.SelectMany(
+                          user => user.Value.Select(
+                              task=>(group:group.Key,user:user.Key,task)))
+                  ).OrderBy(data => data.task.ScheduledTime).ToList();
+          } */
         public async Task StartService()
         {
             Console.WriteLine("Started data retrieval service");
@@ -43,18 +53,44 @@ namespace HostedBlazor.Data
                     (pair.Key,
                     pair.Value.Select(pair2 =>
                         (pair2.Key,
-                        pair2.Value.Select(data =>
-                                { data.StartTime = data.StartTime.ToLocalTime();data.ScheduledTime = data.ScheduledTime.ToLocalTime(); data.EndTime = data.EndTime.ToLocalTime(); return data; }).ToList()
+                             pair2.Value.Select(data =>
+                                {
+                                    data.StartTime = data.StartTime.ToLocalTime(); data.ScheduledTime = data.ScheduledTime.ToLocalTime(); data.EndTime = data.EndTime.ToLocalTime();
+                                    return data;
+                                 }).ToList()
                         )
                     )
-                    )
-                );
-                CopyTasks = res.ToDictionary(x => x.Key, x => x.Item2.ToDictionary(y=>y.Key,y=>y.Item2));
+                    ));
+                var dic=  res.ToDictionary(x => x.Key, x => x.Item2.ToDictionary(y => y.Key, y => y.Item2));
+           /*      if(first){
+                    first=false;
+                   CopyTasks=dic;
+                }
+                else{
+                foreach (var group in dic)
+                {
+
+                    foreach (var user in group.Value)
+                    {
+
+                       for (int i = 0; i < user.Value.Count; i++)
+                       {
+                           if(CopyTasks[group.Key]?[user.Key]?[i]?.EndTime!=user.Value[i].EndTime)
+                                CopyTasks[group.Key][user.Key][i]=user.Value[i];
+                       }
+                    }
+                }
+                } */
+                CopyTasks=dic;
+               /*  CopyTasks = res.ToDictionary(x => x.Key, x => x.Item2.ToDictionary(y => y.Key, y => y.Item2));
+                CopyTasks.Distinct */
                 //Logging: Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
 
                 status = Status.Connected;
 
                 newData.Invoke();
+
+
             });
             /*   hubConnection.On<Object> ("ReceiveData", dataList => {
 
@@ -69,8 +105,8 @@ namespace HostedBlazor.Data
 
             await ContinuousSend();
         }
-        public Task Cancel(string groupName,string userName,int id) =>
-            hubConnection.SendAsync("CancelTransfer", groupName,userName, id);
+        public Task Cancel(string groupName, string userName, int id) =>
+            hubConnection.SendAsync("CancelTransfer", groupName, userName, id);
         Task Send() =>
            hubConnection.SendAsync("GetTransferData");
         Task Confirm() =>
@@ -79,13 +115,14 @@ namespace HostedBlazor.Data
         async Task ContinuousSend()
         {
 
+            Console.WriteLine("starting Data requests");
             while (true)
             {
                 if (IsConnected)
                 {
                     //	await Confirm();
                     await Send();
-                    Console.WriteLine("Requesting data");
+
 
                 }
                 else
