@@ -1,4 +1,4 @@
-namespace TransferClient
+namespace TransferClient.DataBase
 open System.Collections.Generic
 open System.Threading
 module TokenDatabase=
@@ -10,3 +10,5 @@ module TokenDatabase=
                 if not res then printfn"[ERROR]Something went wrong creating token list for %s " groupName
             CancellationTokens.[groupName].Add(id,token)
         )
+    let cancelToken groupName id =
+        CancellationTokens.[groupName].[id].Cancel()

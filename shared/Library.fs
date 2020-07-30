@@ -16,6 +16,7 @@ module SharedTypes =
          Destination:string
          Source:string
          Status:TransferStatus
+         ScheduledTime:DateTime
          StartTime:DateTime
          EndTime:DateTime
          ID:int 

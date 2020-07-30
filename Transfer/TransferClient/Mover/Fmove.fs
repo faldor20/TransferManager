@@ -15,6 +15,7 @@ module FileMove =
     /// progress takes copyprogress and speed
     let FCopy (source:string) destination progress (ct:CancellationToken) =
         async{
+
             let dest=
                 match File.GetAttributes destination with
                 |FileAttributes.Directory->
@@ -38,12 +39,13 @@ module FileMove =
             let requiredReads =
                 double fsread.Length / double array_length
             let speedInterval=2.0
-            let speedTimer = new Timers.Timer(speedInterval*1000.0) //check speed every two seconds
-            let timer = new Timers.Timer(500.0) //check progress every half second
+            use speedTimer = new Timers.Timer(speedInterval*1000.0) //check speed every one seconds
+            use timer = new Timers.Timer(500.0) //check progress every half second
+            
             speedTimer.Elapsed.Add(fun arg->
                 speedMB<- ((reads-lastReads)/2.0)/speedInterval   )
 
-            timer.Elapsed.Add(fun args -> 
+            timer.Elapsed.Add(fun args ->
                 progress
                     {
                     Progress= ((reads / requiredReads) * 100.0)
@@ -51,10 +53,13 @@ module FileMove =
                     SpeedMB= speedMB
                     }
             )
+            timer.Start()
+            speedTimer.Start()
             let readBytes()=
                 let rec loop () =
                     if(ct.IsCancellationRequested) then  TransferResult.Cancelled
                     else
+                        
                         let read = bwread.Read(dataArray, 0, array_length)
                         reads <- reads + 1.0
                         if 0 = read then
@@ -66,5 +71,17 @@ module FileMove =
                 try loop()
                 with
                 |_->TransferResult.Failed
-            return readBytes ()
+            let out=
+                let res =readBytes ()
+                if (res=TransferResult.Cancelled||res=TransferResult.Failed)then 
+                    fswrite.Dispose()
+                    bwwrite.Dispose()
+                    try 
+                        File.Delete(dest) 
+                        res
+                    with|_-> 
+                        printfn "Cancelled or failed and was unable to delete output file %s" dest
+                        TransferResult.Failed
+                else res
+            return out
                         }

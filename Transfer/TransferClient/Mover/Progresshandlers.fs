@@ -8,7 +8,7 @@ open TransferClient.IO.Types
 open System.Threading.Tasks
 open FSharp.Control.Tasks
 open SharedFs.SharedTypes;
-open TransferClient.LocalDB
+open TransferClient.DataBase.LocalDB
 open FluentFTP
 open FFmpeg.NET
 module ProgressHandlers=
@@ -43,9 +43,9 @@ module ProgressHandlers=
             
 
         let fastFileProgress  = (fun (progress:FileMove.ProgressData )->
-            if stopWatch.ElapsedMilliseconds>int64 500 then 
-               setData progress.Progress progress.BytesTransfered
-               )
+           setData progress.Progress progress.BytesTransfered
+           )
+               
         let ftpProgress:Progress<FtpProgress>  =new Progress<FtpProgress>(fun prog ->
             if stopWatch.ElapsedMilliseconds>int64 500 then 
                 setData prog.Progress prog.TransferredBytes

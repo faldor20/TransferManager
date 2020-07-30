@@ -1,10 +1,11 @@
-namespace TransferClient
+namespace TransferClient.DataBase
 open System.Collections.Generic
 
 open SharedFs.SharedTypes
 open System.Threading
 open TransferClient.SignalR
-open DataBase.Types
+open Types
+open Microsoft.AspNetCore.SignalR.Client
 module LocalDB=
 
     let safeAdd1 (dict:Dictionary<'a,'b>)  key1 newData=
@@ -22,16 +23,16 @@ module LocalDB=
         else
             dict.[key1].[key2]<-newData
 
-    type TransferDB=Dictionary<string,Dictionary<int,TransferData>>
+    type TransferDB=Dictionary<string, TransferData ResizeArray>
     //this needs a dictionary for the index ebcuase someties two clients may share the same groupName meaning the id will not be sequential
     let mutable localDB: TransferDB=Dictionary()
     ///Database representing the changes made to the database since the last sync with the manager
-    let mutable ChangeDB: TransferDB=Dictionary()
+    let mutable ChangeDB= Dictionary<string,Dictionary<int, TransferData >>()
     //This is a list of changed parts of the local database this can be used to determine what should and shouldot be synced with the remote one
     let mutable ChangedEntries:((string*int)  ResizeArray)= ResizeArray()
-    
+    let mutable localID=0
     let getTransferData group index= localDB.[group].[index]
-   
+
     let setTransferData  groupName index newData=
         lock ChangeDB (fun x->
         safeAdd2 ChangeDB groupName index newData
@@ -40,16 +41,22 @@ module LocalDB=
     ///Adds a new object to the database getting its index from the ClientManager
     ///Sets the TransferObject ID to the index it is inserted at.
     let addTransferData  groupname newData=
-        let index= Async.RunSynchronously<| ManagerCalls.addTransferData newData groupname
-        //we Set the ID to be the index so the Transdata can allways be refenced back too
-        let indexedData= {newData with ID=index}
+        let mutable index=0
         lock localDB (fun x->
+            if not( localDB.ContainsKey groupname) then localDB.Add(groupname,ResizeArray())
+            index<-localDB.[groupname].Count
+            //we Set the ID to be the index so the Transdata can allways be refenced back too
+            let indexedData= {newData with ID=index}
             lock ChangeDB (fun x->
                 safeAdd2 ChangeDB groupname index indexedData
             )
-            safeAdd2 localDB groupname index indexedData
+            
+            localDB.[groupname].Add(indexedData)
         )
         index
+    let reset()=
+        localDB<- Dictionary()
+        ChangeDB<-Dictionary()
     let AccessFuncs= {
         Set=setTransferData;
         Get=getTransferData;

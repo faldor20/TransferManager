@@ -15,14 +15,14 @@
 	
 		<Compile Include="./SignalR/SignalR.fs" />
 		<Compile Include="./SignalR/ManagerCalls.fs" />
-        <Compile Include="./SignalR/Commands.fs" />
         <Compile Include="./DataBase/Types.fs" /> 
-         <Compile Include="./Mover/Types.fs" />
+        <Compile Include="./Mover/Types.fs" />
         <Compile Include="./Mover/Fmove.fs" /> 
         <Compile Include="./DataBase/LocalDB.fs" />
         <Compile Include="./DataBase/ManagerSync.fs" />
-		 <Compile Include="./DataBase/TokenDatabase.fs" /> 
-    
+        <Compile Include="./DataBase/TokenDatabase.fs" /> 
+        <Compile Include="./SignalR/ClientApi.fs" /> 
+        <Compile Include="./SignalR/Commands.fs" />
         <Compile Include="./ConfigReader.fs" />
         <Compile Include="./FTParser.fs" />
 
@@ -45,7 +45,7 @@
 		<PackageReference Include="FSharp.Control.Reactive" Version="4.4.2" />
 		<PackageReference Include="FSharp.Json" Version="0.4.0" />
 		<PackageReference Include="Legivel" Version="0.4.3" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="2.4.1" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.6" />
 		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.6" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
 		<PackageReference Update="FSharp.Core" Version="4.7.2" />

@@ -8,6 +8,7 @@
   #},
   # Paths must be 1 / or 2 \\ a single \ is an escape character and will cause an error
   #Any if you do not wish to enable ftp do not include it in the config
+  "ClientName":"EliPC",
   "WatchDirs":
     [
       {

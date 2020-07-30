@@ -8,13 +8,13 @@ module TransferHandling=
 
 
     let sucessfullCompleteAction transferData source=
-        printfn " successfully finished copying %s" source
+        printfn "[Info] {Successfull} finished cleanup of %s" source
         { (transferData) with Status=TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} 
     let FailedCompleteAction transferData source=
-        printfn "failed copying %s" source
+        printfn "[Warn] {Failed} copying %s" source
         { (transferData) with Status=TransferStatus.Failed; EndTime=DateTime.Now} 
     let CancelledCompleteAction transferData source=
-        printfn "canceled copying %s" source
+        printfn "[Info] {Canceled} copying %s" source
         { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
     
     let processTask task =

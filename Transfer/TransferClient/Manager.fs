@@ -10,6 +10,7 @@ open System
 open FSharp.Control.Reactive
 open SharedFs.SharedTypes
 open Legivel.Serialization
+open TransferClient.DataBase
 open FSharp.Control
 open TransferHandling
 open IO.Types
@@ -18,18 +19,20 @@ module Manager =
 
     let startUp =
         //Read config file to get information about transfer source dest pairs
-        let mutable watchDirsData= ConfigReader.ReadFile "./WatchDirs.yaml"
+        let userName,rest= ConfigReader.ReadFile "./WatchDirs.yaml"
+        let mutable watchDirsData= rest
         //create a asyncstream that yields new schedule jobs when 
         //a new file is detected in a watched source
         let schedulesInWatchDirs = GetNewTransfers2  watchDirsData LocalDB.AccessFuncs
         
         let groups=watchDirsData|>List.map(fun x-> x.MovementData.DirData.GroupName)
         let signalrCT=new Threading.CancellationTokenSource()
-        SignalR.Commands.MakeConnection groups signalrCT.Token
+
+        Async.Start (SignalR.Commands.MakeConnection userName groups signalrCT.Token)
 
         //Start the Syncing Service
         //TODO: only start this if signalr connects sucesfully
-        let res= (DataBase.ManagerSync.DBsyncer 500)
+        let res= (DataBase.ManagerSync.DBsyncer 500) userName
     
         //Convert the asyncseq to an observable. This is like start all the schedule tasks in
         //paralell but then only interacting with the sequentially as they complete.

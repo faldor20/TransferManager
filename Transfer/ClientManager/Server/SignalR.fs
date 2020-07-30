@@ -17,41 +17,48 @@ module SignalR=
     type ITransferClientApi = 
       abstract member CancelTransfer :string -> int -> System.Threading.Tasks.Task
       abstract member Testing :string -> System.Threading.Tasks.Task
-      abstract member ReceiveID :int -> System.Threading.Tasks.Task
+      abstract member ResetDB :unit -> System.Threading.Tasks.Task
 
     type ClientManagerHub()=
         inherit Hub<ITransferClientApi>()
-
-        member this.SendProgress groupName id transferData=
-            
-           (groupName,id)||> DataBase.setTransferData transferData
+        
         member this.GetTransferData groupName id=
            (groupName,id)||> DataBase.getTransferData
         
-        member this.RegisterSelf groupName =
+        member this.RegisterSelf (userName:string) =
            (*  //TODO: i should really use a user for this incase a transferclient has to reconnect
             this.Context.ConnectionId *)
-            DataBase.registerClient groupName
+            printfn "Registering new client. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
+            DataBase.registerClient userName this.Context.ConnectionId 
 
-        member this.RegisterNewTask groupName transferData =
+        (* member this.RegisterNewTask groupName transferData =
             let callerID= this.Context.ConnectionId
             let DBid=groupName|>DataBase.addTransferData transferData
             DataBase.setNewTaskID groupName DBid callerID
             printfn "registered new task for group %s and id %i" (groupName) DBid
-            DBid
-        member this.SyncTransferData (changes:Dictionary<string, Dictionary<int,TransferData>>) =
+            DBid *)
+
+        member this.SyncTransferData (userName:string) ( changes:Dictionary<string, Dictionary<int,TransferData>>) =
             //printfn "syncing transferData "
-            DataBaseSync.syncDataBaseChanges changes
+
+            DataBaseSync.syncDataBaseChanges userName changes
+            printfn "Synced transferData from %s" userName 
 
     type IFrontendApi = 
-      abstract member ReceiveData :Dictionary<string, List<TransferData>> -> System.Threading.Tasks.Task
+      abstract member ReceiveData :Dictionary<string, Dictionary<string, List<TransferData>>> -> System.Threading.Tasks.Task
       abstract member Testing :string -> System.Threading.Tasks.Task
     //this apprently needs to be injected
     type ClientManager (hubContext :IHubContext<ClientManagerHub,ITransferClientApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<ClientManagerHub, ITransferClientApi> = hubContext
-        member this.CancelTransfer clientId  groupName id=
-            hubContext.Clients.Client(clientId).CancelTransfer groupName id
+        member this.CancelTransfer  groupName user id=
+            let clientID = DataBase.getClientID user
+            printfn "Sending Cancellation request to user:%s with connecionid %s" user clientID
+            (this.HubContext.Clients.All.CancelTransfer groupName id).Wait()
+        member this.ResetDB user=
+            let clientID = DataBase.getClientID user
+           
+            hubContext.Clients.Client(clientID).ResetDB ()
 
     type DataHub(manager:ClientManager)=
         inherit Hub<IFrontendApi>()
@@ -63,10 +70,9 @@ module SignalR=
             this.Clients.All.ReceiveData(data)
         member this.GetConfirmation()=
             this.Clients.All.Testing("hiya from the other side")
-        member this.CancelTransfer groupName id=
-            printfn "recieved Cancellation request for item %i in group %s" id groupName;
-            let clientID =DataBase.getClient groupName id
-            clientManager.CancelTransfer clientID groupName id
+        member this.CancelTransfer groupName user id=
+            printfn "recieved Cancellation request for item %i and user %s in group %s" id user groupName;
+            clientManager.CancelTransfer groupName user id
             
         
     

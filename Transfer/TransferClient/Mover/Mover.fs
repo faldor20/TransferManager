@@ -53,6 +53,7 @@ module Mover =
             let transData= {dbAccess.Get() with StartTime=DateTime.Now}
 
             let newDataHandler newTransData=
+                
                 dbAccess.Set newTransData
 
             let progressHandler= Gethandler moveData transcode transData newDataHandler
@@ -62,13 +63,13 @@ module Mover =
                 |FtpProg-> "FTP Transfer"
                 |FastFileProg->"File transfer"
                 |TranscodeProg-> "FFmpeg transcode"
-            printfn "starting %s from %s to %s" transType filePath destination
+            printfn "[Info] {Starting} %s from %s to %s" transType filePath destination
 
             //We have to set the startTime here because we want the sartime to truly be when the task begins
             dbAccess.Set {transData with StartTime=DateTime.Now}
             
             let! result= task progressHandler
             
-            printfn "finished copy from %s to %s"filePath destination
+            printfn "[Info] {Finished} copy from %s to %s"filePath destination
             return (result,dbAccess)
         }

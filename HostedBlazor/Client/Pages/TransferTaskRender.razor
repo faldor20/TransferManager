@@ -7,14 +7,19 @@
 @inject DataGetter Getter
 @code{
     [Parameter]
-    public List<TransferData> CopyTasks{get;set;}
+    public TransferData task{get;set;}
+    [Parameter]
+    public string GroupName{get;set;}
+    [Parameter]
+    public string UserName{get;set;}    
 }
 @* @{
     Getter.newData += ()=> {this.StateHasChanged();};
 } *@
-@for (int i = CopyTasks.Count - 1; i >= 0 ; i--)
+@* @for (int i = CopyTasks.Count - 1; i >= 0 ; i--)
     { var task= CopyTasks[i];
-            
+             *@
+             @{
 				var type=task.Status switch 
                 {
                     TransferStatus.Complete => Color.Success,
@@ -52,7 +57,7 @@
                 }
                 var fileName= task.Source.Split('\\')[^1];
                 string destination;
-                if(task.Destination.Contains('@'))destination= task.Destination.Split('@')[1];
+                if(task.Destination.Contains('@')) destination= task.Destination.Split('@')[1];
                 else destination=task.Destination;
                 <BSAlert Color="@type">
                     <p><h3><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(task.FileSize)MB</h3></p> 
@@ -64,7 +69,7 @@
                         </div>
                     </div>
                     
-                    <div>@speed MB/s    |  @etaString  @if(task.Status== TransferStatus.Copying){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(task.GroupName,task.ID))">Cancel</BSButton>}  </div>
+                    <div>@speed MB/s    |  @etaString  @if(task.Status== TransferStatus.Copying){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(GroupName,UserName, task.ID))">Cancel</BSButton>}  </div>
                 </BSAlert>
             }
 

@@ -13,7 +13,7 @@ module ConfigReader=
 
     //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
     type jsonData = { WatchDirs: MovementData list }
-    type YamlData = { WatchDirs: MovementData list }
+    type YamlData = {ClientName:string; WatchDirs: MovementData list }
     let ReadFile configFilePath=
         printfn "Reading config file at: %s" configFilePath
 
@@ -21,7 +21,7 @@ module ConfigReader=
                          with 
                             | :? IOException->  printfn "ERROR Could not find WatchDirs.yaml, that file must exist"
                                                 "Failed To open 'WatchDirs.yaml' file must exist for program to run "
-        let watchDirsUnfiltered = 
+        let yamlData = 
             match (Deserialize<YamlData> configText).[0] with
                |Success data -> 
                     printfn "Deserilaization Warnings: %A" data.Warn
@@ -34,7 +34,7 @@ module ConfigReader=
         // Here we check if the directry exists by getting dir and file info about the source and dest and
         //filtering by whether it triggers an exception or not
         
-        let watchDirsExist= watchDirsUnfiltered.WatchDirs|>List.filter(fun dir->
+        let watchDirsExist= yamlData.WatchDirs|>List.filter(fun dir->
             let destOkay= 
                 let printError error= printfn "Watch Destination: %s for source:%s %s" dir.DirData.DestinationDir dir.DirData.DestinationDir error
                 try 
@@ -87,4 +87,4 @@ module ConfigReader=
             )
         
         watchDirsData|>List.iter(fun watchDir->printfn "Watching: %A" watchDir )
-        watchDirsData
+        (yamlData.ClientName,watchDirsData)
