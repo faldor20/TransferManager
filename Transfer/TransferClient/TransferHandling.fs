@@ -4,6 +4,7 @@ open IO.Types
 open System.IO
 open System
 open DataBase.Types
+open StackExchange.Profiling
 module TransferHandling=
 
 
@@ -18,7 +19,8 @@ module TransferHandling=
         { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
     
     let processTask task =
-
+        let prof= MiniProfiler.Current
+        using (prof.Step("cleanup"))(fun x->
         let transResult, transDataAccess = Async.RunSynchronously task
 
         let transData=transDataAccess.Get()
@@ -32,7 +34,7 @@ module TransferHandling=
                 |TransferResult.Failed-> FailedCompleteAction transData source
                 |_-> failwith "unknonw enum for transresult"
         transDataAccess.Set dataChange
-       
+        
         let rec del path iterCount= async{
             if iterCount>10 
             then 
@@ -46,7 +48,8 @@ module TransferHandling=
                          printfn "Error Couldn't delete file, probably in use somehow"
                          do! del path (iterCount+1)
             }
-        async{
-            do! del source 0  
-            }
+        printfn "%s" (prof.RenderPlainText(false))
+        del source 0  
+        )
+            
     

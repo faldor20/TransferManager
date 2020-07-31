@@ -16,7 +16,7 @@
           {
             "GroupName": "Test1",
             "SourceDir": "./testSource",
-            "DestinationDir": "***REMOVED***Transfers/SSC to BUN/",
+            "DestinationDir": "***REMOVED***Transfers/SSC to BUN/testing/",
           },
         "FTPData":
           { "Host": "***REMOVED***", "User": "quantel", "Password": "***REMOVED***" },

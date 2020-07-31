@@ -12,6 +12,7 @@ open ProgressHandlers
 open TransferClient.DataBase.Types
 open FileMove
 open Types
+open StackExchange.Profiling
 module Mover =
     
     let ftpResToTransRes (ftpResult:FtpStatus)=
@@ -21,7 +22,7 @@ module Mover =
         |_-> failwith "ftpresult return unhandled enum value"
    
     let MoveFile (filePath:string) moveData dbAccess transcode (ct:CancellationTokenSource) =
-        
+        let proflier = MiniProfiler.Current
         let {DestinationDir=destination; GroupName= groupName}=moveData.DirData
         let isFTP=moveData.FTPData.IsSome
         
@@ -30,9 +31,18 @@ module Mover =
 
         let task progressHandler=async{
                 let runFtp ftpData callBack=async{
-                    use client=new FtpClient()
+                    use client=new FtpClient(ftpData.Host,ftpData.User,ftpData.Password)
                     client.Connect()
-                    let task= Async.AwaitTask(client.UploadFileAsync (filePath,(destination+fileName),FtpRemoteExists.Overwrite,false,FtpVerify.Throw,  callBack ,ct.Token ))
+                    let task= 
+                        Async.AwaitTask(
+                            client.UploadFileAsync (
+                                filePath,
+                                (destination+fileName),
+                                FtpRemoteExists.Overwrite,
+                                false,
+                                FtpVerify.Throw,
+                                  callBack ,
+                                  ct.Token ))
                     try 
                         let! a= task
                         return ftpResToTransRes a
@@ -44,7 +54,9 @@ module Mover =
                     //The particular transfer action to take has allready been decided by the progress callback
                     match progressHandler with
                         |FtpProg (cb,ftpData)           -> runFtp ftpData cb
-                        |FastFileProg cb                -> FCopy filePath destination cb ct.Token
+                        |FastFileProg cb                -> 
+                            using (proflier.Step("fileMove")) (fun x ->
+                            FCopy filePath destination cb ct.Token)
                         |TranscodeProg (cb, ffmpegInfo) -> VideoMover.Transcode ffmpegInfo moveData.FTPData cb filePath destination ct.Token
                 return! result 
             }
@@ -64,12 +76,12 @@ module Mover =
                 |FastFileProg->"File transfer"
                 |TranscodeProg-> "FFmpeg transcode"
             printfn "[Info] {Starting} %s from %s to %s" transType filePath destination
-
+            using (proflier.Step("dbacess"))(fun x->
             //We have to set the startTime here because we want the sartime to truly be when the task begins
             dbAccess.Set {transData with StartTime=DateTime.Now}
-            
+            )
             let! result= task progressHandler
-            
+            printfn "%s" (proflier.RenderPlainText(false))
             printfn "[Info] {Finished} copy from %s to %s"filePath destination
             return (result,dbAccess)
         }

@@ -56,27 +56,31 @@ module FileMove =
             timer.Start()
             speedTimer.Start()
             let readBytes()=
-                let rec loop () =
-                    if(ct.IsCancellationRequested) then  TransferResult.Cancelled
-                    else
-                        
-                        let read = bwread.Read(dataArray, 0, array_length)
-                        reads <- reads + 1.0
-                        if 0 = read then
-                            TransferResult.Success
+                let mutable reading=true
+                let mutable res=TransferResult.Success
+                try
+                    while reading do
+                        if(ct.IsCancellationRequested) then  res<-TransferResult.Cancelled
                         else
-                            bwwrite.Write(dataArray, 0, read)
-                            loop ()
+                            let read = bwread.Read(dataArray, 0, array_length)
+                            reads <- reads + 1.0
+                            if 0 = read then
+                                reading<-false
+                                res<-TransferResult.Success
+                            else
+                                bwwrite.Write(dataArray, 0, read)
                         
-                try loop()
+                
                 with
-                |_->TransferResult.Failed
+                |_->res<- TransferResult.Failed
+                res
             let out=
                 let res =readBytes ()
                 if (res=TransferResult.Cancelled||res=TransferResult.Failed)then 
                     fswrite.Dispose()
                     bwwrite.Dispose()
                     try 
+                        printfn "Cancelled or failed deleting file %s" dest
                         File.Delete(dest) 
                         res
                     with|_-> 

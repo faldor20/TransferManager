@@ -14,9 +14,10 @@ open TransferClient.DataBase
 open FSharp.Control
 open TransferHandling
 open IO.Types
+open StackExchange.Profiling
 module Manager =
 
-
+    let prof =new MiniProfiler()
     let startUp =
         //Read config file to get information about transfer source dest pairs
         let userName,rest= ConfigReader.ReadFile "./WatchDirs.yaml"
@@ -29,7 +30,7 @@ module Manager =
         let signalrCT=new Threading.CancellationTokenSource()
 
         Async.Start (SignalR.Commands.MakeConnection userName groups signalrCT.Token)
-
+        
         //Start the Syncing Service
         //TODO: only start this if signalr connects sucesfully
         let res= (DataBase.ManagerSync.DBsyncer 500) userName
