@@ -7,6 +7,7 @@ open TransferClient.DataBase.TokenDatabase
 open TransferClient.IO.Types
 open SharedFs.SharedTypes
 open DataBase.Types
+open Logary
 open TransferClient.IO
 module Scheduler =
     //This will return once the file is not beig acessed by other programs.
@@ -88,19 +89,19 @@ module Scheduler =
             let transType=
                 ""  |>fun s->if transcode then s+" transcode"else s
                     |>fun s->if moveData.FTPData.IsSome then s+" ftp" else s
-            printfn "[Info] {Scheduled} %s  transfer from %s To-> %s at index:%i" transType filePath dest index
+            Logging.infof "{Scheduled} %s  transfer from %s To-> %s at index:%i" transType filePath dest index
             addCancellationToken groupName index ct
             let! fileAvailable= isAvailable filePath
         
             let transDataAccess= TransDataAcessFuncs dbAccess groupName index
 
             if fileAvailable then
-                printfn "[Info] {Available} file at: %s is available" filePath
+                Logging.infof "{Available} file at: %s is available" filePath 
                 dbAccess.Set groupName index (getFileData filePath (dbAccess.Get groupName index) )  
                 
                 return Mover.MoveFile filePath moveData transDataAccess transcode  ct
             else
-                printfn "Transfer file at: %s was deleted" filePath 
+                Logging.warnf "{Deleted} While waiting to be available Transfer file at: %s" filePath 
                 dbAccess.Set groupName index {dbAccess.Get groupName index with Status=TransferStatus.Failed} 
                 return async{ return (Types.TransferResult.Failed, transDataAccess)}
         }

@@ -31,7 +31,7 @@ module Watcher =
                         |None-> false
                     
                     let task = Scheduler.scheduleTransfer file watchDir.MovementData dbAcess transcode
-                    printfn "Created schedule task for file %s" (Path.GetFileName file)
+                    Logging.infof "{Found} and created scheduled task for file %s" (Path.GetFileName file)
                     yield task
                 ignoreList<- ignoreList|> Array.append newFiles
                 do! Async.Sleep(500);

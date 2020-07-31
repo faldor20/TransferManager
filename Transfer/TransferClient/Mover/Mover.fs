@@ -13,6 +13,7 @@ open TransferClient.DataBase.Types
 open FileMove
 open Types
 open StackExchange.Profiling
+open TransferClient
 module Mover =
     
     let ftpResToTransRes (ftpResult:FtpStatus)=
@@ -75,13 +76,13 @@ module Mover =
                 |FtpProg-> "FTP Transfer"
                 |FastFileProg->"File transfer"
                 |TranscodeProg-> "FFmpeg transcode"
-            printfn "[Info] {Starting} %s from %s to %s" transType filePath destination
+            Logging.infof " {Starting} %s from %s to %s" transType filePath destination
             using (proflier.Step("dbacess"))(fun x->
             //We have to set the startTime here because we want the sartime to truly be when the task begins
             dbAccess.Set {transData with StartTime=DateTime.Now}
             )
             let! result= task progressHandler
             printfn "%s" (proflier.RenderPlainText(false))
-            printfn "[Info] {Finished} copy from %s to %s"filePath destination
+            Logging.infof " {Finished} copy from %s to %s"filePath destination
             return (result,dbAccess)
         }

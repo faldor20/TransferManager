@@ -7,6 +7,7 @@ open Microsoft.AspNetCore.SignalR.Client
 open TransferClient.SignalR.Connection
 open SharedFs.SharedTypes
 open System.Threading.Tasks
+open TransferClient
 module Commands =
     
     let postconnection userName groupNames =
@@ -32,12 +33,12 @@ module Commands =
                 connected<-false
                 while not connected do
                     try
-                        printfn "Attempting to connect to clientmanager"
+                        Logging.infof "{Attempting} to connect to clientmanager"
                         connection.StartAsync(ct).Wait()
-                        printfn "Succsefully connected to ClientManager"
+                        Logging.infof "{Connected} to ClientManager"
                         Async.RunSynchronously (postconnection userName groupNames)
                         connected<-true
-                    with  ex -> printfn "Failed to connect to ClientManager retrying in 10S Reason: %s" ex.Message
+                    with  ex ->  Logging.warnf "{Failed connection} to ClientManager retrying in 10S Reason: %s" ex.Message
                     do! Async.Sleep 10000
            }
 

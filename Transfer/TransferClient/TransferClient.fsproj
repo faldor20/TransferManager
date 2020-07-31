@@ -12,7 +12,7 @@
 		<ProjectReference Include="../ClientManager/ClientManager.fsproj" />
 	</ItemGroup> 
 	<ItemGroup>
-	
+        <Compile Include="./Logging.fs" />
 		<Compile Include="./SignalR/SignalR.fs" />
 		<Compile Include="./SignalR/ManagerCalls.fs" />
         <Compile Include="./DataBase/Types.fs" /> 
