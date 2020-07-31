@@ -21,34 +21,7 @@
         Group = Group ?? "All";
         User = User ?? " ";
         Getter.newData += StateHasChanged;
-    }
-    /* /* List<TransferData> GetApropriateData()
-    {
-    if (Group == "All")
-    {   var tasks=Getter.CopyTasks.Values.SelectMany(x => x.Values.SelectMany(x => x)).OrderBy(transData => transData.ScheduledTime).ToList();
-        Console.WriteLine("loading all tasks. Count= "+tasks.Count);
-        return tasks;
-    }
-    else if(Getter.CopyTasks[Group].ContainsKey(Group))
-    {
-        if (Getter.CopyTasks[Group].ContainsKey(User))
-        {
-            var tasks=Getter.CopyTasks[Group][User];
-            Console.WriteLine("loading Group:"+Group+" User: "+User+ " tasks. Count= "+tasks.Count);
-            return tasks;
-        }
-        else
-        {   var tasks= Getter.CopyTasks[Group].Values.SelectMany(x => x).OrderBy(transData => transData.ScheduledTime).ToList();
-            Console.WriteLine("loading Group:"+Group+ " tasks. Count= "+tasks.Count);
-            return tasks;
-        }
-    }
-    else
-    {
-       return new List<TransferData>();
-    }
-
-    } */ 
+    } 
 }
 
 <h1>Transfer Monitoring</h1>
@@ -69,27 +42,18 @@ else
 <table class="table">
     <div>
         <ol>
-        @if(Group==""||Group==null)
-        {
-            UriHelper.NavigateTo("/All");
-        }
-        @* @foreach (var task in Getter.AllTasks)
-        {
-            <li>
-            <TransferTaskRender task="@task.task" groupName="@task.group"userName="@task.user" />
-            </li>
-        } *@
-        else
-        {
-
-            if (Group == "All")
+            @if(Group==""||Group==null)
+            {
+                UriHelper.NavigateTo("/All");
+            }
+            else if (Group == "All")
             {  
-                var tasks=Getter.CopyTasks.SelectMany(group => group.Value.SelectMany(user => user.Value.Select(task=>(group:group.Key,user:user.Key,task)))).OrderBy(data => data.task.ScheduledTime).ToList();
+                var tasks=Getter.CopyTasks.SelectMany(group => group.Value.SelectMany(user => user.Value.Select(task=>(group:group.Key,user:user.Key,task:task.Key,scheduledTime:task.Value.ScheduledTime)))) .OrderBy(data => data.scheduledTime).ToList();
                 Console.WriteLine("loading all tasks. Count= "+tasks.Count);
                 foreach (var task in tasks)
                 {   
-                        <TransferTaskRender task="@task.task" groupName="@task.group"userName="@task.user" />
-                   
+                    <TransferTaskRender index="@task.task" groupName="@task.group"userName="@task.user" > </TransferTaskRender>
+                    
                 } 
             }
             else if(Getter.CopyTasks.ContainsKey(Group))
@@ -97,23 +61,22 @@ else
                 if (Getter.CopyTasks[Group].ContainsKey(User??" "))
                 {   
                     Console.WriteLine("loading user tasks");
-                    foreach (var task in Getter.CopyTasks[Group][User])
+                    for (int i = Getter.CopyTasks[Group][User].Count - 1; i >= 0 ; i--)
                     {
-                        <TransferTaskRender task="@task" groupName="@Group"userName="@User" />
+                        <TransferTaskRender index="@i" groupName="@Group"userName="@User" ></TransferTaskRender>
                     }
                             
                 }
                 else
                 {   
                     Console.WriteLine("loading group tasks");
-                    var tasks=Getter.CopyTasks[Group].SelectMany(user => user.Value.Select(task=>(group:Group,user:user.Key,task))).OrderBy(data => data.task.ScheduledTime).ToList();
+                    var tasks=Getter.CopyTasks[Group].SelectMany(user => user.Value.Select(task=>(group:Group,user:user.Key,task:task.Key,scheduledTime:task.Value.ScheduledTime))).OrderBy(data => data.scheduledTime).ToList();
                     foreach (var task in tasks)
                     {
-                        <TransferTaskRender task="@task.task" groupName="@task.group"userName="@task.user" />
+                        <TransferTaskRender index="@task.task" groupName="@task.group"userName="@task.user" ></TransferTaskRender>
                     }
                 }
             }
-        }
         
         </ol>
     </div>

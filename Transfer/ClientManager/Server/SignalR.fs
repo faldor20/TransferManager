@@ -19,9 +19,9 @@ module SignalR=
       abstract member Testing :string -> System.Threading.Tasks.Task
       abstract member ResetDB :unit -> System.Threading.Tasks.Task
 
-    type ClientManagerHub()=
+    and ClientManagerHub(manager:FrontEndManager)=
         inherit Hub<ITransferClientApi>()
-        
+        let frontEndManager=manager
         member this.GetTransferData groupName id=
            (groupName,id)||> DataBase.getTransferData
         
@@ -42,13 +42,15 @@ module SignalR=
             //printfn "syncing transferData "
 
             DataBaseSync.syncDataBaseChanges userName changes
+            frontEndManager.ReceiveDataChange userName changes
             printfn "Synced transferData from %s" userName 
-
-    type IFrontendApi = 
+    
+    and IFrontendApi = 
       abstract member ReceiveData :Dictionary<string, Dictionary<string, List<TransferData>>> -> System.Threading.Tasks.Task
+      abstract member ReceiveDataChange :string->Dictionary<string, Dictionary<int, TransferData>> -> System.Threading.Tasks.Task
       abstract member Testing :string -> System.Threading.Tasks.Task
     //this apprently needs to be injected
-    type ClientManager (hubContext :IHubContext<ClientManagerHub,ITransferClientApi>) =
+    and ClientManager (hubContext :IHubContext<ClientManagerHub,ITransferClientApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<ClientManagerHub, ITransferClientApi> = hubContext
         member this.CancelTransfer  groupName user id=
@@ -59,8 +61,9 @@ module SignalR=
             let clientID = DataBase.getClientID user
            
             hubContext.Clients.Client(clientID).ResetDB ()
+   
 
-    type DataHub(manager:ClientManager)=
+    and DataHub(manager:ClientManager)=
         inherit Hub<IFrontendApi>()
         let toDictionary (map : Map<_, _>) : Dictionary<_, _> = Dictionary(map)
         let clientManager=manager
@@ -72,8 +75,16 @@ module SignalR=
             this.Clients.All.Testing("hiya from the other side")
         member this.CancelTransfer groupName user id=
             printfn "recieved Cancellation request for item %i and user %s in group %s" id user groupName;
+
             clientManager.CancelTransfer groupName user id
-            
+    and FrontEndManager (hubContext :IHubContext<DataHub,IFrontendApi>) =
+        inherit Controller ()
+        member this.HubContext :IHubContext<DataHub, IFrontendApi> = hubContext
+        member this.ReceiveDataChange user change=
+            (this.HubContext.Clients.All.ReceiveDataChange user change).Wait()
+        member this.ReceiveData change=
+            (this.HubContext.Clients.All.ReceiveData DataBase.dataBase).Wait()
+
         
     
              

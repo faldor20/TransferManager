@@ -42,7 +42,8 @@ module Server=
             ()) *)
         service_config (fun services->
             services.AddSignalR().AddMessagePackProtocol()|>ignore
-            services.AddSingleton<ClientManager.Server.SignalR.ClientManager>()|>ignore;
+            services.AddSingleton<SignalR.ClientManager>()|>ignore;
+            services.AddSingleton<SignalR.FrontEndManager>()|>ignore;
             ( services.AddCors((fun options -> options.AddPolicy("CorsPolicy",(fun builder ->
                     builder.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin()|>ignore
                     ()

@@ -7,19 +7,28 @@
 @inject DataGetter Getter
 @code{
     [Parameter]
-    public TransferData task{get;set;}
+    public int index{get;set;}
     [Parameter]
     public string GroupName{get;set;}
     [Parameter]
     public string UserName{get;set;}    
+     protected override async Task OnInitializedAsync()
+    {   if(!Getter.ComponentUpdateEvents.ContainsKey(GroupName)) Getter.ComponentUpdateEvents[GroupName]=new Dictionary<string, Dictionary<int,Action>>() ;
+        if(!Getter.ComponentUpdateEvents[GroupName].ContainsKey(UserName)) Getter.ComponentUpdateEvents[GroupName][UserName]=new Dictionary<int,Action>();
+        void changed () {
+            this.StateHasChanged();
+            Console.WriteLine("state changed for user: "+UserName+" Id:"+index);
+            }
+        Getter.ComponentUpdateEvents[GroupName][UserName][index] = changed;
+    
+    }
 }
-@* @{
-    Getter.newData += ()=> {this.StateHasChanged();};
-} *@
+
 @* @for (int i = CopyTasks.Count - 1; i >= 0 ; i--)
     { var task= CopyTasks[i];
              *@
              @{
+                var task=Getter.CopyTasks[GroupName][UserName][index];
 				var type=task.Status switch 
                 {
                     TransferStatus.Complete => Color.Success,
