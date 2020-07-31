@@ -99,28 +99,45 @@ namespace HostedBlazor.Data
 
 
             });
-            hubConnection.On<string,Dictionary<string, Dictionary<int, TransferData>>>("ReceiveDataChange", (user,change) =>
-            {lock (CopyTasks)
-                        {
-                Console.WriteLine("recived changes from ClientManager");
-                foreach (var group in change)
-                {
-                        foreach (var index in group.Value)
-                        {
-                            if (!CopyTasks.ContainsKey(group.Key)) {
-                            CopyTasks[group.Key]= new Dictionary<string, Dictionary<int, TransferData>>();
-                            newData.Invoke();
-                            }if (!CopyTasks[group.Key].ContainsKey(user)){
-                                 CopyTasks[group.Key][user] = new Dictionary<int, TransferData>();
-                                 newData.Invoke();
-                            }
-                            if (!CopyTasks[group.Key][user].ContainsKey(index.Key)) newData.Invoke();
-                            CopyTasks[group.Key][user][index.Key] =index.Value;
-                            ComponentUpdateEvents[group.Key][user][index.Key].Invoke();
-                        }
-                }}
+            hubConnection.On<string, Dictionary<string, Dictionary<int, TransferData>>>("ReceiveDataChange", (user, change) =>
+             {
+                 lock (CopyTasks)
+                 {
+                     Console.WriteLine("recived changes from ClientManager");
+                     var fullRefresh = false;
+                     foreach (var group in change)
+                     {
+                         foreach (var index in group.Value)
+                         {
 
-            });
+                             if (!CopyTasks.ContainsKey(group.Key))
+                             {
+                                 CopyTasks[group.Key] = new Dictionary<string, Dictionary<int, TransferData>>();
+                                 fullRefresh = true;
+                             }
+                             if (!CopyTasks[group.Key].ContainsKey(user))
+                             {
+                                 CopyTasks[group.Key][user] = new Dictionary<int, TransferData>();
+                                 fullRefresh = true;
+                             }
+                             if (!CopyTasks[group.Key][user].ContainsKey(index.Key)) fullRefresh = true;
+
+                             CopyTasks[group.Key][user][index.Key] = index.Value;
+                             //If a fullrefresh is going to ccur anyway this would be pointless
+                             if (!fullRefresh)
+                                 ComponentUpdateEvents[group.Key][user][index.Key].Invoke();
+                         }
+                     }
+                     if (fullRefresh)
+                     {
+                         newData.Invoke();
+                     }
+
+                 }
+
+
+
+             });
             /*   hubConnection.On<Object> ("ReceiveData", dataList => {
 
                   Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
