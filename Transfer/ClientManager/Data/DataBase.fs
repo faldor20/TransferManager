@@ -6,6 +6,8 @@ open System.Threading
 open System.IO
 open SharedFs.SharedTypes;
 module DataBase=
+
+
     type TransferTaskDatabase=Dictionary<string,SortedDictionary<int,TransferData>>
     let mutable CancellationTokens=new Dictionary<string,CancellationTokenSource ResizeArray>()
     //this db is keyed 
@@ -81,21 +83,5 @@ module DataBase=
                 let res=CancellationTokens.TryAdd(key,(new ResizeArray<CancellationTokenSource>([token])))
                 if not res then printfn"[ERROR]Something went wrong creating token list for %s " key
         ) *)
-         
-    let reset ()=
-        CancellationTokens<- new Dictionary<string,CancellationTokenSource ResizeArray>()
-        dataBase<- Dictionary<string,Dictionary<string,TransferData ResizeArray>>()
-
-    let resetWatch= 
-        async{
-            while true do
-                let hour=DateTime.Now.Hour
-                if hour=1 then
-                    reset()
-                    printfn "Reset list of jobs"
-                printfn "waiting for hour 1 to reset currently hour= %i" hour   
-                do!Async.Sleep(1000*60*59)
-
-        }
 
         

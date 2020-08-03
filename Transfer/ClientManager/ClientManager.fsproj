@@ -18,6 +18,7 @@
         <Compile Include="./Server/SignalR.fs" />
 
 
+        <Compile Include="./Data/DBReset.fs" />
         <Compile Include="./Server/Server.fs" />
         <Compile Include="Program.fs" />
 

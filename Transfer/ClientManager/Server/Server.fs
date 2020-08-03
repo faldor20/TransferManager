@@ -41,9 +41,11 @@ module Server=
             builder.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()|>ignore 
             ()) *)
         service_config (fun services->
+            
             services.AddSignalR().AddMessagePackProtocol()|>ignore
             services.AddSingleton<SignalR.ClientManager>()|>ignore;
             services.AddSingleton<SignalR.FrontEndManager>()|>ignore;
+            services.AddHostedService<ClientManager.Data.DBReset.DBResetService> ()|>ignore;
             ( services.AddCors((fun options -> options.AddPolicy("CorsPolicy",(fun builder ->
                     builder.AllowAnyMethod().AllowAnyHeader().AllowAnyOrigin()|>ignore
                     ()

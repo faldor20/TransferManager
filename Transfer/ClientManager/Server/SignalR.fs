@@ -14,6 +14,8 @@ module SignalR=
    (*  type IClientApi = 
       abstract member DataResponse : Dictionary<Guid,TransferData> -> Threading.Tasks.Task *)
 
+    
+
     type ITransferClientApi = 
       abstract member CancelTransfer :string -> int -> System.Threading.Tasks.Task
       abstract member Testing :string -> System.Threading.Tasks.Task
@@ -57,10 +59,8 @@ module SignalR=
             let clientID = DataBase.getClientID user
             printfn "Sending Cancellation request to user:%s with connecionid %s" user clientID
             (this.HubContext.Clients.All.CancelTransfer groupName id).Wait()
-        member this.ResetDB user=
-            let clientID = DataBase.getClientID user
-           
-            hubContext.Clients.Client(clientID).ResetDB ()
+        member this.ResetDB ()=
+            this.HubContext.Clients.All.ResetDB();
    
 
     and DataHub(manager:ClientManager)=
@@ -84,8 +84,7 @@ module SignalR=
             (this.HubContext.Clients.All.ReceiveDataChange user change).Wait()
         member this.ReceiveData change=
             (this.HubContext.Clients.All.ReceiveData DataBase.dataBase).Wait()
-
-        
+    
     
              
 

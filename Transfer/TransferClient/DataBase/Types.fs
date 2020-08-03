@@ -10,6 +10,7 @@ module Types =
 
     
     type Set = string -> int ->TransferData -> unit
+    /// groupName->data->index
     type Add = string  -> TransferData -> int
     type Get = string -> int -> TransferData
     type DataBaseAcessFuncs={
