@@ -12,6 +12,7 @@ namespace HostedBlazor.Data
     using System.Linq;
     using Microsoft.Extensions.DependencyInjection;
     using Microsoft.AspNetCore.SignalR.Protocol;
+    using System.Timers;
     interface IDataGetter
     {
 
@@ -36,6 +37,13 @@ namespace HostedBlazor.Data
                               task=>(group:group.Key,user:user.Key,task)))
                   ).OrderBy(data => data.task.ScheduledTime).ToList();
           } */
+        TransferData ConvertToLocalTime(TransferData transData)
+        {
+            transData.StartTime = transData.StartTime.ToLocalTime();
+            transData.ScheduledTime = transData.ScheduledTime.ToLocalTime();
+            transData.EndTime = transData.EndTime.ToLocalTime();
+            return transData;
+        }
         public async Task StartService()
         {
             Console.WriteLine("Started data retrieval service");
@@ -121,8 +129,8 @@ namespace HostedBlazor.Data
                                  fullRefresh = true;
                              }
                              if (!CopyTasks[group.Key][user].ContainsKey(index.Key)) fullRefresh = true;
-
-                             CopyTasks[group.Key][user][index.Key] = index.Value;
+                             var transferData = ConvertToLocalTime(index.Value);
+                             CopyTasks[group.Key][user][index.Key] = transferData;
                              //If a fullrefresh is going to ccur anyway this would be pointless
                              if (!fullRefresh)
                                  ComponentUpdateEvents[group.Key][user][index.Key].Invoke();
@@ -150,17 +158,20 @@ namespace HostedBlazor.Data
             await hubConnection.StartAsync();
 
             await ContinuousSend();
+
         }
         public Task Cancel(string groupName, string userName, int id) =>
             hubConnection.SendAsync("CancelTransfer", groupName, userName, id);
-        Task Send() =>
+        Task RequestData() =>
            hubConnection.SendAsync("GetTransferData");
         Task Confirm() =>
            hubConnection.SendAsync("GetConfirmation");
 
         async Task ContinuousSend()
         {
-
+            var timer = new System.Timers.Timer(1000 * 60);
+            timer.Elapsed += (caller, arg) => RequestData();
+            timer.Start();
             Console.WriteLine("starting Data requests");
             while (true)
             {
@@ -170,7 +181,7 @@ namespace HostedBlazor.Data
                     {
                         GotFirstConnectData = true;
                         //	await Confirm();
-                        await Send();
+                        await RequestData();
                     }
 
 
