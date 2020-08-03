@@ -4,88 +4,123 @@ open System
 open System.IO
 open System.Threading
 open Types
+
 module FileMove =
-    type ProgressData={
-        Progress:float
-        BytesTransfered:int64
-        SpeedMB:float
-    }
+    type ProgressData =
+        { Progress: float
+          BytesTransfered: int64
+          SpeedMB: float }
 
-    ///
-    /// progress takes copyprogress and speed
-    let FCopy (source:string) destination progress (ct:CancellationToken) =
-        async{
 
-            let dest=
-                match File.GetAttributes destination with
-                |FileAttributes.Directory->
-                    destination+ (Path.GetFileName source)
-                |_-> destination
-            let array_length = int (Math.Pow(2.0, 19.0))
-            let dataArray: array<byte> = Array.zeroCreate (array_length)
-            use  fsread=(new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.None, array_length)) 
+    let doTransfer source dest progress array_length (ct: CancellationToken) =
+        using (new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.None, array_length)) (fun fsread ->
 
-            use bwread=(new BinaryReader(fsread)) 
+            using (new BinaryReader(fsread)) (fun bwRead ->
 
-            use fswrite=(new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None, array_length)) 
+                using (new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None, array_length)) (fun fswrite ->
 
-            use bwwrite=(new BinaryWriter(fswrite)) 
-                            
-            let time=Diagnostics.Stopwatch()
-            time.Start()
-            let mutable reads = 0.0
-            let mutable speedMB= 0.0
-            let mutable lastReads=0.0
-            let requiredReads =
-                double fsread.Length / double array_length
-            let speedInterval=2.0
-            use speedTimer = new Timers.Timer(speedInterval*1000.0) //check speed every one seconds
-            use timer = new Timers.Timer(500.0) //check progress every half second
-            
-            speedTimer.Elapsed.Add(fun arg->
-                speedMB<- ((reads-lastReads)/2.0)/speedInterval   )
+                    using (new BinaryWriter(fswrite)) (fun bwWrite ->
+                        //----------Setup and progress reporting code--------
+                        let time = Diagnostics.Stopwatch()
+                        time.Start()
+                       
+                        let mutable speedMB = 0.0
+                        //number of times a chunk of data of length "array_length" has been read
+                        let mutable reads = 0.0
+                        //used for calculating speed, the delta of reads each every second
+                        let mutable lastReads = 0.0
 
-            timer.Elapsed.Add(fun args ->
-                progress
-                    {
-                    Progress= ((reads / requiredReads) * 100.0)
-                    BytesTransfered= (int64 reads*int64 array_length)
-                    SpeedMB= speedMB
-                    }
-            )
-            timer.Start()
-            speedTimer.Start()
-            let readBytes()=
-                let mutable reading=true
-                let mutable res=TransferResult.Success
-                try
-                    while reading do
-                        if(ct.IsCancellationRequested) then  res<-TransferResult.Cancelled
-                        else
+                        //the number of reads that will need to be done to complete the transfer
+                        let requiredReads =
+                            double fsread.Length / double array_length
+
+                        let speedInterval = 1.0//check speed every "n" seconds
+
+                        use speedTimer = new Timers.Timer(speedInterval * 1000.0) 
+                        use timer = new Timers.Timer(500.0) //check progress every half second
+
+                        speedTimer.Elapsed.Add(fun arg ->
+                             speedMB <- ((reads - lastReads) / 2.0) / speedInterval
+                             lastReads<-reads)
+                             
+
+                        timer.Elapsed.Add(fun args ->
+                            progress
+                                { 
+                                Progress = ((reads / requiredReads) * 100.0)
+                                BytesTransfered = (int64 reads * int64 array_length)
+                                SpeedMB = speedMB 
+                                })
+
+                        timer.Start()
+                        speedTimer.Start()
+
+                        //----------Copying Code--------
+                        //This is out read buffer
+                        let dataArray: array<byte> = Array.zeroCreate (array_length)
+
+                        let readBytes (bwread: BinaryReader) (bwwrite: BinaryWriter) =
+                            //number of bytes actaully read into the buffer, if all has been read it will be 0
                             let read = bwread.Read(dataArray, 0, array_length)
                             reads <- reads + 1.0
                             if 0 = read then
-                                reading<-false
-                                res<-TransferResult.Success
+                                //Finish reading
+                                false
                             else
                                 bwwrite.Write(dataArray, 0, read)
-                        
-                
-                with
-                |_->res<- TransferResult.Failed
-                res
-            let out=
-                let res =readBytes ()
-                if (res=TransferResult.Cancelled||res=TransferResult.Failed)then 
-                    fswrite.Dispose()
-                    bwwrite.Dispose()
-                    try 
-                        printfn "Cancelled or failed deleting file %s" dest
-                        File.Delete(dest) 
+                                //Continue reading
+                                true
+
+                        let mutable res = TransferResult.Success
+                        try
+                            let mutable keepReading = true
+
+                            while keepReading do
+                                if (ct.IsCancellationRequested) then
+                                    res <- TransferResult.Cancelled
+                                else
+                                    keepReading <- readBytes bwRead bwWrite
+                        with _ -> res <- TransferResult.Failed
                         res
-                    with|_-> 
+                    ))))
+    ///
+    ///
+    ///
+    /// progress takes copyprogress and speed
+    let FCopy (source: string) destination progress (ct: CancellationToken) =
+        async {
+
+            let dest =
+                try
+                    match File.GetAttributes destination with
+                    | FileAttributes.Directory -> destination + (Path.GetFileName source)
+                    | _ -> destination
+                with| :? FileNotFoundException-> destination + (Path.GetFileName source)
+                    |x-> raise x
+
+            let array_length = int (Math.Pow(2.0, 19.0))
+
+
+
+
+
+
+            let res =
+                doTransfer source dest progress array_length ct
+
+            let out =
+
+                if (res = TransferResult.Cancelled
+                    || res = TransferResult.Failed) then
+                    try
+                        printfn "Cancelled or failed deleting file %s" dest
+                        File.Delete(dest)
+                        res
+                    with _ ->
                         printfn "Cancelled or failed and was unable to delete output file %s" dest
                         TransferResult.Failed
-                else res
+                else
+                    res
+
             return out
-                        }
+        }
