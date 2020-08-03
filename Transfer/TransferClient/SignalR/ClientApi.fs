@@ -8,6 +8,7 @@ module ClientApi=
         printfn "Cancellation request recieved for group %s id %i" groupName id
         TokenDatabase.cancelToken groupName id
       )
+
     let ResetDB=Action(fun ()->
         printfn "reste request recieved"
         LocalDB.reset()
@@ -15,6 +16,7 @@ module ClientApi=
       ) 
 
     let InitManagerCalls= 
+        
         printfn("[Setup] Initialising Client Signalr Triggers (connection.On...etc)")
 
         let types= [|string.GetType();  int.GetType()|]
