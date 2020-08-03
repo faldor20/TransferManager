@@ -12,6 +12,7 @@
 @inject DataGetter Getter
 @inject NavigationManager UriHelper  
 @code{
+    
     [Parameter]
     public string Group { get; set; }
     [Parameter]
@@ -44,11 +45,12 @@ else
         <ol>
             @if(Group==""||Group==null)
             {
+                
                 UriHelper.NavigateTo("/All");
             }
             else if (Group == "All")
             {  
-                var tasks=Getter.CopyTasks.SelectMany(group => group.Value.SelectMany(user => user.Value.Select(task=>(group:group.Key,user:user.Key,task:task.Key,scheduledTime:task.Value.ScheduledTime)))) .OrderBy(data => data.scheduledTime).ToList();
+                var tasks=Getter.CopyTasks.SelectMany(group => group.Value.SelectMany(user => user.Value.Select(task=>(group:group.Key,user:user.Key,task:task.Key,scheduledTime:task.Value.ScheduledTime)))) .OrderByDescending(data => data.scheduledTime).ToList();
                 Console.WriteLine("loading all tasks. Count= "+tasks.Count);
                 foreach (var task in tasks)
                 {   
@@ -70,7 +72,7 @@ else
                 else
                 {   
                     Console.WriteLine("loading group tasks");
-                    var tasks=Getter.CopyTasks[Group].SelectMany(user => user.Value.Select(task=>(group:Group,user:user.Key,task:task.Key,scheduledTime:task.Value.ScheduledTime))).OrderBy(data => data.scheduledTime).ToList();
+                    var tasks=Getter.CopyTasks[Group].SelectMany(user => user.Value.Select(task=>(group:Group,user:user.Key,task:task.Key,scheduledTime:task.Value.ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
                     foreach (var task in tasks)
                     {
                         <TransferTaskRender index="@task.task" groupName="@task.group"userName="@task.user" ></TransferTaskRender>
