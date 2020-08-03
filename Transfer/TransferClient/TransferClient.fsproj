@@ -36,7 +36,10 @@
 		<Compile Include="testing.fsx" />
 		<Content Include="WatchDirs.yaml">
 		  <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-		</Content>
+        </Content>
+        <Content Include="ffmpeg.exe">
+            <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+        </Content>
 		<Compile Include="testing.fs" />
 		<Compile Include="Program.fs" />
 	</ItemGroup>
