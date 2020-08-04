@@ -10,7 +10,9 @@ module SharedTypes =
     [<CLIMutable>]
     type TransferData={
          Percentage:float 
+         ///MB
          FileSize :float
+         ///MB
          FileRemaining: float
          Speed:float
          Destination:string

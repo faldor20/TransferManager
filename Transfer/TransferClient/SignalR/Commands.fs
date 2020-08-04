@@ -8,10 +8,12 @@ open TransferClient.SignalR.Connection
 open SharedFs.SharedTypes
 open System.Threading.Tasks
 open TransferClient
+open Microsoft.AspNetCore.SignalR.Protocol
+open Microsoft.Extensions.DependencyInjection;
 module Commands =
     
-    let postconnection userName groupNames =
-        Async.RunSynchronously(ManagerCalls.RegisterSelf userName)
+    let postconnection (connection:HubConnection) userName groupNames =
+        Async.RunSynchronously(ManagerCalls.RegisterSelf connection userName)
         //Here we convert the Dictionary< list> to a dictionary< dictionary>
         let dic =
             LocalDB.localDB
@@ -25,35 +27,44 @@ module Commands =
             )
             |> Dictionary
 
-        ManagerCalls.syncTransferData userName (dic)
+        ManagerCalls.overwriteTransferData connection userName (dic)
 
-    let reconnect userName groupNames ct =
+    let reconnect (connection:HubConnection) userName groupNames ct =
         let job =
             async {
                 connected<-false
                 while not connected do
                     try
-                        Logging.infof "{Attempting} to connect to clientmanager"
+                        Logging.infof "{Signalr} -Attempting- to connect to clientmanager"
                         connection.StartAsync(ct).Wait()
-                        Logging.infof "{Connected} to ClientManager"
-                        Async.RunSynchronously (postconnection userName groupNames)
+                        Logging.infof "{Signalr} -Connecting- to ClientManager"
+                        Async.RunSynchronously (postconnection connection userName groupNames)
+                        Logging.infof "{Signalr} -Successfully connected- to ClientManager"
                         connected<-true
-                    with  ex ->  Logging.warnf "{Failed connection} to ClientManager retrying in 10S Reason: %s" ex.Message
+                    with  ex ->  Logging.warnf "{Signalr} -Failed Connection- to ClientManager retrying in 10S. Reason= \"%s\"" ex.Message
                     do! Async.Sleep 10000
            }
 
         Task.Run(fun () -> Async.RunSynchronously job)
 
-    let connect userName groupNames ct =
+    /// Begins a connection and registers client with the manager
+    let connect managerIP userName groupNames ct =
+        async{
+        Logging.infof "{SignalR} Building  connection to ip= %s" managerIP
+        let newConnection=
+            (HubConnectionBuilder())
+                .WithUrl(sprintf "http://%s:8085/ClientManagerHub" managerIP )
+                .AddMessagePackProtocol()
+                .Build()
+       
         // Create connection to the ClientManager Server
-        connection.add_Closed (fun error -> reconnect userName groupNames ct)
-        ClientApi.InitManagerCalls
+        newConnection.add_Closed (fun error -> reconnect newConnection userName groupNames ct)
+        ClientApi.InitManagerCalls newConnection
         // Start connection and login
-        (reconnect userName groupNames ct).Wait()
-    /// Begins a connection and registers the groupNames with the manager
-    let MakeConnection userName groupNames ct =
-        async {
-            do connect userName groupNames ct
-
-            ()
+        Logging.infof "{SignalR} Running connection task" 
+        (reconnect newConnection userName groupNames ct).Wait()
+        connection<- Some newConnection
+        return newConnection
         }
+
+        

@@ -38,6 +38,8 @@ module LocalDB=
         safeAdd2 ChangeDB groupName index newData
         )
         localDB.[groupName].[index]<- newData 
+    let initDB groups=
+        groups|>List.iter(fun groupName->localDB.[groupName]<- new List<TransferData>())
     ///Adds a new object to the database getting its index from the ClientManager
     ///Sets the TransferObject ID to the index it is inserted at.
     let addTransferData  groupname newData=

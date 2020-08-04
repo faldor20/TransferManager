@@ -28,17 +28,19 @@ module SignalR=
            (groupName,id)||> DataBase.getTransferData
         
         member this.RegisterSelf (userName:string) =
-           (*  //TODO: i should really use a user for this incase a transferclient has to reconnect
-            this.Context.ConnectionId *)
             printfn "Registering new client. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
             DataBase.registerClient userName this.Context.ConnectionId 
-
-        (* member this.RegisterNewTask groupName transferData =
-            let callerID= this.Context.ConnectionId
-            let DBid=groupName|>DataBase.addTransferData transferData
-            DataBase.setNewTaskID groupName DBid callerID
-            printfn "registered new task for group %s and id %i" (groupName) DBid
-            DBid *)
+            
+        member this.OverwriteTransferData(userName:string) ( changes:Dictionary<string, Dictionary<int,TransferData>>) =
+            printfn "overwriting local info with client info. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
+            lock(DataBase.dataBase) (fun x->
+            changes|>Seq.iter(fun group-> 
+                //instantiate the group if it doesn't exist
+                if not(DataBase.dataBase.ContainsKey group.Key) then
+                    DataBase.dataBase.[group.Key]<-new Dictionary<string,Dictionary<int,TransferData>>()
+                DataBase.dataBase.[group.Key].[userName]<-group.Value
+                )
+            )
 
         member this.SyncTransferData (userName:string) ( changes:Dictionary<string, Dictionary<int,TransferData>>) =
             //printfn "syncing transferData "
@@ -48,7 +50,7 @@ module SignalR=
             printfn "Synced transferData from %s" userName 
     
     and IFrontendApi = 
-      abstract member ReceiveData :Dictionary<string, Dictionary<string, List<TransferData>>> -> System.Threading.Tasks.Task
+      abstract member ReceiveData :Dictionary<string, Dictionary<string, Dictionary<int, TransferData >>> -> System.Threading.Tasks.Task
       abstract member ReceiveDataChange :string->Dictionary<string, Dictionary<int, TransferData>> -> System.Threading.Tasks.Task
       abstract member Testing :string -> System.Threading.Tasks.Task
     //this apprently needs to be injected

@@ -69,7 +69,7 @@
                 if(task.Destination.Contains('@')) destination= task.Destination.Split('@')[1];
                 else destination=task.Destination;
                 <BSAlert Color="@type">
-                    <p><h3><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(task.FileSize)MB</h3></p> 
+                    <p><h3><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(Math.Round( task.FileSize,1)  )MB</h3></p> 
 
                     <h4> <BSBadge Color="Color.Secondary">From</BSBadge> | @task.Source.Remove(task.Source.Length- fileName.Length) | <BSBadge Color="Color.Secondary">--></BSBadge>  | @destination |</h4>
                     <div>@task.Percentage.ToString("0") % Complete | Started: @task.StartTime.ToString("dd/MMM  HH:mm:ss")

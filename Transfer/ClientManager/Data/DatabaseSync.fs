@@ -10,10 +10,10 @@ module DataBaseSync=
 
     let internal syncIndexLevel userName groupName (changes:Dictionary<int,TransferData>)=
         if not(dataBase.ContainsKey groupName) then 
-           dataBase.Add(groupName,new Dictionary<string,TransferData ResizeArray>()  ) 
+           dataBase.Add(groupName,new Dictionary<string,Dictionary<int, TransferData >>()  ) 
           //clientId exists?
         if not(dataBase.[groupName].ContainsKey userName) then
-            dataBase.[groupName].Add(userName,new ResizeArray<TransferData>()  )
+            dataBase.[groupName].Add(userName,new Dictionary<int, TransferData >()  )
 
         let indexs= seq changes.Keys
         let transferDatas= seq changes.Values

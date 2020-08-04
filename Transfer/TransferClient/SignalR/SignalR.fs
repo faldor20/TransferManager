@@ -8,12 +8,9 @@ open Microsoft.Extensions.DependencyInjection;
  
 module Connection=
     let mutable connected=false
-    let mutable connection = 
-        (HubConnectionBuilder())
-            .WithUrl("http://localhost:8085/ClientManagerHub")
-            .AddMessagePackProtocol()
-            .Build()
- 
+    let mutable connection:HubConnection option=None 
+
+    
                 
 
         

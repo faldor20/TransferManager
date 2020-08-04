@@ -1,7 +1,6 @@
 namespace TransferClient.SignalR
 open System
 open TransferClient.DataBase
-open Connection
 open Microsoft.AspNetCore.SignalR.Client;
 module ClientApi=
     let CancelTransfer=Action<string,int>(fun  groupName id->
@@ -15,7 +14,7 @@ module ClientApi=
         ()
       ) 
 
-    let InitManagerCalls= 
+    let InitManagerCalls (connection:HubConnection)= 
         
         printfn("[Setup] Initialising Client Signalr Triggers (connection.On...etc)")
 

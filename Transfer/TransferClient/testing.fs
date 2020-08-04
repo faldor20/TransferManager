@@ -12,10 +12,10 @@ module Testing=
             let dest= "H:/testDest2/Files.zip"
             let Callback=(fun x-> printfn "progress: %A"x)
             let ct= new Threading.CancellationTokenSource()
-            let! a=IO.FileMove.FCopy  source2 dest2 Callback ct.Token|>Async.StartChild
-            let! b=IO.FileMove.FCopy  source dest Callback ct.Token |>Async.StartChild
-            let! resA=a
-            let! resB=b
+            let! jobA=IO.FileMove.FCopy  source2 dest2 Callback ct.Token|>Async.StartChild
+            let! jobB=IO.FileMove.FCopy  source dest Callback ct.Token |>Async.StartChild
+            let! resA=jobA
+            let! resB=jobB
             return(resA,resB)
         }
         |>Async.RunSynchronously

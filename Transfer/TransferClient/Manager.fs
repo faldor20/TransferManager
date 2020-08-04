@@ -20,20 +20,25 @@ module Manager =
     let prof =new MiniProfiler()
     let startUp =
         //Read config file to get information about transfer source dest pairs
-        let userName,rest= ConfigReader.ReadFile "./WatchDirs.yaml"
+        let managerIP,userName,rest= ConfigReader.ReadFile "./WatchDirs.yaml"
         let mutable watchDirsData= rest
+        let groups=watchDirsData|>List.map(fun x-> x.MovementData.DirData.GroupName)
+        //Create all the needed groups
+        LocalDB.initDB groups
         //create a asyncstream that yields new schedule jobs when 
         //a new file is detected in a watched source
         let schedulesInWatchDirs = GetNewTransfers2  watchDirsData LocalDB.AccessFuncs
         
-        let groups=watchDirsData|>List.map(fun x-> x.MovementData.DirData.GroupName)
-        let signalrCT=new Threading.CancellationTokenSource()
-
-        Async.Start (SignalR.Commands.MakeConnection userName groups signalrCT.Token)
         
+        let signalrCT=new Threading.CancellationTokenSource()
+        //For reasons i entirely do not understand starting this just as async deosnt run connection in release mode
+        Logging.infof "{Manager} starting signalr connection process"
+        let conection= SignalR.Commands.connect managerIP  userName groups signalrCT.Token|>Async.RunSynchronously
         //Start the Syncing Service
         //TODO: only start this if signalr connects sucesfully
-        let res= (DataBase.ManagerSync.DBsyncer 500) userName
+        (ManagerSync.DBsyncer 500 conection userName )|>ignore
+        
+
     
         //Convert the asyncseq to an observable. This is like start all the schedule tasks in
         //paralell but then only interacting with the sequentially as they complete.

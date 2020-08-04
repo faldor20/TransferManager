@@ -13,7 +13,7 @@ module ConfigReader=
 
     //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
     type jsonData = { WatchDirs: MovementData list }
-    type YamlData = {ClientName:string; WatchDirs: MovementData list }
+    type YamlData = {ManagerIP:string;ClientName:string; WatchDirs: MovementData list }
     let ReadFile configFilePath=
         printfn "Reading config file at: %s" configFilePath
 
@@ -87,4 +87,4 @@ module ConfigReader=
             )
         
         watchDirsData|>List.iter(fun watchDir->printfn "Watching: %A" watchDir )
-        (yamlData.ClientName,watchDirsData)
+        (yamlData.ManagerIP,yamlData.ClientName,watchDirsData)

@@ -55,58 +55,26 @@ namespace HostedBlazor.Data
                 .AddMessagePackProtocol()
                 .Build();
 
-            hubConnection.On<Dictionary<string, Dictionary<string, List<TransferData>>>>("ReceiveData", dataList =>
-            {
-                //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
-                Dictionary<int, TransferData> ListToDic(List<TransferData> user)
-                {
-                    var dic = new Dictionary<int, TransferData>();
-                    for (int i = 0; i < user.Count; i++)
-                    {
-                        user[i].StartTime = user[i].StartTime.ToLocalTime();
-                        user[i].ScheduledTime = user[i].ScheduledTime.ToLocalTime();
-                        user[i].EndTime = user[i].EndTime.ToLocalTime();
-                        dic[i] = user[i];
-                    }
-                    return dic;
-                }
-                var res = dataList.Select(pair =>
-                    (pair.Key,
-                    pair.Value.Select(pair2 =>
-                        (pair2.Key, ListToDic(pair2.Value))
-                    )
-                    ));
-                var dic = res.ToDictionary(x => x.Key, x => x.Item2.ToDictionary(y => y.Key, y => y.Item2));
-                /*      if(first){
-                         first=false;
-                        CopyTasks=dic;
-                     }
-                     else{
-                     foreach (var group in dic)
-                     {
+            hubConnection.On<Dictionary<string, Dictionary<string, Dictionary<int, TransferData>>>>("ReceiveData", dataList =>
+           {
+               //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
+               foreach (var group in dataList)
+               {
+                   foreach (var user in group.Value)
+                   {
+                       foreach (var i in user.Value)
+                       {
+                           dataList[group.Key][user.Key][i.Key].StartTime = i.Value.StartTime.ToLocalTime();
+                           dataList[group.Key][user.Key][i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
+                           dataList[group.Key][user.Key][i.Key].EndTime = i.Value.EndTime.ToLocalTime();
+                       }
+                   }
+               }
+                CopyTasks=dataList;
+               status = Status.Connected;
 
-                         foreach (var user in group.Value)
-                         {
-
-                            for (int i = 0; i < user.Value.Count; i++)
-                            {
-                                if(CopyTasks[group.Key]?[user.Key]?[i]?.EndTime!=user.Value[i].EndTime)
-                                     CopyTasks[group.Key][user.Key][i]=user.Value[i];
-                            }
-                         }
-                     }
-                     } */
-                CopyTasks = dic;
-                /*  CopyTasks = res.ToDictionary(x => x.Key, x => x.Item2.ToDictionary(y => y.Key, y => y.Item2));
-                 CopyTasks.Distinct */
-                //Logging: Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
-
-                status = Status.Connected;
-
-                newData.Invoke();
-
-
-            });
+               newData.Invoke();
+           });
             hubConnection.On<string, Dictionary<string, Dictionary<int, TransferData>>>("ReceiveDataChange", (user, change) =>
              {
                  lock (CopyTasks)
@@ -170,7 +138,10 @@ namespace HostedBlazor.Data
         async Task ContinuousSend()
         {
             var timer = new System.Timers.Timer(1000 * 60);
-            timer.Elapsed += (caller, arg) => RequestData();
+            timer.Elapsed += (caller, arg) =>{
+                RequestData();
+                
+                };
             timer.Start();
             Console.WriteLine("starting Data requests");
             while (true)
@@ -183,8 +154,6 @@ namespace HostedBlazor.Data
                         //	await Confirm();
                         await RequestData();
                     }
-
-
                 }
                 else
                 {
