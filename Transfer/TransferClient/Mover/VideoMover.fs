@@ -2,6 +2,7 @@ namespace TransferClient.IO
 open System
 open FFmpeg.NET
 open Types
+open TransferClient
 module VideoMover=
 
     /// outPath should either be a straight filepath or an FTp path 
@@ -19,8 +20,9 @@ module VideoMover=
         let mutable transferError=false
         let errorHandler (errorArgs:Events.ConversionErrorEventArgs)=
             transferError<-true
-            
-            printfn "[ERROR] ffmpeg transcode transfer for source: %s failed with error %A" errorArgs.Input.FileInfo.Name errorArgs.Exception        
+            try
+                Logging.errorf "{ffmpeg} transcode transfer for source: %s failed with error %A" fileName errorArgs.Exception        
+            with|_->  Logging.errorf "{ffmpeg} transcode transfer for source: %s failed with no error message "fileName
         mpeg.Error.Add errorHandler
        (*  let dataHandler (dataArgs:Events.ConversionDataEventArgs)=
             printfn "%A" dataArgs.Data        
@@ -40,10 +42,15 @@ module VideoMover=
 
 
         let defaultArgs=" -c:v h264 -crf 20 -pix_fmt + -preset faster -flags +ildct+ilme  "
+        //we must include "-movflags faststart" in ftp becuase it makes the mp4 sreamable
+        let defaultFtpArgs=" -c:v h264 -crf 20 -pix_fmt + -movflags frag_keyframe+empty_moov -g 52 -preset faster -flags +ildct+ilme  "
         let usedFFmpegArgs=
             match ffmpegInfo.FfmpegArgs with
             |Some x->x
-            |None->defaultArgs
+            |None->
+                match ftpInfo with
+                |Some-> defaultFtpArgs
+                |None-> defaultArgs
         let args="-i "+"\""+filePath+"\""+usedFFmpegArgs+"\""+out+"\"" 
 
         printfn "call ffmpeg with args: %s" args
