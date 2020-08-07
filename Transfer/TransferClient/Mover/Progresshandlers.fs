@@ -51,12 +51,19 @@ module ProgressHandlers=
                 setData prog.Progress prog.TransferredBytes
             )
 
-        let transcodeProgress sourceDuration (eventArgs:Events.ConversionProgressEventArgs) = 
+        let transcodeProgress (sourceDuration:TimeSpan)(eventArgs:Events.ConversionProgressEventArgs) = 
             if stopWatch.ElapsedMilliseconds>int64 500 then
-                let byterate= (float eventArgs.Bitrate)/8.0
-                let speed= if eventArgs.Fps.HasValue then ((byterate/1000.0) *(eventArgs.Fps.Value/24.0)) else 0.0
-                let size= if eventArgs.SizeKb.HasValue then float eventArgs.SizeKb.Value/1000.0 else fileSizeMB 
-                let remaining= byterate * float (sourceDuration- eventArgs.ProcessedDuration).Seconds
+                let KBrate= (double eventArgs.Bitrate)/8.0
+                let MBrate= KBrate/1000.0
+                //this means MB/s*speed multiplyer(frames per secondof video/number of frames being processed each second)
+                let speed= if eventArgs.Fps.HasValue then (MBrate *(eventArgs.Fps.Value/24.0)) else 0.0
+
+                //let size= if eventArgs.SizeKb.HasValue then float eventArgs.SizeKb.Value/1000.0 else fileSizeMB 
+                //we have to sue the expected size beuase otherwise the eta will be wrong.
+                //TODO: we could just ahve a different data structutre for transcode jobs and disaly differnet info in the ui.(that would be scary)
+                let expectedSize= (sourceDuration.TotalSeconds*MBrate)
+                
+                let remaining= MBrate * float (sourceDuration- eventArgs.ProcessedDuration).TotalSeconds
                 //printfn "transferData for %s: %A"(Path.GetFileName filePath) eventArgs
                 stopWatch.Reset()
                 stopWatch.Start()
@@ -67,7 +74,7 @@ module ProgressHandlers=
                         Percentage= (eventArgs.ProcessedDuration/sourceDuration)*100.0
                         EndTime=DateTime.Now
                         FileRemaining= remaining
-                        FileSize= size
+                        FileSize= expectedSize
                         Status=TransferStatus.Copying
                     }
                 newDataHandler lastTransferData 

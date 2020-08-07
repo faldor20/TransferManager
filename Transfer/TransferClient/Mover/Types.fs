@@ -15,7 +15,7 @@ module Types =
         { TranscodeExtensions: string list
           FfmpegArgs: string option
           OutputFileExtension: string option }
-
+        ///
     let TranscodeData transcodeExtensions ffmpegArgs outputFileExtension =
         { TranscodeExtensions = transcodeExtensions
           FfmpegArgs = ffmpegArgs
