@@ -89,14 +89,13 @@ module FileMove =
     /// progress takes copyprogress and speed
     let FCopy (source: string) destination progress (ct: CancellationToken) =
         async {
-
             let dest =
-                try
-                    match File.GetAttributes destination with
-                    | FileAttributes.Directory -> destination + (Path.GetFileName source)
-                    | _ -> destination
-                with| :? FileNotFoundException-> destination + (Path.GetFileName source)
-                    |x-> raise x
+                // we use this wierd pattern beuase this enum is bit manipulated to allow for multiple states to be encoded at once.
+                // each enum value is a bit. "1010" would mean two enums enum 1 and enum 4. The and just checks if the enum specified exists in the bits
+                match File.GetAttributes destination with
+                | x when (x &&& FileAttributes.Directory)=FileAttributes.Directory -> destination + (Path.GetFileName source)
+                | _ -> destination
+
 
             let array_length = int (Math.Pow(2.0, 19.0))
 
