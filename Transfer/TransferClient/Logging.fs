@@ -31,7 +31,9 @@ module Logging=
          ksprintf (logger.logSimple << Message.eventWarn )fmt
     let errorf fmt=
          ksprintf (logger.logSimple << Message.eventError )fmt
-         
-         
+    let verbosef fmt=
+        ksprintf (logger.logSimple << Message.eventVerbose )fmt
+     
+     
        
 
