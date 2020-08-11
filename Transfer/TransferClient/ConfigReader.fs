@@ -86,5 +86,5 @@ module ConfigReader=
                 {MovementData=moveData;TransferedList = List.empty;ScheduledTasks= List.Empty }
             )
         
-        watchDirsData|>List.iter(fun watchDir->printfn "Watching: %A" watchDir )
+        watchDirsData|>List.iter(fun watchDir->printfn "Watching: %s" watchDir.MovementData.DirData.SourceDir )
         (yamlData.ManagerIP,yamlData.ClientName,watchDirsData)
