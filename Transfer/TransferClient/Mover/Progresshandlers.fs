@@ -11,6 +11,7 @@ open SharedFs.SharedTypes;
 open TransferClient.DataBase.LocalDB
 open FluentFTP
 open FFmpeg.NET
+open FSharp.Linq.NullableOperators
 module ProgressHandlers=
     type ProgressHandler=
         | FtpProg of Progress<FtpProgress>*FTPData
@@ -53,7 +54,7 @@ module ProgressHandlers=
 
         let transcodeProgress (sourceDuration:TimeSpan)(eventArgs:Events.ConversionProgressEventArgs) = 
             if stopWatch.ElapsedMilliseconds>int64 500 then
-                let KBrate= (double eventArgs.Bitrate)/8.0
+                let KBrate= match  Option.ofNullable eventArgs.Bitrate with | Some x-> x / 8.0|None->0.0
                 let MBrate= KBrate/1000.0
                 //this means MB/s*speed multiplyer(frames per secondof video/number of frames being processed each second)
                 let speed= if eventArgs.Fps.HasValue then (MBrate *(eventArgs.Fps.Value/24.0)) else 0.0
