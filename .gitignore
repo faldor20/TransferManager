@@ -14,3 +14,9 @@ published apps
 testSource*
 Publish
 Transfer/TransferClient/logs
+ContainedPublish
+*.history
+
+Transfer/TransferClient/testDest/
+
+Transfer/TransferClient/watchSource/

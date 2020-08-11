@@ -10,6 +10,14 @@
   <ItemGroup>
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
+    
+  </ItemGroup>
+  
+  <ItemGroup>
+    <Content Include="./testSource/Files.zip"/>
+    <Content Include="testDest\**"> 
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> 
+      </Content> 
   </ItemGroup>
 
   <ItemGroup>
