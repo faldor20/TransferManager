@@ -1,14 +1,14 @@
 namespace TransferClient
 open System
 open System.Diagnostics;
-open Medallion.Shell;
 open System.Threading
 open System.IO
-open Medallion.Shell.Streams
+
 open System.Threading.Tasks
 open System.IO.Pipelines
 open FSharp.Control.Tasks
 open System.Buffers
+open FFmpeg.NET
 module Testing=
 
     let Fmovertest()=
@@ -54,11 +54,11 @@ module Testing=
         time.Stop()
         printfn "time: %s" (time.Elapsed.ToString())
     
-    let ReadError (reader:ProcessStreamReader  )(token:CancellationToken) =
+(*     let ReadError (reader:ProcessStreamReader  )(token:CancellationToken) =
       async{  while not token.IsCancellationRequested do
             Console.WriteLine(reader.ReadLine)
       }
-    
+     *)
     let outputPipe()=
         //ideas from here vv
 //https://gist.github.com/bobend/ae229860d4f69c563c3555e3ccfc190d
@@ -220,6 +220,56 @@ module Testing=
         let ftpWriter= ftp.UploadAsync(proc.StandardOutput.BaseStream,dest+destFile,FluentFTP.FtpRemoteExists.Overwrite) 
         ftpWriter.Wait()
         //ftp.UploadAsync(proc.StandardOutput.BaseStream,dest+"/ftpTest.mp4",FluentFTP.FtpRemoteExists.Overwrite)|>Async.AwaitTask 
+    let ffmpegstreamLibrary args dest destFile (writer:Stream->Stream->Task<unit>)=
+        let ftp = new FluentFTP.FtpClient("***REMOVED***","***REMOVED***","***REMOVED***")
+
+        ftp.Connect()
+        (* let mutable info = ProcessStartInfo("./ffmpeg.exe",args)
+        info.RedirectStandardOutput<-true
+        let mutable proc=new Process()
+        proc.StartInfo<-info
+        proc.Start() *)
+        let eng =new FFmpeg.NET.Engine("./ffmpeg.exe")
+        let datahandler (arg:FFmpeg.NET.Events.ConversionDataEventArgs)=
+            printfn " %s "arg.Data
+            ()
+        let Handler (arg)=
+            printfn " %A "arg
+            ()   
+        let errorHandler (arg:FFmpeg.NET.Events.ConversionErrorEventArgs)=
+            printfn "{FFMPEG ERROR:} %A "arg.Exception
+            () 
+       // eng.Data.Add datahandler
+        eng.Progress.Add Handler
+        eng.Error.Add errorHandler
+
+        let (finishTask,ffmpegProcess)=eng.ExecuteStream( args,CancellationToken.None).ToTuple()
+        //finishTask.Start();
+        //ffmpegProcess.Start();
+
+        printfn "can acess stdout %b" ffmpegProcess.StartInfo.RedirectStandardOutput
+        try
+            ftp.DeleteFile(dest+destFile)
+        with|_->()
+       
+        
+        finishTask.Start()
+        let ftpWriter= ftp.OpenWrite(dest+destFile,FluentFTP.FtpDataType.ASCII,false)
+        try
+            (writer ffmpegProcess.StandardOutput.BaseStream ftpWriter).Wait()
+        with
+        |ex-> Logging.errorf "Something went wrong with the ffmpeg process make sure your ags a correct: %A" ex
+
+            
+        
+        printfn"closing connection"
+        
+        ftpWriter.Close() 
+        let resply=ftp.GetReply() 
+        printfn "reply= %A" resply.Message
+        printfn "worked?= %A" resply.Success
+        
+        //ftp.UploadAsync(proc.StandardOutput.BaseStream,dest+"/ftpTest.mp4",FluentFTP.FtpRemoteExists.Overwrite)|>Async.AwaitTask 
     let streamTest()=
         let conf=File.ReadLines("config.txt")|>Seq.toList;
 
@@ -229,9 +279,9 @@ module Testing=
             |"0"->simplewriter
             |"1" ->pipeStream
         if conf.[2] ="2" then 
-            ffmpegstream2 (conf.[0]+" pipe:1") dest conf.[1]
+            ffmpegstream2 (conf.[0]+" pipe:1 ") dest conf.[1]
         else
-            ffmpegstream (conf.[0]+" pipe:1") dest conf.[1] writer
+            ffmpegstreamLibrary (conf.[0]+" pipe:1 ") dest conf.[1] writer
     let simpleBinary (source:Stream) (dest:Stream)=
         task{
         let array_length = int (Math.Pow(2.0, 19.0))
@@ -250,7 +300,7 @@ module Testing=
                 //Continue reading
                 keepReading <- true
         }
-    let systemwatcher  outputArgs dest destFile sourceFile=
+   (*  let systemwatcher  outputArgs dest destFile sourceFile=
         printfn "found file "
         let inputArgs= " -c:v mpeg2video -f mxf -i pipe:0"
         let ftp = new FluentFTP.FtpClient("***REMOVED***","***REMOVED***","***REMOVED***")
@@ -269,7 +319,7 @@ module Testing=
         let readFFmpeg=
             task{
                 
-                let ftpWriter=  ftp.OpenWrite(dest+destFile,FluentFTP.FtpDataType.Binary,false)
+                
                 do! simpleBinary proc.StandardOutput.BaseStream ftpWriter
                 ftpWriter.Close() 
                 let resply=ftp.GetReply() 
@@ -304,14 +354,14 @@ module Testing=
             do! Async.Sleep(100)
         }|>Async.RunSynchronously
         
-
+ *)
         
             
     let test number=
         printfn"testing %i"number
         let timer= Diagnostics.Stopwatch()
         timer.Start()
-        watch()
+        streamTest()
         timer.Stop()
         printfn "took %f "timer.Elapsed.TotalSeconds
         //let job=FileTransferManager.CopyWithProgressAsync ("./testSource2/Files.zip", "H:/testDest2/Files.zip", Callback,false )

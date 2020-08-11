@@ -8,32 +8,19 @@
   #},
   # Paths must be 1 / or 2 \\ a single \ is an escape character and will cause an error
   #Any if you do not wish to enable ftp do not include it in the config
-  "ClientName":"EliPC",
+  "ClientName":"VDCPServer",
+  "ManagerIP":"10.41.57.141",
   "WatchDirs":
     [
       {
         "DirData":
           {
-            "GroupName": "Test1",
-            "SourceDir": "./testSource",
+            "GroupName": "BUN",
+            "SourceDir": "./testSource/",
             "DestinationDir": "***REMOVED***Transfers/SSC to BUN/testing/",
           },
         "FTPData":
           { "Host": "***REMOVED***", "User": "quantel", "Password": "***REMOVED***" },
-        "TranscodeData":
-          {
-            "TranscodeExtensions": ["mp4", "mxf"],
-            "FfmpegArgs": "",
-            "OutputFileExtension": "mp4",
-          },
-      },
-      {
-        "DirData":
-          {
-            "GroupName": "Test2",
-            "SourceDir": "./testSource2",
-            "DestinationDir": "H:/testDest2",
-          },
         "TranscodeData":
           {
             "TranscodeExtensions": ["mp4", "mxf"],
