@@ -34,12 +34,14 @@ module Types =
     type DirectoryData =
         { GroupName: string
           SourceDir: string
-          DestinationDir: string }
+          DestinationDir: string
+          DeleteCompleted:bool }
 
-    let DirectoryData groupName source destination =
+    let DirectoryData groupName source destination deleteCompleted=
         { GroupName = groupName
           SourceDir = source
-          DestinationDir = destination }
+          DestinationDir = destination
+          DeleteCompleted= deleteCompleted}
 
     type MovementData =
         { DirData: DirectoryData

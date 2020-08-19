@@ -19,9 +19,8 @@ module TransferHandling=
         { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
     
     let processTask task =
-        let prof= MiniProfiler.Current
-        using (prof.Step("cleanup"))(fun x->
-        let transResult, transDataAccess = Async.RunSynchronously task
+        async{
+        let transResult, transDataAccess, delete = Async.RunSynchronously task
 
         let transData=transDataAccess.Get()
         let source = transData.Source
@@ -48,8 +47,10 @@ module TransferHandling=
                          Logging.warnf "Couldn't delete file, probably in use somehow retrying"
                          do! del path (iterCount+1)
             }
-        printfn "%s" (prof.RenderPlainText(false))
-        del source 0  
-        )
+        if delete then return! del source 0 
+        else ()
+        }
+         
+        
             
     

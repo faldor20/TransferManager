@@ -103,5 +103,5 @@ module Scheduler =
             else
                 Logging.warnf "{Deleted} While waiting to be available Transfer file at: %s" filePath 
                 dbAccess.Set groupName index {dbAccess.Get groupName index with Status=TransferStatus.Failed} 
-                return async{ return (Types.TransferResult.Failed, transDataAccess)}
+                return async{ return (Types.TransferResult.Failed, transDataAccess,moveData.DirData.DeleteCompleted)}
         }

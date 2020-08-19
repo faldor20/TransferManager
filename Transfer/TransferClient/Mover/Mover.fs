@@ -81,5 +81,5 @@ module Mover =
             let! result= task progressHandler
             
             Logging.infof " {Finished} copy from %s to %s"filePath destination
-            return (result,dbAccess)
+            return (result,dbAccess,moveData.DirData.DeleteCompleted)
         }

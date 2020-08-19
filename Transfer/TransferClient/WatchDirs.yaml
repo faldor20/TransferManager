@@ -18,6 +18,7 @@
             "GroupName": "BUN",
             "SourceDir": "./testSource/",
             "DestinationDir": "***REMOVED***Transfers/SSC to BUN/testing/",
+            "DeleteCompleted":false,
           },
         "FTPData":
           { "Host": "***REMOVED***", "User": "quantel", "Password": "***REMOVED***" },
