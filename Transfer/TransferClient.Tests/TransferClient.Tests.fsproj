@@ -8,23 +8,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Utils.fs" />
+    <Compile Include="DataBaseTests.fs" />
+    <Compile Include="FmoveTests.fs" />
     <Compile Include="Tests.fs" />
     <Compile Include="Program.fs" />
     
   </ItemGroup>
   
   <ItemGroup>
-    <Content Include="./testSource/Files.zip"/>
+    <Content Include="./testSource/Files.zip" />
     <Content Include="testDest\**"> 
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory> 
       </Content> 
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../TransferClient/TransferClient.fsproj"/>
+    <ProjectReference Include="../TransferClient/TransferClient.fsproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Expecto" Version="9.0.2" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="xunit" Version="2.4.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
