@@ -8,26 +8,36 @@
   #},
   # Paths must be 1 / or 2 \\ a single \ is an escape character and will cause an error
   #Any if you do not wish to enable ftp do not include it in the config
-  "ClientName":"VDCPServer",
-  "ManagerIP":"10.41.57.141",
+  "ClientName": "TestClient",
+  "ManagerIP": "10.41.57.172",
   "WatchDirs":
     [
       {
         "DirData":
           {
-            "GroupName": "BUN",
-            "SourceDir": "./testSource/",
-            "DestinationDir": "***REMOVED***Transfers/SSC to BUN/testing/",
+            "GroupName": "Trans",
+            "SourceDir": "***REMOVED***TransferManager/Source",
+            "DestinationDir": "***REMOVED***TransferManager/Dest/",
             "DeleteCompleted":false,
           },
-        "FTPData":
-          { "Host": "***REMOVED***", "User": "quantel", "Password": "***REMOVED***" },
-        "TranscodeData":
+        "SourceFTPData":
           {
-            "TranscodeExtensions": ["mp4", "mxf"],
-            "FfmpegArgs": "",
-            "OutputFileExtension": "mp4",
+            "Host": "***REMOVED***",
+            "User": "user",
+            "Password": "pass",
           },
+          "DestFTPData":
+          {
+            "Host": "***REMOVED***",
+            "User": "user",
+            "Password": "pass",
+          },
+        # "TranscodeData":
+          # {
+            # "TranscodeExtensions": ["mp4", "mxf"],
+            # "FfmpegArgs": " -c:v h264 -crf 18 -pix_fmt +  -movflags frag_keyframe+empty_moov -g 52  -preset fast -flags +ildct+ilme -f mp4 ",
+            # "OutputFileExtension": "mp4",
+          # },
       },
     ],
 }

@@ -6,7 +6,7 @@ open TransferClient
 open FSharp.Control.Tasks.V2
 open FluentFTP
 open System.Diagnostics
-
+open System.Threading
 module VideoMover=
     let ftpFFmpeg ftpData outpath (ffmpegProc:Process) =
         task{
@@ -14,14 +14,16 @@ module VideoMover=
             ftpClient.Connect()
             let ftpWriter= 
                 try
-                Some( ftpClient.OpenWrite(outpath,FtpDataType.Binary,false))
+                //This must be ascii mode becuase that is what ffmpeg outputs
+                Some( ftpClient.OpenWrite(outpath,FtpDataType.ASCII,false))
                 with|ex->
                     Logging.errorf "{Fffmpeg} Exception in ftp opening for ffmpeg %A"ex
                     None
             if ftpWriter.IsNone then ()
             else
                 try
-                    do! StreamPiping.simpleBinaryWriter ffmpegProc.StandardOutput.BaseStream ftpWriter.Value
+                //this must not use a binary writer because ffmpeg outputs ascii data
+                    do! StreamPiping.simplewriter ffmpegProc.StandardOutput.BaseStream ftpWriter.Value
                 with|ex-> Logging.errorf "{Ffmpeg} Exception in stream copying from ffmpeg to ftp %A" ex
                 
                 ftpWriter.Value.Close() 
@@ -35,11 +37,11 @@ module VideoMover=
     let defaultArgs=" -c:v h264 -crf 18 -pix_fmt + -preset veryfast -flags +ildct+ilme"
     //we must include "-movflags faststart" in ftp becuase it makes the mp4 sreamable
     //-movflags frag_keyframe+empty_moov -g 52
-    let defaultFtpArgs=" -c:v h264 -crf 18 -pix_fmt + -movflags frag_keyframe+empty_moov -g 52 -preset veryfast -flags +ildct+ilme -f h264 "
+    let defaultFtpArgs=" -c:v h264 -crf 18 -pix_fmt + -movflags frag_keyframe+empty_moov -g 52 -preset veryfast -flags +ildct+ilme -f mp4 "
 
 
     /// outPath should either be a straight filepath or an FTp path 
-    let Transcode ffmpegInfo (ftpInfo:FTPData option) progressHandler (filePath:string)  (destDir:string) ct=
+    let Transcode ffmpegInfo (ftpInfo:FTPData option) progressHandler (filePath:string)  (destDir:string) (ct:CancellationToken)=
 
         async{
         if not(IO.File.Exists "./ffmpeg.exe") then 
@@ -86,7 +88,7 @@ module VideoMover=
                 |Some x-> " -y  pipe:1" 
                 |None->" \""+outPath+"\""
             let args="-i "+"\""+filePath+"\" "+usedFFmpegArgs+outArg 
-            
+        (*     
             Logging.infof "{FFmpeg} Calling with args: %s" args
             try 
                 //We use execute stream beuase it returns the process wheich can output from ffmpeg
@@ -100,7 +102,7 @@ module VideoMover=
                 |ex-> 
                     Logging.errorf "{FFmpeg} Transcode failed with error:%A \n FFmpegLog= %s" ex FfmpegLog
                     transferError<-true
-                      
+                       *)
             if transferError then return  TransferResult.Failed
             else if ct.IsCancellationRequested then return TransferResult.Cancelled
             else return TransferResult.Success

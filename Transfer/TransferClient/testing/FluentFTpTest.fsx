@@ -1,10 +1,67 @@
-namespace TransferClient.IO
+#r "nuget: FluentFTP"
+
+open System.Threading
+
+module Types =
+    type TransferResult =
+        | Success = 0
+        | Failed = 1
+        | Cancelled = 2
+
+    type ScheduledTransfer = Async<Async<TransferResult * int * CancellationToken>>
+
+
+    type TranscodeData =
+        { TranscodeExtensions: string list
+          FfmpegArgs: string option
+          OutputFileExtension: string option }
+        ///
+    let TranscodeData transcodeExtensions ffmpegArgs outputFileExtension =
+        { TranscodeExtensions = transcodeExtensions
+          FfmpegArgs = ffmpegArgs
+          OutputFileExtension = outputFileExtension }
+
+    type FTPData =
+        { User: string
+          Password: string
+          Host: string }
+
+    let FTPData user password host =
+        { User = user
+          Password = password
+          Host = host }
+
+    type DirectoryData =
+        { GroupName: string
+          SourceDir: string
+          DestinationDir: string
+          DeleteCompleted:bool }
+
+    let DirectoryData groupName source destination deleteCompleted=
+        { GroupName = groupName
+          SourceDir = source
+          DestinationDir = destination
+          DeleteCompleted= deleteCompleted}
+
+    type MovementData =
+        { DirData: DirectoryData
+          SourceFTPData: FTPData option
+          DestFTPData: FTPData option
+          TranscodeData: TranscodeData option }
+
+    type WatchDir =
+        { MovementData: MovementData
+          TransferedList: string list
+          ScheduledTasks: ScheduledTransfer list }
+    type FilePath=
+        |FTPPath of string
+        |Path of string
+      
 
 open System
 open System.IO
 open System.Threading
 open Types
-
 module FileMove =
     type ProgressData =
         { Progress: float
@@ -72,7 +129,6 @@ module FileMove =
                         while keepReading do
                             if (ct.IsCancellationRequested) then
                                 res <- TransferResult.Cancelled
-                                keepReading<-false
                             else
                                 keepReading <- readBytes bwRead bwWrite
                     with _ -> res <- TransferResult.Failed
@@ -96,14 +152,11 @@ module FileMove =
     let FCopy (source: string) destination progress (ct: CancellationToken) =
         async {
             let dest =
-                try
-                    // we use this wierd pattern beuase this enum is bit manipulated to allow for multiple states to be encoded at once.
-                    // each enum value is a bit. "1010" would mean two enums enum 1 and enum 4. The and just checks if the enum specified exists in the bits
-                    match File.GetAttributes destination with
-                    | x when (x &&& FileAttributes.Directory)=FileAttributes.Directory -> destination + (Path.GetFileName source)
-                    | _ -> destination
-                //if the getatributes failes it musn't exist so it has to be a full filepath
-                with|_->destination
+                // we use this wierd pattern beuase this enum is bit manipulated to allow for multiple states to be encoded at once.
+                // each enum value is a bit. "1010" would mean two enums enum 1 and enum 4. The and just checks if the enum specified exists in the bits
+                match File.GetAttributes destination with
+                | x when (x &&& FileAttributes.Directory)=FileAttributes.Directory -> destination + (Path.GetFileName source)
+                | _ -> destination
 
 
             let buffLength = int (Math.Pow(2.0, 19.0))
@@ -170,3 +223,19 @@ module FileMove =
 
             return out
         }
+open FluentFTP
+let host ="***REMOVED***"
+let user= "***REMOVED***admin-***REMOVED***"
+let password="***REMOVED***"
+let sourceDir="***REMOVED***TransferManager/Source"
+let destinationDir= "***REMOVED***TransferManager/Dest/"
+let client=new FtpClient(host, user ,password)
+client.Connect()
+let clientDest=new FtpClient(host, user ,password)
+clientDest.Connect()
+let source=client.OpenRead(sourceDir+"/BUNPREMIER.mxf")
+let dest = clientDest.OpenWrite(destinationDir+"BUNPREMIER.mxf")
+async{
+    FileMove.writeWithProgress source dest Progress
+        
+}|>Async.RunSynchronously

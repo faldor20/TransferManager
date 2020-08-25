@@ -18,14 +18,13 @@ module Main=
     [<EntryPoint>]
     let main argv =
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler
-        (* printfn"Begining"
+     (*   
+        printfn"Begining"
         Testing.test 1
-        printfn "done" *)
+        printfn "done"   *)
     
         let a=Task.Run(fun()-> Async.RunSynchronously startUp)
-        //let b=Task.Run(fun()-> run  Server.Server.app)
-        //b.Wait()
-        a.Wait()  
+        a.Wait()   
  
       
         

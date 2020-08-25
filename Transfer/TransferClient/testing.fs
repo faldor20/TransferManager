@@ -8,6 +8,7 @@ open System.Threading.Tasks
 open System.IO.Pipelines
 open FSharp.Control.Tasks
 open System.Buffers
+open FluentFTP
 open FFmpeg.NET
 module Testing=
 
@@ -242,7 +243,7 @@ module Testing=
        // eng.Data.Add datahandler
         eng.Progress.Add Handler
         eng.Error.Add errorHandler
-
+(* 
         let (finishTask,ffmpegProcess)=eng.ExecuteStream( args,CancellationToken.None).ToTuple()
         //finishTask.Start();
         //ffmpegProcess.Start();
@@ -258,30 +259,19 @@ module Testing=
         try
             (writer ffmpegProcess.StandardOutput.BaseStream ftpWriter).Wait()
         with
-        |ex-> Logging.errorf "Something went wrong with the ffmpeg process make sure your ags a correct: %A" ex
+        |ex-> Logging.errorf "Something went wrong with the ffmpeg process make sure your ags a correct: %A" ex *)
 
             
         
         printfn"closing connection"
         
-        ftpWriter.Close() 
+        //ftpWriter.Close() 
         let resply=ftp.GetReply() 
         printfn "reply= %A" resply.Message
         printfn "worked?= %A" resply.Success
         
         //ftp.UploadAsync(proc.StandardOutput.BaseStream,dest+"/ftpTest.mp4",FluentFTP.FtpRemoteExists.Overwrite)|>Async.AwaitTask 
-    let streamTest()=
-        let conf=File.ReadLines("config.txt")|>Seq.toList;
-
-        let dest="***REMOVED***Transfers/SSC to BUN/testing/"
-        let writer= 
-            match conf.[2] with
-            |"0"->simplewriter
-            |"1" ->pipeStream
-        if conf.[2] ="2" then 
-            ffmpegstream2 (conf.[0]+" pipe:1 ") dest conf.[1]
-        else
-            ffmpegstreamLibrary (conf.[0]+" pipe:1 ") dest conf.[1] writer
+   
     let simpleBinary (source:Stream) (dest:Stream)=
         task{
         let array_length = int (Math.Pow(2.0, 19.0))
@@ -360,28 +350,59 @@ module Testing=
             
         let ftp = new FluentFTP.FtpClient("***REMOVED***","***REMOVED***","***REMOVED***")
         let readStream= new FileStream(sourceFile,FileMode.Open)
-        
+        let writeStream= new FileStream("./testDest"+destFile,FileMode.Create)
         let ftpWriter= ftp.OpenWrite(dest+destFile,FluentFTP.FtpDataType.ASCII,false)
         let ffmpeg= 
             FFMpegArguments
-                .FromPipe(new Pipes.StreamPipeSource(readStream))
-                .WithVideoCodec("h264")
-                .ForceFormat("mxf")
+                .FromPipe(new Pipes.StreamPipeSource(readStream))               
+                .WithCustomArgument(args)
                 .OutputToPipe(new Pipes.StreamPipeSink(ftpWriter))
-                .ProcessAsynchronously();
+                .ProcessAsynchronously()
+                
+        ffmpeg.Wait()
         ftpWriter.Close() 
         let resply=ftp.GetReply() 
         printfn "reply= %A" resply.Message
         printfn "worked?= %A" resply.Success
         //ftp.UploadAsync(proc.StandardOutput.BaseStream,dest+"/ftpTest.mp4",FluentFTP.FtpRemoteExists.Overwrite)|>Async.AwaitTask 
+    let streamTest()=
+        let conf=File.ReadLines("config.txt")|>Seq.toList;
 
+        let dest="***REMOVED***Transfers/SSC to BUN/testing/"
+        let writer= 
+            match conf.[2] with
+            |"0"->simplewriter
+            |"1" ->pipeStream
+        if conf.[4] ="core" then 
+            ffmpegCore (conf.[0]) "./watchSource/bunTest.mxf" dest conf.[1]  writer
+        else if conf.[2] ="2" then 
+            ffmpegstream2 (conf.[0]+" pipe:1 ") dest conf.[1]
+        else
+            ffmpegstreamLibrary (conf.[0]+" pipe:1 ") dest conf.[1] writer   
+    
     let test number=
-        printfn"testing %i"number
+(*         printfn"testing %i"number
         let timer= Diagnostics.Stopwatch()
         timer.Start()
         streamTest()
         timer.Stop()
         printfn "took %f "timer.Elapsed.TotalSeconds
+
+         *)
+        let host ="***REMOVED***"
+        let user= "quantel"
+        let password="***REMOVED***"
+        let client=new FtpClient(host, user ,password)
+        client.Connect()
+        client.DownloadFileAsync("./vdcp1Dest/testFile.mxf", "***REMOVED***RKY UPDATE 12 21 08.mxf")
+        let host ="***REMOVED***"
+        let user= "quantel"
+        let password="***REMOVED***"
+        let client2=new FtpClient(host, user ,password)
+        client2.Connect()
+        client2.DownloadFile("./vdcp1Dest/testFile2.mxf", "***REMOVED***RKY HEADLINES 21 08.mxf")
+        
+
         //let job=FileTransferManager.CopyWithProgressAsync ("./testSource2/Files.zip", "H:/testDest2/Files.zip", Callback,false )
        // Async.RunSynchronously (Async.AwaitTask job)
        (*  let inPath= "./testSource/BUNPREMIER.mxf"

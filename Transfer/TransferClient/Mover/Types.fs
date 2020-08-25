@@ -45,10 +45,14 @@ module Types =
 
     type MovementData =
         { DirData: DirectoryData
-          FTPData: FTPData option
+          SourceFTPData: FTPData option
+          DestFTPData: FTPData option
           TranscodeData: TranscodeData option }
 
     type WatchDir =
         { MovementData: MovementData
           TransferedList: string list
           ScheduledTasks: ScheduledTransfer list }
+    type FilePath=
+        |FTPPath of string
+        |Path of string

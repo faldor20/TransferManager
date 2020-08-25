@@ -11,6 +11,30 @@ open FSharp.Control
 open IO.Types
 module ConfigReader=
 
+
+      
+    let directoryTest ftpData directory errorPrinter = 
+        try 
+            match ftpData with
+            | Some data->   
+                use client=new FluentFTP.FtpClient(data.Host,data.User,data.Password)
+                client.Connect()
+                let exists=client.DirectoryExists(directory)
+                if not exists then errorPrinter "could not be found on server" 
+                exists
+            |None-> 
+                (DirectoryInfo directory).Exists
+        with
+            |(:? IOException)->  
+                errorPrinter "does not exist, will not watch this directory" 
+                false
+            | :? FluentFTP.FtpException-> 
+                errorPrinter "cannot be connected to" 
+                false
+            | _ as x -> 
+                errorPrinter "not accessable for an unknown reason" 
+                printfn "reason: %A" x.Message
+                false    
     //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
     type jsonData = { WatchDirs: MovementData list }
     type YamlData = {ManagerIP:string;ClientName:string; WatchDirs: MovementData list }
@@ -35,35 +59,13 @@ module ConfigReader=
         //filtering by whether it triggers an exception or not
         
         let watchDirsExist= yamlData.WatchDirs|>List.filter(fun dir->
+
+            let printDestError error= Logging.errorf "{Config} Watch Destination: %s for source:%s %s" dir.DirData.DestinationDir dir.DirData.SourceDir error
             let destOkay= 
-                let printError error= printfn "Watch Destination: %s for source:%s %s" dir.DirData.DestinationDir dir.DirData.DestinationDir error
-                try 
-                    match dir.FTPData with
-                        | Some ftpData->   
-                            use client=new FluentFTP.FtpClient(ftpData.Host,ftpData.User,ftpData.Password)
-                            client.Connect()
-                            let exists=client.DirectoryExists(dir.DirData.DestinationDir)
-                            if not exists then printError "could not be found on server" 
-                            exists
-                        |None-> 
-                            (DirectoryInfo dir.DirData.DestinationDir).Exists
-                with
-                    |(:? IOException)->  
-                        printError "does not exist, will not watch this directory" 
-                        false
-                    | :? FluentFTP.FtpException-> 
-                        printError "cannot be connected to" 
-                        false
-                    | _ as x -> 
-                        printError "watchdir dest not accessable for an unknown reason" 
-                        printfn "reason: %A" x.Message
-                        false    
+                directoryTest dir.DestFTPData dir.DirData.DestinationDir printDestError
+            let printSourceError error= Logging.errorf "{Config} Watch Source: %s for Destination:%s %s" dir.DirData.SourceDir dir.DirData.DestinationDir error
             let sourceOkay =
-                try 
-                    (DirectoryInfo dir.DirData.SourceDir).Exists
-                with
-                    |_ ->printfn "Watch Source: %s for Destination:%s does not exist, will not watch this source" dir.DirData.SourceDir dir.DirData.DestinationDir 
-                         false
+                directoryTest dir.SourceFTPData dir.DirData.SourceDir printSourceError
             (sourceOkay && destOkay)
         )
         if watchDirsExist.Length=0 then printfn "ERROR: no WatchDirs existing could be found in yaml file. The program is usless without one"

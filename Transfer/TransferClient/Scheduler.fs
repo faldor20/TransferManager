@@ -14,7 +14,7 @@ module Scheduler =
     //it returns false if the file is discovered to be deleted before that point.
     let isAvailable (source:string) =
         async {
-            let fileName= source.Split("\\")|>Array.last
+            let fileName= Path.GetFileName (string source)
             let mutable currentFile = new FileInfo(source)
             let mutable unavailable = true
             let mutable fileExists=false
@@ -66,9 +66,11 @@ module Scheduler =
         {currentTransferData with
                 FileSize=fileSizeMB
         }
-       
-    let scheduleTransfer filePath moveData (dbAccess:DataBase.Types.DataBaseAcessFuncs) transcode =
+     
+    let scheduleTransfer (filePath) moveData (dbAccess:DataBase.Types.DataBaseAcessFuncs) transcode =
         async {
+            //this is only used for logging
+            let logFilePath=match moveData.SourceFTPData with | Some _-> "FTP:"+filePath |None -> string filePath
             let {DestinationDir=dest;GroupName=groupName}:DirectoryData=moveData.DirData
             let transData=
                 { Percentage = 0.0
@@ -76,7 +78,7 @@ module Scheduler =
                   FileRemaining = 0.0
                   Speed = 0.0
                   Destination = dest
-                  Source = filePath
+                  Source =  filePath
                   StartTime =  DateTime.Now
                   ID = 0
                   GroupName=groupName
@@ -88,20 +90,25 @@ module Scheduler =
             let ct = new CancellationTokenSource()
             let transType=
                 ""  |>fun s->if transcode then s+" transcode"else s
-                    |>fun s->if moveData.FTPData.IsSome then s+" ftp" else s
-            Logging.infof "{Scheduled} %s  transfer from %s To-> %s at index:%i" transType filePath dest index
+                    |>fun s->if moveData.SourceFTPData.IsSome||moveData.DestFTPData.IsSome then s+" ftp" else s
+            Logging.infof "{Scheduled} %s  transfer from %s To-> %s at index:%i" transType logFilePath dest index
             addCancellationToken groupName index ct
-            let! fileAvailable= isAvailable filePath
+            //This should only be run if reading from growing files is disabled otherwise ignroe it.
+            //Doesn't work on ftp files
+            let fileAvailable=
+                match moveData.SourceFTPData with
+                    |Some _-> true
+                    |None-> Async.RunSynchronously( isAvailable filePath)
         
             let transDataAccess= TransDataAcessFuncs dbAccess groupName index
 
             if fileAvailable then
-                Logging.infof "{Available} file at: %s is available" filePath 
+                Logging.infof "{Available} file at: %s is available" logFilePath 
                 dbAccess.Set groupName index (getFileData filePath (dbAccess.Get groupName index) )  
                 
                 return Mover.MoveFile filePath moveData transDataAccess transcode  ct
             else
-                Logging.warnf "{Deleted} While waiting to be available Transfer file at: %s" filePath 
+                Logging.warnf "{Deleted} While waiting to be available Transfer file at: %s" logFilePath 
                 dbAccess.Set groupName index {dbAccess.Get groupName index with Status=TransferStatus.Failed} 
                 return async{ return (Types.TransferResult.Failed, transDataAccess,moveData.DirData.DeleteCompleted)}
         }
