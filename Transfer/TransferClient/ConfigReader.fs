@@ -18,6 +18,7 @@ module ConfigReader=
             match ftpData with
             | Some data->   
                 use client=new FluentFTP.FtpClient(data.Host,data.User,data.Password)
+                Logging.infof "{Config} Testing connection to ftp: %A"data
                 client.Connect()
                 let exists=client.DirectoryExists(directory)
                 if not exists then errorPrinter "could not be found on server" 

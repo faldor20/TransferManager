@@ -15,7 +15,7 @@ module Types =
         { TranscodeExtensions: string list
           FfmpegArgs: string option
           OutputFileExtension: string option }
-        ///
+    ///
     let TranscodeData transcodeExtensions ffmpegArgs outputFileExtension =
         { TranscodeExtensions = transcodeExtensions
           FfmpegArgs = ffmpegArgs
@@ -35,13 +35,13 @@ module Types =
         { GroupName: string
           SourceDir: string
           DestinationDir: string
-          DeleteCompleted:bool }
+          DeleteCompleted: bool }
 
-    let DirectoryData groupName source destination deleteCompleted=
+    let DirectoryData groupName source destination deleteCompleted =
         { GroupName = groupName
           SourceDir = source
           DestinationDir = destination
-          DeleteCompleted= deleteCompleted}
+          DeleteCompleted = deleteCompleted }
 
     type MovementData =
         { DirData: DirectoryData
@@ -53,6 +53,7 @@ module Types =
         { MovementData: MovementData
           TransferedList: string list
           ScheduledTasks: ScheduledTransfer list }
-    type FilePath=
-        |FTPPath of string
-        |Path of string
+
+    type FoundFile =
+        { Path: string
+          FTPFileInfo: FluentFTP.FtpListItem option }

@@ -20,23 +20,33 @@ module Mover =
         |FtpStatus.Failed->TransferResult.Failed
         |FtpStatus.Success->TransferResult.Success
         |_-> failwith "ftpresult return unhandled enum value"
-    let runFtp ftpData sourceStream destination fileName callBack (ct:CancellationToken)=async{
+    let runFtp ftpData sourceStream destFilePath callBack (ct:CancellationToken)=async{
         use client=new FtpClient(ftpData.Host,ftpData.User,ftpData.Password)
         client.Connect()
-        let destStream= client.OpenWrite((destination+fileName),FtpDataType.ASCII)
+        Logging.verbosef "{Mover} Opening FTP writeStream for file %s" destFilePath
+        use destStream= client.OpenWrite(destFilePath,FtpDataType.Binary)
         try 
-            let res=FileMove.writeWithProgress sourceStream destStream callBack (int (Math.Pow( 2.0,19.0))) ct
+            let writeResult=FileMove.writeWithProgress sourceStream destStream callBack (int (Math.Pow( 2.0,19.0))) ct
             sourceStream.Close()
             destStream.Close()
+            let reply=client.GetReply()
+
+            //We need to check the ftp status code returned after the write completed
+            let res=
+                if not reply.Success then
+                    Logging.errorf "{Mover} Ftp writer returned failure: %A"reply
+                    TransferResult.Failed
+                else
+                    writeResult
             let out =
                 if (res = TransferResult.Cancelled
                     || res = TransferResult.Failed) then
                     try
-                        printfn "Cancelled or failed deleting ftp file %s" (destination+fileName)
-                        client.DeleteFile(destination+fileName)
+                        Logging.warnf "{Mover} Cancelled or failed. Deleting ftp file %s" destFilePath
+                        client.DeleteFile destFilePath
                         res
                     with _ ->
-                        printfn "Cancelled or failed and was unable to delete output ftp file %s" (destination+fileName)
+                        Logging.errorf "{Mover} Cancelled or failed and was unable to delete output ftp file %s" destFilePath
                         TransferResult.Failed
                 else
                     res
@@ -47,33 +57,37 @@ module Mover =
     }
 
 
-    let MoveFile (filePath:string) moveData dbAccess transcode (ct:CancellationTokenSource) =
+    let MoveFile (sourceFilePath:string) moveData dbAccess transcode (ct:CancellationTokenSource) =
  
         let {DestinationDir=destination; GroupName= groupName}=moveData.DirData
         //let isFTP=moveData.FTPData.IsSome
         
         
-        let fileName= Path.GetFileName filePath
+        let fileName= Path.GetFileName sourceFilePath
         
         //I could go two ways with the input:
         //1. i could use descriminated unions to have either a stream input or a file input depending on whether it is local or ftp.
         //2. i could allways feed in a stream input and just open a filestream for local files
-        let inputStream=
-            let sourceDir=moveData.DirData.SourceDir
+        let mutable sourceClient=None;
+        use inputStream=
             match moveData.SourceFTPData with
                 |Some sourceFTPData->
                     let client=new FluentFTP.FtpClient(sourceFTPData.Host,sourceFTPData.User,sourceFTPData.Password)
                     client.Connect()
-                    client.OpenRead(sourceDir)
+                    sourceClient<-Some client
+                    Logging.verbosef "{Mover} Opening FTP readStream for file %s" sourceFilePath
+                    client.OpenRead(sourceFilePath,FtpDataType.Binary,true)
+                    
                 |None->
-                    let stream=new FileStream(sourceDir,FileMode.Open,FileAccess.Read)
+                    Logging.verbosef "{Mover} Opening Read FileStream for file %s" sourceFilePath
+                    let stream=new FileStream(sourceFilePath,FileMode.Open,FileAccess.Read)
                     stream :> Stream
         
         let doMove progressHandler=async{
                 let result= 
                     //The particular transfer action to take has allready been decided by the progress callback
                     match progressHandler with
-                        |FtpProg (cb,ftpData)           -> runFtp ftpData inputStream destination fileName cb ct.Token
+                        |FtpProg (cb,ftpData)           -> runFtp ftpData inputStream (destination+fileName) cb ct.Token
                         |FastFileProg cb                -> SCopy inputStream fileName destination cb ct.Token
                         //|TranscodeProg (cb, ffmpegInfo) -> VideoMover.Transcode ffmpegInfo moveData.FTPData cb filePath destination ct.Token
                 return! result 
@@ -82,7 +96,7 @@ module Mover =
         async {
             // We pass this in to the progressCallback so it  
             let transData= {dbAccess.Get() with StartTime=DateTime.Now}
-
+            
             let newDataHandler newTransData=
                 
                 dbAccess.Set newTransData
@@ -94,13 +108,15 @@ module Mover =
                 |FtpProg _-> "FTP Transfer"
                 |FastFileProg _->"File transfer"
                 |TranscodeProg _-> "FFmpeg transcode"
-            Logging.infof " {Starting} %s from %s to %s" transType filePath destination
+            Logging.infof " {Starting} %s from %s to %s" transType sourceFilePath destination
            
             //We have to set the startTime here because we want the sartime to truly be when the task begins
             dbAccess.Set {transData with StartTime=DateTime.Now}
             
             let! result= doMove progressHandler
-            
-            Logging.infof " {Finished} copy from %s to %s"filePath destination
+            //We need to dispose the sourceclient if there is one. If we getrid of this we would endlessly increase our number of active connections
+            match sourceClient with|Some x-> x.Dispose()|None->()
+
+            Logging.infof " {Finished} copy from %s to %s"sourceFilePath destination
             return (result,dbAccess,moveData.DirData.DeleteCompleted)
         }

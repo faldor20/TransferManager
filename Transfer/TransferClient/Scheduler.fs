@@ -58,19 +58,23 @@ module Scheduler =
                 }
             return! loop(FileInfo(source))
         }
-    let getFileData filePath currentTransferData=
-        
-        let fileSize=(new FileInfo(filePath)).Length;
+    let getFileData (file:FoundFile) currentTransferData=
+        let fileSize=
+            match file.FTPFileInfo with 
+            |Some x->
+               x.Size 
+            |None ->
+                (new FileInfo(file.Path)).Length
         let fileSizeMB=(float(fileSize/int64 1000))/1000.0
 
         {currentTransferData with
                 FileSize=fileSizeMB
         }
      
-    let scheduleTransfer (filePath) moveData (dbAccess:DataBase.Types.DataBaseAcessFuncs) transcode =
+    let scheduleTransfer (file:FoundFile) moveData (dbAccess:DataBase.Types.DataBaseAcessFuncs) transcode =
         async {
             //this is only used for logging
-            let logFilePath=match moveData.SourceFTPData with | Some _-> "FTP:"+filePath |None -> string filePath
+            let logFilePath=match file.FTPFileInfo with | Some f-> "FTP:"+f.FullName |None -> file.Path
             let {DestinationDir=dest;GroupName=groupName}:DirectoryData=moveData.DirData
             let transData=
                 { Percentage = 0.0
@@ -78,7 +82,7 @@ module Scheduler =
                   FileRemaining = 0.0
                   Speed = 0.0
                   Destination = dest
-                  Source =  filePath
+                  Source =  file.Path
                   StartTime =  DateTime.Now
                   ID = 0
                   GroupName=groupName
@@ -98,15 +102,16 @@ module Scheduler =
             let fileAvailable=
                 match moveData.SourceFTPData with
                     |Some _-> true
-                    |None-> Async.RunSynchronously( isAvailable filePath)
+                    |None-> Async.RunSynchronously( isAvailable file.Path)
         
             let transDataAccess= TransDataAcessFuncs dbAccess groupName index
 
             if fileAvailable then
                 Logging.infof "{Available} file at: %s is available" logFilePath 
-                dbAccess.Set groupName index (getFileData filePath (dbAccess.Get groupName index) )  
+
+                dbAccess.Set groupName index (getFileData file (dbAccess.Get groupName index) )  
                 
-                return Mover.MoveFile filePath moveData transDataAccess transcode  ct
+                return Mover.MoveFile file.Path moveData transDataAccess transcode  ct
             else
                 Logging.warnf "{Deleted} While waiting to be available Transfer file at: %s" logFilePath 
                 dbAccess.Set groupName index {dbAccess.Get groupName index with Status=TransferStatus.Failed} 
