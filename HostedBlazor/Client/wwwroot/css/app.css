@@ -38,7 +38,7 @@ app {
 
         .main .top-row > a, .main .top-row .btn-link {
             white-space: nowrap;
-            margin-left: 1.5rem;
+            margin-left: 1rem;
         }
 
 .main .top-row a:first-child {
@@ -55,12 +55,12 @@ app {
     }
 
     .sidebar .navbar-brand {
-        font-size: 1.1rem;
+        font-size: 0.9rem;
     }
 
     .sidebar .oi {
-        width: 2rem;
-        font-size: 1.1rem;
+        width: 1.5rem;
+        font-size: 0.9rem;
         vertical-align: text-top;
         top: -2px;
     }
