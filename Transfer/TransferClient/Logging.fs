@@ -1,38 +1,33 @@
-// Learn more about F# at http://fsharp.org
 namespace TransferClient
 open System
-open Logary
-open Hopac
-open Logary.Message
-open Logary.Configuration
-open Logary.Targets
-open Logary.Targets.File
-open Printf
-module Logging=
-   
-    let logger = Log.create "Logary.HelloWorld"
-    let fileConf =
-            File.FileConf.create "./logs" (Naming ("{service}-{host}-{datetime}", "log")) 
+open Serilog
 
-    let logary =
-        Config.create "Logary.ConsoleApp" "laptop"
-        |> Config.targets[ 
-            (File.create fileConf "file")
-            (Targets.LiterateConsole.create LiterateConsole.empty "Console" )
-            ]
-        |> Config.ilogger (ILogger.Console Debug)
-        |> Config.build
-        |>run
+open Microsoft.Extensions.Configuration
+open Serilog.Sinks
+open Serilog.Configuration
+open Printf
+
+module Logging=
+    let logger =
+        Serilog.LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.Console(theme=Sinks.SystemConsole.Themes.SystemConsoleTheme.Literate)
+            .WriteTo.File("./logs/log-.log" ,Serilog.Events.LogEventLevel.Verbose)
+            .CreateLogger();
+
+
     let initLogging()=
-        logary|>ignore
+        logger|>ignore
     let infof fmt=
-         ksprintf (logger.logSimple << Message.eventInfo )fmt
+        ksprintf (logger.Information )fmt
     let warnf fmt=
-         ksprintf (logger.logSimple << Message.eventWarn )fmt
+        ksprintf (logger.Warning )fmt
     let errorf fmt=
-         ksprintf (logger.logSimple << Message.eventError )fmt
+        ksprintf (logger.Error )fmt
     let verbosef fmt=
-        ksprintf (logger.logSimple << Message.eventVerbose )fmt
+        ksprintf (logger.Verbose )fmt
+    let debugf fmt=
+        ksprintf (logger.Debug )fmt
      
      
        
