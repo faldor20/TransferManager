@@ -33,20 +33,18 @@ module StreamPiping=
             let mutable reading=true
             while reading do
                 let! result =  reader.ReadAsync();
+
                 let mutable buffer = result.Buffer;
-                let mutable line =System.Buffers.ReadOnlySequence<byte>()
+                let mutable line =new ReadOnlyMemory<byte>()
                 let tryReadLine ()=
-                    // Look for a EOL in the buffer.
-                    let position = buffer.PositionOf((byte)'\n');
-                
-                    if  not(position.HasValue) then
-                        line<- Buffers.ReadOnlySequence<byte>() 
-                        false 
-                    else
-                        // Skip the line + the \n.
-                        line <- buffer.Slice(0, position.Value)
-                        buffer <- buffer.Slice(buffer.GetPosition(1L, position.Value))
-                        true
+                //this took fucking forever to make work. from what i understand you have to try to read an amount of a certain size and if you read bove a 
+                //speicif size you get nothing so i can't read the whole buffer, i cant read a set amount i have to read one lines worth at a time
+                        line <- buffer.First
+                        if line.IsEmpty then 
+                            false
+                        else
+                            buffer <- buffer.Slice(buffer.GetPosition(int64 line.Length))
+                            true
 
                 while tryReadLine() do
                     // Process the line.
