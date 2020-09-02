@@ -14,7 +14,8 @@ open FFmpeg.NET
 open FSharp.Linq.NullableOperators
 module ProgressHandlers=
     type ProgressHandler=
-        | FtpProg of (FileMove.ProgressData->unit)*FTPData
+        | DoubleFtpProg of (FileMove.ProgressData->unit)*FTPData
+        | FtpProg of Progress<FtpProgress>
         | FastFileProg of (FileMove.ProgressData->unit)
         | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*TranscodeData
     type NewDataHandler= TransferData->unit
@@ -50,7 +51,10 @@ module ProgressHandlers=
         let newftpProgress=(fun (progress:FileMove.ProgressData )->
             setData progress.Progress progress.BytesTransfered
         )
-
+        let ftpProgress:Progress<FtpProgress>  =new Progress<FtpProgress>(fun prog ->
+                 if stopWatch.ElapsedMilliseconds>int64 500 then 
+                     setData prog.Progress prog.TransferredBytes
+        )
         let transcodeProgress (sourceDuration:TimeSpan)(eventArgs:Events.ConversionProgressEventArgs) = 
             if stopWatch.ElapsedMilliseconds>int64 500 then
                 let KBrate= match  Option.ofNullable eventArgs.Bitrate with | Some x-> x / 8.0|None->0.0
@@ -81,6 +85,7 @@ module ProgressHandlers=
                 
         //TODO: put another option here for transcode without ftp
         if transcode then (TranscodeProg (transcodeProgress, moveData.TranscodeData.Value))
-        else if moveData.DestFTPData.IsSome then FtpProg (newftpProgress, moveData.DestFTPData.Value)
+        else if moveData.SourceFTPData.IsSome then FtpProg (ftpProgress)
+        else if moveData.DestFTPData.IsSome then FtpProg (ftpProgress)
         else (FastFileProg fastFileProgress)
          
