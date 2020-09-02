@@ -10,8 +10,8 @@ module FileMove =
         { Progress: float
           BytesTransfered: int64
           SpeedMB: float }
-
-    let writeWithProgress inStream outStream progress bufferLength (ct: CancellationToken) =
+    
+    let writeWithProgress inStream outStream progress bufferLength (ct: CancellationToken)  =
         using (new BinaryReader(inStream)) (fun bwRead ->
                 using (new BinaryWriter(outStream)) (fun bwWrite ->
                     //----------Setup and progress reporting code--------
@@ -26,8 +26,8 @@ module FileMove =
 
                     //the number of reads that will need to be done to complete the transfer
                     let requiredReads =
-                        double inStream.Length / double bufferLength
-
+                        (double inStream.Length) / double bufferLength
+                    TransferClient.Logging.infof "file size=  %i or %f MB"inStream.Length (double inStream.Length/1000.0/1000.0)
                     let speedInterval = 1.0//check speed every "n" seconds
 
                     use speedTimer = new Timers.Timer(speedInterval * 1000.0) 
@@ -56,7 +56,7 @@ module FileMove =
                     let readBytes (bwread: BinaryReader) (bwwrite: BinaryWriter) =
                         //number of bytes actaully read into the buffer, if all has been read it will be 0
                         let read = bwread.Read(dataArray, 0, bufferLength)
-                        reads <- reads + 1.0
+                        reads <- reads + (double read/ double bufferLength)
                         if 0 = read then
                             //Finish reading
                             false
@@ -78,6 +78,7 @@ module FileMove =
                     with _ -> res <- TransferResult.Failed
                     res
                 ))
+
     let doTransfer inStream dest progress bufferLength (ct: CancellationToken) =
             
         using (new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None, bufferLength)) (fun fswrite ->
