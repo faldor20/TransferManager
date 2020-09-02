@@ -51,7 +51,7 @@ module Manager =
                 |>AsyncSeq.toObservable
                 |>Observable.bind (fun x-> Observable.ofAsync x)
                 |>Observable.iter(fun transferTask ->
-                    Async.Start( processTask transferTask ))
+                    Async.RunSynchronously( processTask transferTask ))
           
             )
         //Merge the observable seqence of each group together
