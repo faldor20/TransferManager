@@ -17,7 +17,6 @@ open IO.Types
 open StackExchange.Profiling
 module Manager =
 
-    let prof =new MiniProfiler()
     let startUp =
         //Read config file to get information about transfer source dest pairs
         let managerIP,userName,rest= ConfigReader.ReadFile "./WatchDirs.yaml"
