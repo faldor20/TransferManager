@@ -1,20 +1,13 @@
 namespace TransferClient
 
-open System.IO
-open System.Threading.Tasks
-open TransferClient.IO
 open Watcher
-open FSharp.Data
-open FSharp.Json
 open System
 open FSharp.Control.Reactive
-open SharedFs.SharedTypes
-open Legivel.Serialization
+
 open TransferClient.DataBase
 open FSharp.Control
 open TransferHandling
 open IO.Types
-open StackExchange.Profiling
 module Manager =
 
     let startUp =
@@ -45,7 +38,7 @@ module Manager =
         //but because we only want one transfer to happen at a time the transfer tasks that
         // are finished shceduling need to be processed sequentially
         let observables= schedulesInWatchDirs|>List.map(fun (schedules,groupName)->
-            printfn "Setting up observables for group: %s" groupName
+            Logging.infof "Setting up observables for group: %s" groupName
             schedules
                 |>AsyncSeq.toObservable
                 |>Observable.bind (fun x-> Observable.ofAsync x)

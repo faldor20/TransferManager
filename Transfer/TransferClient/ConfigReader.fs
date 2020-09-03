@@ -33,27 +33,26 @@ module ConfigReader=
                 errorPrinter "cannot be connected to" 
                 false
             | _ as x -> 
-                errorPrinter "not accessable for an unknown reason" 
-                printfn "reason: %A" x.Message
+                errorPrinter (sprintf "not accessable for an handled reason \n reason: %A"  x.Message)
                 false    
     //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
     type jsonData = { WatchDirs: MovementData list }
     type YamlData = {ManagerIP:string;ClientName:string; WatchDirs: MovementData list }
     let ReadFile configFilePath=
-        printfn "Reading config file at: %s" configFilePath
+        Logging.infof "{Config} Reading config file at: %s" configFilePath
 
         let configText = try File.ReadAllText(configFilePath)
                          with 
-                            | :? IOException->  printfn "ERROR Could not find WatchDirs.yaml, that file must exist"
+                            | :? IOException->  Logging.errorf "{Config} Could not find WatchDirs.yaml, that file must exist"
                                                 "Failed To open 'WatchDirs.yaml' file must exist for program to run "
         let yamlData = 
             match (Deserialize<YamlData> configText).[0] with
                |Success data -> 
-                    printfn "Deserilaization Warnings: %A" data.Warn
-                    printfn "Config Data=: %A" data.Data
+                    Logging.infof "{Config}Deserilaization Warnings: %A" data.Warn
+                    Logging.infof "{Config} Data=: %A" data.Data
                     data.Data
                |Error error ->
-                    printfn "Config file (%s) malformed, there is an error at %s becasue: %A" configText error.StopLocation.AsString error.Error
+                    Logging.errorf "{Config}Config file (%s) malformed, there is an error at %s becasue: %A" configText error.StopLocation.AsString error.Error
                     raise (FormatException())
 
         // Here we check if the directry exists by getting dir and file info about the source and dest and
@@ -69,7 +68,7 @@ module ConfigReader=
                 directoryTest dir.SourceFTPData dir.DirData.SourceDir printSourceError
             (sourceOkay && destOkay)
         )
-        if watchDirsExist.Length=0 then printfn "ERROR: no WatchDirs existing could be found in yaml file. The program is usless without one"
+        if watchDirsExist.Length=0 then Logging.errorf "{Config} No WatchDirs with valid source and dest could be found in yaml file. The program is usless without one"
        
         let mutable watchDirsData =
             watchDirsExist|> List.map (fun watchDir ->
@@ -89,5 +88,5 @@ module ConfigReader=
                 {MovementData=moveData;TransferedList = List.empty;ScheduledTasks= List.Empty }
             )
         
-        watchDirsData|>List.iter(fun watchDir->printfn "Watching: %s" watchDir.MovementData.DirData.SourceDir )
+        watchDirsData|>List.iter(fun watchDir->Logging.infof "Watching: %s" watchDir.MovementData.DirData.SourceDir )
         (yamlData.ManagerIP,yamlData.ClientName,watchDirsData)

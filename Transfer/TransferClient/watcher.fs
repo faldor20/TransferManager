@@ -6,7 +6,6 @@ open System.Threading.Tasks
 open IO.Types
 open FluentFTP
 open FSharp.Control
-open FSharp.Control.Reactive.Builders
 open System
 module Watcher =
 

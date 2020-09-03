@@ -2,9 +2,7 @@
 namespace TransferClient
 open System
 open System.Threading.Tasks
-open FSharp.Control.Tasks.V2
 open Manager
-open Saturn
 
 module Main=
 
@@ -12,7 +10,7 @@ module Main=
         
     let exceptionHandler (excep:UnhandledExceptionEventArgs) =
         let ex=(excep.ExceptionObject :?> Exception)
-        Logging.errorf  "unhandled exception: %s"  ex.Message
+        Logging.errorf  "unhandled exception: %s || %A"  ex.Message ex
         ()
     //let main2= new Task (fun()-> startUp)
     let logTest()=
