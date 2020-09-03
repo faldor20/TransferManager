@@ -11,16 +11,18 @@
     [Parameter]
     public string GroupName{get;set;}
     [Parameter]
-    public string UserName{get;set;}    
-     protected override async Task OnInitializedAsync()
+    public string UserName{get;set;}
+    public SlidingArray etaArray = new SlidingArray(5);
+
+    protected override async Task OnInitializedAsync()
     {   if(!Getter.ComponentUpdateEvents.ContainsKey(GroupName)) Getter.ComponentUpdateEvents[GroupName]=new Dictionary<string, Dictionary<int,Action>>() ;
         if(!Getter.ComponentUpdateEvents[GroupName].ContainsKey(UserName)) Getter.ComponentUpdateEvents[GroupName][UserName]=new Dictionary<int,Action>();
         void changed () {
             this.StateHasChanged();
             Console.WriteLine("state changed for user: "+UserName+" Id:"+index);
-            }
+        }
         Getter.ComponentUpdateEvents[GroupName][UserName][index] = changed;
-    
+
     }
 }
 
@@ -52,11 +54,12 @@
                  };
                  var etaSecs=(double)(task.FileRemaining/task.Speed);
                  string etaString;
+                 etaArray.AddEta(etaSecs);
                  if(etaSecs>3600){
                      etaString= "ETA "+ ">1 hour";
                  }
                  else if(etaSecs>1){
-                     var eta= TimeSpan.FromSeconds(etaSecs);
+                     var eta= TimeSpan.FromSeconds(etaArray.average);
                      etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
                  }
                  else if(task.Status==TransferStatus.Complete) etaString="Took: "+((task.EndTime-task.StartTime).ToString("hh\\:mm\\:ss"));

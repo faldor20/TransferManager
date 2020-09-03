@@ -44,6 +44,21 @@ namespace HostedBlazor.Data
             transData.EndTime = transData.EndTime.ToLocalTime();
             return transData;
         }
+         async Task Reconnect(HubConnection connection)
+        {
+            var connected = false;
+            while (!connected)
+            {
+                try
+                {
+                    Console.WriteLine("-Attempting- to connect to clientmanager");
+                    await connection.StartAsync();
+
+                    connected = true;
+                }
+                catch (Exception ex) { Console.WriteLine("-Failed Connection- to ClientManager retrying in 10S. Reason=" + ex.ToString()); }
+            }
+        }
         public async Task StartService()
         {
             Console.WriteLine("Started data retrieval service");
@@ -54,8 +69,8 @@ namespace HostedBlazor.Data
                 .WithUrl(transferServerUrl + "/datahub")
                 .AddMessagePackProtocol()
                 .Build();
-
-            hubConnection.On<Dictionary<string, Dictionary<string, Dictionary<int, TransferData>>>>("ReceiveData", dataList =>
+            hubConnection.Closed+= (ex=>Reconnect(hubConnection));
+                hubConnection.On<Dictionary<string, Dictionary<string, Dictionary<int, TransferData>>>>("ReceiveData", dataList =>
            {
                //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
                foreach (var group in dataList)
@@ -70,7 +85,7 @@ namespace HostedBlazor.Data
                        }
                    }
                }
-                CopyTasks=dataList;
+               CopyTasks = dataList;
                status = Status.Connected;
 
                newData.Invoke();
@@ -138,10 +153,11 @@ namespace HostedBlazor.Data
         async Task ContinuousSend()
         {
             var timer = new System.Timers.Timer(1000 * 60);
-            timer.Elapsed += (caller, arg) =>{
+            timer.Elapsed += (caller, arg) =>
+            {
                 RequestData();
-                
-                };
+
+            };
             timer.Start();
             Console.WriteLine("starting Data requests");
             while (true)
