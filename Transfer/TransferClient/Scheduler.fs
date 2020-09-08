@@ -116,6 +116,13 @@ module Scheduler =
             //this is only used for logging
             let logFilePath=match file.FTPFileInfo with | Some f-> "FTP:"+f.FullName |None -> file.Path
             let {DestinationDir=dest;GroupName=groupName}:DirectoryData=moveData.DirData
+            let transferType=
+                let{SourceFTPData= source; DestFTPData=dest;}=moveData
+                match (source,dest) with
+                |Some _,Some _->TransferTypes.FTPtoFTP
+                |None,Some _->TransferTypes.LocaltoFTP
+                |Some _,None->TransferTypes.FTPtoLocal
+                |None,None->TransferTypes.LocaltoLocal
             let transData=
                 { Percentage = 0.0
                   FileSize = 0.0
@@ -126,16 +133,17 @@ module Scheduler =
                   StartTime =  DateTime.Now
                   ID = 0
                   GroupName=groupName
+                  TransferType=transferType 
                   Status = TransferStatus.Waiting 
                   ScheduledTime=DateTime.Now
                   EndTime=new DateTime()}
             let index= dbAccess.Add  groupName transData
-
+            
             let ct = new CancellationTokenSource()
             let transType=
                 ""  |>fun s->if transcode then s+" transcode"else s
                     |>fun s->if moveData.SourceFTPData.IsSome||moveData.DestFTPData.IsSome then s+" ftp" else s
-            Logging.infof "{Scheduled} %s  transfer from %s To-> %s at index:%i" transType logFilePath dest index
+            Logging.infof "{Scheduled} %s transfer from %s To-> %s at index:%i" transType logFilePath dest index
             addCancellationToken groupName index ct
             //This should only be run if reading from growing files is disabled otherwise ignroe it.
             //Doesn't work on ftp files

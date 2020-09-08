@@ -47,6 +47,13 @@
                      TransferStatus.Cancelled=>"Canceled",
                      TransferStatus.Failed=>"Failed",
                  };
+                 var icon=task.TransferType switch{
+                     TransferTypes.FTPtoFTP=>"=>\n<=",
+                     TransferTypes.FTPtoLocal=>"=>",
+                     TransferTypes.LocaltoFTP=>"<=",
+                     TransferTypes.LocaltoLocal=>"V",
+
+                 };
                  string speed=task.Status switch
                  {
                      TransferStatus.Complete =>"Average Speed = "+ (task.FileSize/(task.EndTime-task.StartTime).TotalSeconds).ToString("0.0"),
@@ -72,6 +79,11 @@
                  if(task.Destination.Contains('@')) destination= task.Destination.Split('@')[1];
                  else destination=task.Destination;
                 <BSAlert Color="@type">
+                    <div style="display: flex;">
+
+                    <h2>
+                    @icon
+                    </h2>
                     <h5>
                         <span ><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(Math.Round( task.FileSize,1))MB || </span><span style="font-size: 17px"> <BSBadge Color="Color.Secondary">From</BSBadge> { @task.Source.Remove(task.Source.Length - fileName.Length) } <BSBadge Color="Color.Secondary">--></BSBadge>  { @destination }</span>
                     </h5>
@@ -79,6 +91,7 @@
                         <div class="progress"> 
                             <div class="progress-bar" role="progressbar" style="width: @task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
+                    </div>
                     </div>
                   
                 </BSAlert>
