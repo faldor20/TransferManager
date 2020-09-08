@@ -22,6 +22,8 @@
         <Compile Include="Mover/Types.fs" />
         <Compile Include="Mover/StreamPiping.fs" /> 
         <Compile Include="Mover/Fmove.fs" /> 
+        <Compile Include="Scheduler/Types.fs" /> 
+        <Compile Include="Scheduler/JobRunner.fs" /> 
         <Compile Include="DataBase/LocalDB.fs" />
         <Compile Include="DataBase/ManagerSync.fs" />
         <Compile Include="DataBase/TokenDatabase.fs" /> 

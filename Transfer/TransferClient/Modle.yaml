@@ -1,0 +1,61 @@
+{
+  #This is a dictionary
+  "1[Dictionary]":
+    {
+      "Remote":
+        {
+        
+          "1[groupLevel Dicionary]":
+            {
+              "Bun": { "1 None": {}, "2[jobs]": ["Bunjob", "Bunjob"] },
+              "Rky": { "1 None": {}, "2[jobs]": ["Rkyjob"] },
+            },
+          "2[jobs]": ["BunJob", "RkyJob", "BunJob"],
+          "3[ScheduleTokens]": ["Bun", "Rky"],
+           
+        },
+      "Local":
+        {
+          "1 Some":
+            {
+              "1": { "FromQaunt":{"1 None": {}, "2": ["FromQauntJob"] },
+                      "ToQaunt":{"1 None": {}, "2": ["ToQauntJob","ToQauntJob"]} 
+                    },
+              "2": ["FromQuant", "ToQaunt", "ToQaunt"],
+            },
+          "2": ["toQauntJOb", "FromQauntjob", "ToQauntjob"],
+        },
+    },
+  #This might have a enear infinte number of concurrent jobs
+  "2[Jobs]": ["toQauntJOb" , "FromQauntjob", "BunJob" ],
+  "3[Schedules]": 
+    [
+      "Remote",
+      "Local",
+      "Local",
+      "Remote",
+      "Local",
+      "Local",
+      "Remote",
+      "Local",
+      "Local",
+      "Remote",
+      "Local",
+      "Local",
+      "Remote",
+      "Local",
+      "Local",
+    ],
+}
+
+#a job type
+{
+ "JOb":{
+   #jobdata
+   "name":"bunjob"
+ },
+ "ScheduleTokens":[
+   "Remote"
+   ,"Bun"
+ ] 
+}
