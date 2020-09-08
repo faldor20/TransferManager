@@ -25,38 +25,44 @@ module LocalDB=
 
     type TransferDB=Dictionary<string, TransferData ResizeArray>
     //this needs a dictionary for the index ebcuase someties two clients may share the same groupName meaning the id will not be sequential
-    let mutable localDB: TransferDB=Dictionary()
+    let mutable private localDB: TransferDB=Dictionary()
+    let getlocalDB()=localDB
     ///Database representing the changes made to the database since the last sync with the manager
     let mutable ChangeDB= Dictionary<string,Dictionary<int, TransferData >>()
     //This is a list of changed parts of the local database this can be used to determine what should and shouldot be synced with the remote one
-    let mutable ChangedEntries:((string*int)  ResizeArray)= ResizeArray()
+    let mutable private ChangedEntries:((string*int)  ResizeArray)= ResizeArray()
     let mutable localID=0
     let getTransferData group index= localDB.[group].[index]
 
-    let setTransferData  groupName index newData=
+    let private setTransferData  groupName index newData=
         lock ChangeDB (fun x->
         safeAdd2 ChangeDB groupName index newData
         )
         localDB.[groupName].[index]<- newData 
     let initDB groups=
+        TransferClient.Logging.infof "{DataBase} Initialising DataBase"
         groups|>List.iter(fun groupName->localDB.[groupName]<- new List<TransferData>())
     ///Adds a new object to the database getting its index from the ClientManager
     ///Sets the TransferObject ID to the index it is inserted at.
-    let addTransferData  groupname newData=
+    let private addTransferData  groupName newData=
         let mutable index=0
-        lock localDB (fun x->
-            if not( localDB.ContainsKey groupname) then localDB.Add(groupname,ResizeArray())
-            index<-localDB.[groupname].Count
-            //we Set the ID to be the index so the Transdata can allways be refenced back too
-            let indexedData= {newData with ID=index}
-            lock ChangeDB (fun x->
-                safeAdd2 ChangeDB groupname index indexedData
+        lock localDB (fun ()->
+            lock ChangeDB (fun ()->
+                if not( localDB.ContainsKey groupName) then 
+                    localDB.Add(groupName,ResizeArray())
+                    TransferClient.Logging.debugf "Cancellation token DB doesn't contain group: %s adding it now" groupName
+                index<-localDB.[groupName].Count
+                TransferClient.Logging.verbosef "{DataBase} Adding transfer data %s current length of array is %i" newData.Source index
+                //we Set the ID to be the index so the Transdata can allways be refenced back too
+                let indexedData= {newData with ID=index}
+                localDB.[groupName].Add(indexedData)
+                safeAdd2 ChangeDB groupName index indexedData
+                TransferClient.Logging.verbosef "{DataBase} Added transfer data %s new length of array is %i "newData.Source localDB.[groupName].Count 
             )
-            
-            localDB.[groupname].Add(indexedData)
         )
         index
     let reset()=
+        TransferClient.Logging.infof "{DataBase} Resetting DataBase"
         localDB<- Dictionary()
         ChangeDB<-Dictionary()
     let AccessFuncs= {

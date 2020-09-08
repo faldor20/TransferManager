@@ -16,7 +16,7 @@ module Commands =
         Async.RunSynchronously(ManagerCalls.RegisterSelf connection userName)
         //Here we convert the Dictionary< list> to a dictionary< dictionary>
         let dic =
-            LocalDB.localDB
+            LocalDB.getlocalDB()
             |> Seq.map (fun key ->
                 KeyValuePair
                     (key.Key,

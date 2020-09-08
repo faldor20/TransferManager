@@ -8,8 +8,8 @@ module Types =
         | Failed = 1
         | Cancelled = 2
 
-    type ScheduledTransfer = Async<Async<TransferResult * int * CancellationToken>>
-
+    type MoveJob=Async<TransferResult * int * CancellationToken>
+    type ScheduledTransfer = Async<MoveJob>
 
     type TranscodeData =
         { TranscodeExtensions: string list
