@@ -20,8 +20,9 @@ let sampleData: TransferData =
           ScheduledTime = DateTime.Now 
           Status=TransferStatus.Waiting
           Percentage=0.0
+          TransferType=TransferTypes.LocaltoLocal
           }
-
+(* 
 let setupDB() =
    DataBase.LocalDB.addTransferData "hi" sampleData
 let resetDB() =
@@ -37,3 +38,4 @@ let DataBaseTests=
         Expect.isEmpty DataBase.LocalDB.localDB <|"localDBEmpty"
     }
     ]
+ *)
