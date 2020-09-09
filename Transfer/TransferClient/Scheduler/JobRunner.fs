@@ -24,16 +24,6 @@ module JobRunner=
     }
     type JobDB<'a>=RecDict<string,Level<'a>,MutableData<JobList<'a>>>
 
-    type GroupLevels<'a>=
-    |MiddleLevel of Level<'a>
-    |EndLevel of JobItem<'a>
-    type Group<'a>=
-        {
-        NextGroup : GroupLevel<'a> option
-        mutable JobList: JobItem<'a> list
-        ScheduleTokens:List<string>
-    } 
-    and GroupLevel<'T>= Dictionary<string, Group<'T>>
     let private tryGetValue key (gl)=
         let getVal (dic:Dictionary<'T,'U>)=
             if dic.ContainsKey(key) then
@@ -44,98 +34,48 @@ module JobRunner=
 
     let private removeJob (jobsList:'a list)=
         if jobsList.Length>=1 then 
-            Some (jobsList.Head,jobsList.Tail)
-
-
-        
+            Some (List.last jobsList,jobsList|> List.take (jobsList.Length-1))
         else None
-       
-(*     let getNextJob (jobGroups:Dictionary<string,'a list>) (scheduleOrder:list<string>) =
-        let rec intern _jobGroups _scheduleOrder index=
-            match scheduleOrder with
-            | head::tail-> 
-                match getJob head jobGroups with 
-                |None->
-                    intern _jobGroups tail (index+1) 
-                |Some x->
-                   Some (x,head,index)
-            |[]->None
-        intern jobGroups scheduleOrder 0 *)
-    ///<summary> Returns the next job to be scheduled from the Joblist of the given groupLevel removing it from the list</summary>
-    /// <param name="jobGroups"> dictionary whos keys are the names of watchdirs and whos values are the list of jobs to run from that watchdir</param>
-    /// <param name="scheduleOrder"> a list containg the keys from the dictionary that represents the order to choose by </pram>
-    let removeNextItem (group:GroupLevel<'a>) scheduleOrder  =
-        let rec intern _scheduleOrder index=
-            match scheduleOrder with
-            | head::tail-> 
-                match tryGetValue head group with
-                |Some {JobList=jobs}->
-                    match removeJob jobs  with 
-                    |None->
-                        intern tail (index+1) 
-                    |Some (job,newList)->
-                        group.[head].JobList<-newList
-                        Some (job,head,index)
-                |None->
-                    Logging.errorf "{JobRunner} jobList did not contain key '%A'from scheduleOrder" head
-                    intern tail (index+1)
-            |[]->None
-        intern scheduleOrder 0
-     ///<summary> Returns the next job to be scheduled from the Joblist of the given groupLevel removing it from the list</summary>
-    /// <param name="jobGroups"> dictionary whos keys are the names of watchdirs and whos values are the list of jobs to run from that watchdir</param>
-    /// <param name="scheduleOrder"> a list containg the keys from the dictionary that represents the order to choose by </pram>
-    let removeNextItem2 (levels:RecDict<'a,'b,MutableData<JobItem<'c>list>>) scheduleOrder  =
-        
-        let rec intern ((mid,dat): (Dictionary<'a,MutableData<JobItem<'c>list>>* 'b option)) _scheduleOrder index =
-            match scheduleOrder with
-            | head::tail-> 
-                match tryGetValue head mid with
-                 |Some jobs->
-                    match removeJob jobs.MutDat  with 
-                    |None->
-                        intern (mid,dat) tail (index+1) 
-                    |Some (job,newList)->
-                        dat.<-newList
-                        Some (job,head,index)
-                |None->
-                    Logging.errorf "{JobRunner} jobList did not contain key '%A'from scheduleOrder" head
-                    intern tail (index+1)
-            |[]->None
-        match levels with
-        |Middle mid->intern mid scheduleOrder 0
 
-    //TODO: may have to remove job from first group in this function
-    let returnSchedule groupRoot (job:JobItem<'a>) =
-        let rec intern (group:GroupLevel<'a>) scheduleTokens=
-            group|>Seq.iter(fun x ->
-            match x.Value with
-            |{NextGroup=Some nextLevel}->
-               group.[x.Key].ScheduleTokens.Add( List.head scheduleTokens)
-               intern nextLevel (List.tail scheduleTokens)
-            |{NextGroup=None}->
-                ()
-            )
-        intern groupRoot (Seq.toList job.TakenScheduleTokens)
+    let returnSchedule' recDict scheduleTokens=
+        let rec intern a tokens=
+            match drillToData recDict a with
+            |Ok data-> 
+                match tokens with 
+                |head::tail->
+                    match data with
+                    |MiddleType mid->
+                        mid.AvailableScheduleTokens<- head::mid.AvailableScheduleTokens
+                        let newList=a@[head]
+                        intern a tail
+                    |EndType _->Error <|sprintf"still had tokens left after reaching bottom of heirachy. Remaining: %A" tokens
+                |[]->
+                    match data with
+                    |EndType _-> Ok ()
+                    |MiddleType _->Error "Ran out of tokens before reaching Bottom of heirachy"
+            |Error er->Error<| sprintf"failed drilling down %s"er
+        intern [] scheduleTokens 
+    let rec returnScheduleTokens'' (recDict:JobDB<'a>) (scheduleTokens) =
+        //Check if we are at the end or not
+        match recDict with
+        |Middle (mid,dat)->
+            //Get the head schedule token to be put back
+            match scheduleTokens with 
+            |head::tail->
+                //Put token back
+                dat.AvailableScheduleTokens<-(head):: dat.AvailableScheduleTokens
+                //Go down a level and use that as the input for next time
+                match mid.[head] with    
+                |Middle nextMid->
+                    returnScheduleTokens'' (Middle nextMid) (tail)
+                |End _->
+                    Ok()
+            |[]->Error "Ran out of tokens before reaching Bottom of heirachy"
+        |End _->
+            match scheduleTokens with
+            |_::_-> Error <|sprintf"still had tokens left after reaching bottom of heirachy. Remaining: %A" scheduleTokens
+            |[]->Ok () 
     ///Moves jobs from lower teirs of groups to higher teirs if possibble
-    /// currently works top down which means it could take many iterations to mograte items up the group levels... i shold proabbly just run it regularly.
-    let rec shuffleUp (group:GroupLevel<'a>)= 
-        group|>Seq.iter(fun x ->
-        match x.Value with
-        |{NextGroup=Some nextLevel;JobList=jobList;ScheduleTokens=scheduleTokens}->
-            
-            match removeNextItem nextLevel (Seq.toList(scheduleTokens)) with
-            |Some (job,name,index)->
-                job.TakenScheduleTokens<-name::job.TakenScheduleTokens
-                group.[x.Key].JobList<-job::jobList
-                scheduleTokens.RemoveAt(index)
-                if index=scheduleTokens.Count-1 then
-                    shuffleUp nextLevel
-                else
-                    shuffleUp group
-            |None->
-                shuffleUp nextLevel
-        |{NextGroup=None}->()
-        )
     let rec shuffleUp2 (recDict:RecDict<string,Level<'a>,MutableData<JobList<'a>>>)= 
         match recDict with
         //First we figure out whetehr we are at the end of our Heirachy
@@ -149,55 +89,56 @@ module JobRunner=
                 let belowData=tryGetValue token dict
                 match belowData with 
                 |Some below ->
-                    let updateList (list:ref<list<JobItem<'a>>>)=
-                        match removeJob list.Value with
-                        |Some (job,newList)->
-                            list.Value<-newList
-                            job.TakenScheduleTokens<-token::job.TakenScheduleTokens
-                            data.JobList<-job::data.JobList
-                            false
-                        |None->true//This means there was no jobs waiting to move up
+                    let updateList (jobList:list<JobItem<'a>>)=
+                        match removeJob jobList with //remove the token from the list
+                        |Some (job,newJobList)-> 
+                            job.TakenScheduleTokens<-token::job.TakenScheduleTokens //give the job the token
+                            data.JobList<-job::data.JobList //put the token in the tier aboves list
+                            (newJobList,false) //return false which removes token from the available list
+                        |None->(jobList,true)//This means there was no jobs waiting to move up
                     match below with
-                    |Middle (_,mid)->updateList (ref mid.JobList)
-                    |End en-> updateList (ref en.MutDat)
+                    |Middle (_,mid)-> 
+                        let (newList,outp)= updateList mid.JobList
+                        mid.JobList<-newList
+                        outp
+                    |End en-> 
+                        let (newList,outp)= updateList en.MutDat
+                        en.MutDat<-newList
+                        outp
                 |None-> true  
             )
             data.AvailableScheduleTokens<- newKeys
         |End data->()
         
-    let addNewJob (groupRoot) job (groupkeys: string list)=
-    //Here we keep drilling down thorugh groups using our list of keys untill we gt to the last key then insert out job at that point
-        let rec intern (_group:GroupLevel<'a> option) keys=
-            match _group with
-            |Some group->
-                match keys with
-                |[only]->
-                    if group.[only].NextGroup.IsSome then 
-                        raise<| ArgumentException(sprintf"keys list did not drill all the way down to a watchdir, ended at key %s. Keys given: %A" only keys  )
-                    group.[only].JobList<- job::group.[only].JobList
-                |head::tail -> intern group.[head].NextGroup tail
-            |None->raise <|ArgumentOutOfRangeException "Reached a group that didn't exist before getting to the end of the keys"
-        intern groupRoot.NextGroup groupkeys
+  
     let addNewJob2 (recDict:JobDB<'a>) job (groupkeys: string list)=
     //Here we keep drilling down thorugh groups using our list of keys untill we gt to the last key then insert out job at that point
         let data=drillToEndData recDict groupkeys
         match data with
         |Ok data->Ok (data.MutDat<-job::data.MutDat)
         |Error err->Error <|sprintf "failed with message %s "err
-    let removeJob (groupRoot) job (groupkeys: string list)=
-    //Here we keep drilling down thorugh groups using our list of keys untill we gt to the last key then insert out job at that point
-        let rec intern (_group:GroupLevel<'a> option) keys=
-            match _group with
-            |Some group->
-                match keys with
-                |[only]->
-                    if group.[only].NextGroup.IsSome then 
-                        raise<| ArgumentException(sprintf"keys list did not drill all the way down to a watchdir, ended at key %s. Keys given: %A" only keys  )
-                    group.[only].JobList<- job::group.[only].JobList
-                |head::tail -> intern group.[head].NextGroup tail
-            |None->raise <|ArgumentOutOfRangeException "Reached a group that didn't exist before getting to the end of the keys"
-        intern groupRoot.NextGroup groupkeys
+    ///Rmoves the Job from a list at the speified postion the position is a sequence of keys refering to its location n the heirache. an empty list means top level
+    let removeJob2 (recDict:JobDB<'a>) (job:JobItem<'a>) (position: list<'b>)=
+        let removeItem (list:ref<JobList<'a>>) =
 
+            let newList=list.Value|>List.except [job] //remove job from list
+            if newList.Length= (list.Value.Length-1) then
+                list:=newList//apply change to list
+                //We then return the tokens the job list
+                match returnScheduleTokens'' recDict job.TakenScheduleTokens with
+                |Ok _->Ok ()
+                |Error er-> Error <| sprintf"failed returning tokens with: %s" er 
+            else if newList.Length= list.Value.Length then
+                Error "Job was not removed becuase it was not found in the list it was supposed to be removed from"
+            else Error "Something went horribly horribly wrong"
+        //Get the job wherever it may be
+        let dat=drillToData recDict position
+        match dat with
+        |Ok data->
+            match data with
+            |EndType  x->removeItem (ref x.MutDat)
+            |MiddleType x->removeItem (ref x.JobList)
+        |Error err->Error <|sprintf "failed with message %s "err
     (* let handleTopLevelJobs (group:GroupLevel<IO.Types.MoveJob>)=
         group.Values|>Seq.iter(fun x-> x.JobList|>List.iter(fun y->y.Job)) *)
         
