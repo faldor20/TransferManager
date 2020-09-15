@@ -37,8 +37,8 @@ module Mover =
     }
 
     let MoveFile (sourceFilePath:string) moveData dbAccess transcode (ct:CancellationTokenSource) = async {
-   
-        let {DestinationDir=destination; GroupName= groupName}=moveData.DirData
+        
+        let {DestinationDir=destination;}=moveData.DirData
         //let isFTP=moveData.FTPData.IsSome
         
         let fileName= Path.GetFileName sourceFilePath

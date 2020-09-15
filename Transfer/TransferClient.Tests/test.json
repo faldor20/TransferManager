@@ -1,0 +1,132 @@
+{
+    "Case": "Middle",
+    "Fields": [
+        [
+            {
+                "Remote": {
+                    "Case": "Middle",
+                    "Fields": [
+                        [
+                            {
+                                "Bun": {
+                                    "Case": "End",
+                                    "Fields": [
+                                        {
+                                            "MutDat": [
+                                                {
+                                                    "Job": "BunJob2",
+                                                    "TakenScheduleTokens": [
+                                                        ""
+                                                    ]
+                                                },
+                                                {
+                                                    "Job": "BunJob3",
+                                                    "TakenScheduleTokens": [
+                                                        ""
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                "Rky": {
+                                    "Case": "End",
+                                    "Fields": [
+                                        {
+                                            "MutDat": [
+                                                {
+                                                    "Job": "RkyJob1",
+                                                    "TakenScheduleTokens": [
+                                                        ""
+                                                    ]
+                                                },
+                                                {
+                                                    "Job": "RkyJob2",
+                                                    "TakenScheduleTokens": [
+                                                        ""
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "JobList": [
+                                        {
+                                            "Job": "BunJOb1",
+                                            "TakenScheduleTokens": [
+                                                "Bun"
+                                            ]
+                                        }
+                                    ],
+                                    "AvailableScheduleTokens": [
+                                        "Bun",
+                                        "Rky"
+                                    ]
+                                }
+                            ]
+                        ]
+                    },
+                    "Local": {
+                        "Case": "Middle",
+                        "Fields": [
+                            [
+                                {
+                                    "ToQuantel": {
+                                        "Case": "End",
+                                        "Fields": [
+                                            {
+                                                "MutDat": [
+                                                    {
+                                                        "Job": "ToQuantelJob2",
+                                                        "TakenScheduleTokens": [
+                                                            ""
+                                                        ]
+                                                    },
+                                                    {
+                                                        "Job": "ToQuantelJob3",
+                                                        "TakenScheduleTokens": [
+                                                            ""
+                                                        ]
+                                                    }
+                                                ]
+                                            }
+                                        ]
+                                    },
+                                    {
+                                        "JobList": [
+                                            {
+                                                "Job": "ToQauntelJob1",
+                                                "TakenScheduleTokens": [
+                                                    "ToQuantel"
+                                                ]
+                                            }
+                                        ],
+                                        "AvailableScheduleTokens": [
+                                            "ToQauntel"
+                                        ]
+                                    }
+                                ]
+                            ]
+                        },
+                        {
+                            "JobList": [
+                                {
+                                    "Job": "ToQauntelJob0",
+                                    "TakenScheduleTokens": [
+                                        "ToQuantel",
+                                        "Local"
+                                    ]
+                                }
+                            ],
+                            "AvailableScheduleTokens": [
+                                "Remote",
+                                "Local",
+                                "Local",
+                                "Local"
+                            ]
+                        }
+                    ]
+                ]
+            }
+        }

@@ -23,14 +23,15 @@ module Main=
     let main argv =
         logTest()
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler
-        
-     //   printfn"Begining"
-      //  Testing.test 1
-       // Benchmark.benchmark()
-     //   printfn "done"   
+               
+        printfn"Begining"
+        Testing.test 1
+        //Benchmark.benchmark()
+
+        printfn "done"   
     
-        let a=Task.Run(fun()-> Async.RunSynchronously startUp)
-        a.Wait()    
+(*         let a=Task.Run(fun()-> Async.RunSynchronously startUp)
+        a.Wait()     *)
  
       
         

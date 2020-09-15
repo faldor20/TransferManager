@@ -115,7 +115,7 @@ module Scheduler =
         async {
             //this is only used for logging
             let logFilePath=match file.FTPFileInfo with | Some f-> "FTP:"+f.FullName |None -> file.Path
-            let {DestinationDir=dest;GroupName=groupName}:DirectoryData=moveData.DirData
+            let {DestinationDir=dest;}:DirectoryData=moveData.DirData
             let transferType=
                 let{SourceFTPData= source; DestFTPData=dest;}=moveData
                 match (source,dest) with
@@ -132,7 +132,7 @@ module Scheduler =
                   Source =  file.Path
                   StartTime =  DateTime.Now
                   ID = 0
-                  GroupName=groupName
+                  GroupKeys=moveData.Grouping
                   TransferType=transferType 
                   Status = TransferStatus.Waiting 
                   ScheduledTime=DateTime.Now

@@ -1,6 +1,6 @@
 namespace TransferClient.JobManager
 open SharedFs.SharedTypes
-open Types
+open TransferClient.RecDict
 open System
 open FSharp.Control.Reactive
 open TransferClient
@@ -9,7 +9,7 @@ open FSharp.Control
 open TransferClient.IO.Types
 open TransferClient.DataBase.Types
 open System.Collections.Generic
-module JobRunner=
+module JobManager=
     type JobItem<'a>=
         {
         Job:'a
@@ -23,6 +23,8 @@ module JobRunner=
         mutable AvailableScheduleTokens:string list
     }
     type JobDB<'a>=RecDict<string,Level<'a>,MutableData<JobList<'a>>>
+open JobManager
+module JobRunner=
 
     let private tryGetValue key (gl)=
         let getVal (dic:Dictionary<'T,'U>)=
@@ -30,7 +32,6 @@ module JobRunner=
                 Some dic.[key]
             else None
         getVal (gl)
-        
 
     let private removeJob (jobsList:'a list)=
         if jobsList.Length>=1 then 
@@ -110,7 +111,7 @@ module JobRunner=
             data.AvailableScheduleTokens<- newKeys
         |End data->()
         
-  
+    
     let addNewJob2 (recDict:JobDB<'a>) job (groupkeys: string list)=
     //Here we keep drilling down thorugh groups using our list of keys untill we gt to the last key then insert out job at that point
         let data=drillToEndData recDict groupkeys

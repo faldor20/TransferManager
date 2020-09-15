@@ -8,15 +8,23 @@ open TransferClient.DataBase
 open FSharp.Control
 open TransferHandling
 open IO.Types
+open RecDict
 module Manager =
 
     let startUp =
         //Read config file to get information about transfer source dest pairs
         let managerIP,userName,rest= ConfigReader.ReadFile "./WatchDirs.yaml"
         let mutable watchDirsData= rest
-        let groups=watchDirsData|>List.map(fun x-> x.MovementData.DirData.GroupName)
+        let groupsRes=
+            watchDirsData
+            |>List.map(fun x->   x.MovementData.Grouping)
+            |>makeKeys
+        let groups=
+            match groupsRes with 
+            |Ok a-> a
+            |Error a-> failwith a
         //Create all the needed groups
-        LocalDB.initDB groups
+        LocalDB.initRecDB groups
         //create a asyncstream that yields new schedule jobs when 
         //a new file is detected in a watched source
         let schedulesInWatchDirs = GetNewTransfers2  watchDirsData LocalDB.AccessFuncs

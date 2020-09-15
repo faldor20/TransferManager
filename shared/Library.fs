@@ -32,4 +32,4 @@ module SharedTypes =
           StartTime: DateTime
           EndTime: DateTime
           ID: int
-          GroupName: string }
+          GroupKeys: list<string> }
