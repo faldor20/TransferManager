@@ -16,12 +16,14 @@
 	</ItemGroup> 
 	<ItemGroup>
         <Compile Include="Logging.fs" />
-		<Compile Include="SignalR/SignalR.fs" />
-		<Compile Include="SignalR/ManagerCalls.fs" />
         <Compile Include="DataBase/Types.fs" /> 
         <Compile Include="Mover/Types.fs" />
         <Compile Include="Mover/StreamPiping.fs" /> 
         <Compile Include="Mover/Fmove.fs" /> 
+        <Compile Include="JobManager/JobManager.fs" /> 
+		<Compile Include="SignalR/SignalR.fs" />
+		<Compile Include="SignalR/ManagerCalls.fs" />
+        
         <Compile Include="DataBase/LocalDB.fs" />
         <Compile Include="DataBase/ManagerSync.fs" />
         <Compile Include="DataBase/TokenDatabase.fs" /> 
@@ -34,9 +36,9 @@
         <Compile Include="Mover/Progresshandlers.fs" />
         <Compile Include="Mover/VideoMover.fs" />
 		<Compile Include="Mover/Mover.fs" />
+        <Compile Include="TransferHandling.fs" />
         <Compile Include="Scheduler.fs" />
 		<Compile Include="watcher.fs" />
-        <Compile Include="TransferHandling.fs" />
 		<Compile Include="Manager.fs" />
 		<Compile Include="testing.fsx" />
 		<Compile Include="testing.fs" />

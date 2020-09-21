@@ -22,6 +22,9 @@
 <ProjectReference Include="..\..\shared\SharedData.fsproj" >
 <Name>SharedFs</Name>
 </ProjectReference>
+<ProjectReference Include="..\..\Transfer\TransferClient\TransferClient.fsproj" >
+<Name>TransferClient</Name>
+</ProjectReference>
 
     <ProjectReference Include="..\Shared\HostedBlazor.Shared.csproj" />
   </ItemGroup>

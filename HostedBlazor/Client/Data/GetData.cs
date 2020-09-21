@@ -70,7 +70,7 @@ namespace HostedBlazor.Data
                 .AddMessagePackProtocol()
                 .Build();
             hubConnection.Closed+= (ex=>Reconnect(hubConnection));
-                hubConnection.On<Dictionary<string, Dictionary<string, Dictionary<int, TransferData>>>>("ReceiveData", dataList =>
+                hubConnection.On<Dictionary<string, Tran>>("ReceiveData", dataList =>
            {
                //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
                foreach (var group in dataList)

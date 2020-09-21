@@ -60,7 +60,7 @@ module Watcher =
                     yield task
                 ignoreList<- ignoreList|> Array.append (newFiles|> Array.map(fun x->x.Path))
                 do! Async.Sleep(500);
-        },watchDir.MovementData.DirData.GroupName)
+        },watchDir.MovementData.GroupList)
 
    
     let GetNewTransfers2 watchDirs dbAccess=

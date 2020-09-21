@@ -32,3 +32,4 @@ module Types =
             Set= dbFuncs.Set groupName index 
             Get= (fun x -> dbFuncs.Get groupName index)
         }
+    

@@ -6,9 +6,9 @@
     <ItemGroup>
         <ProjectReference Include="../../Shared/SharedData.fsproj" />
 
-        <!-- <ProjectReference Include="..\TransferClient\TransferClient.fsproj">
+         <ProjectReference Include="..\TransferClient\TransferClient.fsproj">
       <Name>TransferClient.fsproj</Name>
-    </ProjectReference> -->
+    </ProjectReference> 
     </ItemGroup>
     <ItemGroup>
 

@@ -9,9 +9,15 @@ open SharedFs.SharedTypes
 open Legivel.Serialization
 open FSharp.Control
 open IO.Types
+open System.Collections.Generic
 module ConfigReader=
 
-
+   type ConfigMovementData =
+        { GroupList: string list
+          DirData: DirectoryData
+          SourceFTPData: FTPData option
+          DestFTPData: FTPData option
+          TranscodeData: TranscodeData option }
       
     let directoryTest ftpData directory errorPrinter = 
         try 
@@ -36,8 +42,13 @@ module ConfigReader=
                 errorPrinter (sprintf "not accessable for an handled reason \n reason: %A"  x.Message)
                 false    
     //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
-    type jsonData = { WatchDirs: MovementData list }
-    type YamlData = {ManagerIP:string;ClientName:string; WatchDirs: MovementData list }
+    type YamlData = 
+        {
+            ManagerIP:string;
+            ClientName:string; 
+            MaxJobs:Dictionary<string,int>
+            WatchDirs: ConfigMovementData list 
+        }
     let ReadFile configFilePath=
         Logging.infof "{Config} Reading config file at: %s" configFilePath
 
@@ -69,9 +80,23 @@ module ConfigReader=
             (sourceOkay && destOkay)
         )
         if watchDirsExist.Length=0 then Logging.errorf "{Config} No WatchDirs with valid source and dest could be found in yaml file. The program is usless without one"
-       
+        let groups=
+            watchDirsExist
+                |>List.map(fun x-> x.GroupList)
+
+        let mapping =
+                    groups
+                    |>List.concat
+                    |> List.distinct
+                    |> List.mapi (fun i x -> KeyValuePair(x, i))
+                    |>Dictionary<string,int> 
+        let freeTokens=yamlData.MaxJobs |>Seq.map(fun x ->  KeyValuePair(mapping.[x.Key],x.Value))|>Dictionary<int,int>
+        let mappedGroups=
+            groups
+            |> List.map (List.map (fun x ->  mapping.[x]))
         let mutable watchDirsData =
-            watchDirsExist|> List.map (fun watchDir ->
+            (mappedGroups, watchDirsExist)||> List.map2 (fun group watchDir ->
+                
                 let transData=
                     match watchDir.TranscodeData with 
                         |Some transData->
@@ -81,12 +106,16 @@ module ConfigReader=
                             let ffmpegArgs= transData.FfmpegArgs|> Option.bind (fun x->if x=""then None else Some x)
                             Some {transData with TranscodeExtensions= normalisedExtensions; FfmpegArgs=ffmpegArgs}
                         |None-> None
-                let moveData=
-                   { watchDir with
+                let moveData:MovementData=
+                   {    GroupList=group
+                        DirData=watchDir.DirData
+                        SourceFTPData=watchDir.SourceFTPData
+                        DestFTPData=watchDir.DestFTPData
                         TranscodeData= transData
                    }
+                
                 {MovementData=moveData;TransferedList = List.empty;ScheduledTasks= List.Empty }
             )
         
         watchDirsData|>List.iter(fun watchDir->Logging.infof "Watching: %s" watchDir.MovementData.DirData.SourceDir )
-        (yamlData.ManagerIP,yamlData.ClientName,watchDirsData)
+        {|manIP= yamlData.ManagerIP; ClientName=yamlData.ClientName;FreeTokens=freeTokens;ScheduleIDMapping= mapping;WatchDirs= watchDirsData|}

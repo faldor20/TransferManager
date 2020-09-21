@@ -111,11 +111,11 @@ module Scheduler =
                 FileSize=fileSizeMB
         }
      
-    let scheduleTransfer (file:FoundFile) moveData (dbAccess:DataBase.Types.DataBaseAcessFuncs) transcode =
+    let scheduleTransfer (file:FoundFile) moveData (dbAccess:JobManager.JobDBAccess) transcode =
         async {
             //this is only used for logging
             let logFilePath=match file.FTPFileInfo with | Some f-> "FTP:"+f.FullName |None -> file.Path
-            let {DestinationDir=dest;GroupName=groupName}:DirectoryData=moveData.DirData
+            let {DestinationDir=dest}:DirectoryData=moveData.DirData
             let transferType=
                 let{SourceFTPData= source; DestFTPData=dest;}=moveData
                 match (source,dest) with
@@ -123,7 +123,7 @@ module Scheduler =
                 |None,Some _->TransferTypes.LocaltoFTP
                 |Some _,None->TransferTypes.FTPtoLocal
                 |None,None->TransferTypes.LocaltoLocal
-            let transData=
+            let transData:TransferData=
                 { Percentage = 0.0
                   FileSize = 0.0
                   FileRemaining = 0.0
@@ -131,20 +131,33 @@ module Scheduler =
                   Destination = dest
                   Source =  file.Path
                   StartTime =  DateTime.Now
-                  ID = 0
-                  GroupName=groupName
+                  jobID = -1
+                  location=moveData.GroupList
                   TransferType=transferType 
-                  Status = TransferStatus.Waiting 
+                  Status = TransferStatus.Unavailable 
                   ScheduledTime=DateTime.Now
                   EndTime=new DateTime()}
-            let index= dbAccess.Add  groupName transData
-            
+            //TODO: make an event that is subscribed to this that cancells the job
             let ct = new CancellationTokenSource()
+            let jobID= dbAccess.JobList.AddJob  (fun id->{Job=Mover.MoveFile file.Path moveData  dbAccess id transcode ct;TakenTokens=List.Empty})
+            dbAccess.TransferDataList.Set jobID transData
+            addCancellationToken jobID ct
+            //We register a function that will cancell the job if cancellation is requested while it is waiting to be started
+            ct.Token.Register (Action (fun ()-> 
+                if(dbAccess.TransferDataList.Get(jobID).Status=TransferStatus.Waiting) then
+                    Logging.infof "{Scheduler} File cancelled while waiting to be available Transfer file at: %s" logFilePath 
+                    dbAccess.TransferDataList.Set jobID {dbAccess.TransferDataList.Get jobID with Status=TransferStatus.Cancelled} 
+                    TransferHandling.cleaupTask dbAccess jobID moveData.GroupList TransferResult.Cancelled moveData.DirData.DeleteCompleted
+                        |>Async.RunSynchronously
+                    ct.Dispose()
+                ))|>ignore
+            
+            
             let transType=
                 ""  |>fun s->if transcode then s+" transcode"else s
                     |>fun s->if moveData.SourceFTPData.IsSome||moveData.DestFTPData.IsSome then s+" ftp" else s
-            Logging.infof "{Scheduled} %s transfer from %s To-> %s at index:%i" transType logFilePath dest index
-            addCancellationToken groupName index ct
+            Logging.infof "{Scheduled} %s transfer from %s To-> %s at index:%A" transType logFilePath dest jobID
+
             //This should only be run if reading from growing files is disabled otherwise ignroe it.
             //Doesn't work on ftp files
             let fileAvailable=
@@ -155,20 +168,18 @@ module Scheduler =
                         Async.RunSynchronously<| (file.Path|>isAvailableFTP  ct.Token client)
                     |None-> Async.RunSynchronously( isAvailable file.Path ct.Token)
         
-            let transDataAccess= TransDataAcessFuncs dbAccess groupName index
 
             if fileAvailable= Availability.Available then
                 Logging.infof "{Available} file at: %s is available" logFilePath 
-
-                dbAccess.Set groupName index (getFileData file (dbAccess.Get groupName index) )  
+                dbAccess.TransferDataList.Set jobID (getFileData file ({dbAccess.TransferDataList.Get jobID with Status=TransferStatus.Waiting}) )  
                 
-                return Mover.MoveFile file.Path moveData transDataAccess transcode  ct
             else if fileAvailable =Availability.Deleted then
                 Logging.warnf "{Scheduler} File Deleted  while waiting to be available Transfer file at: %s" logFilePath 
-                dbAccess.Set groupName index {dbAccess.Get groupName index with Status=TransferStatus.Failed} 
-                return async{ return (Types.TransferResult.Failed, transDataAccess,moveData.DirData.DeleteCompleted)}
+                dbAccess.TransferDataList.Set jobID {dbAccess.TransferDataList.Get jobID with Status=TransferStatus.Failed} 
+                do! TransferHandling.cleaupTask dbAccess jobID moveData.GroupList TransferResult.Failed moveData.DirData.DeleteCompleted
+                
             else 
                 Logging.infof "{Scheduler} File cancelled while waiting to be available Transfer file at: %s" logFilePath 
-                dbAccess.Set groupName index {dbAccess.Get groupName index with Status=TransferStatus.Cancelled} 
-                return async{ return (Types.TransferResult.Cancelled, transDataAccess,moveData.DirData.DeleteCompleted)}
+                dbAccess.TransferDataList.Set jobID {dbAccess.TransferDataList.Get jobID with Status=TransferStatus.Cancelled} 
+                do! TransferHandling.cleaupTask dbAccess jobID moveData.GroupList TransferResult.Cancelled moveData.DirData.DeleteCompleted
         }

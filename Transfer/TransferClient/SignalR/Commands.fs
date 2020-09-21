@@ -15,8 +15,8 @@ module Commands =
     let postconnection (connection:HubConnection) userName groupNames =
         Async.RunSynchronously(ManagerCalls.RegisterSelf connection userName)
         //Here we convert the Dictionary< list> to a dictionary< dictionary>
-        let dic =
-            LocalDB.getlocalDB()
+        //let dic =
+           (*  LocalDB.getlocalDB()
             |> Seq.map (fun key ->
                 KeyValuePair
                     (key.Key,
@@ -25,9 +25,9 @@ module Commands =
                       |> Dictionary)
                     )
             )
-            |> Dictionary
+            |> Dictionary *)
 
-        ManagerCalls.overwriteTransferData connection userName (dic)
+        ManagerCalls.overwriteTransferData connection userName (JobManager.UIData LocalDB.jobDB)
 
     let reconnect (connection:HubConnection) userName groupNames ct =
         let job =

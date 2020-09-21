@@ -14,11 +14,11 @@ module ManagerSync=
             while true do
             //TODO: i need to make sure we are actualy regeistered wih the clientManager
                 if SignalR.Connection.connected then
-                    if LocalDB.ChangeDB.Count>0 then 
+                   // if LocalDB.ChangeDB.Count>0 then 
 
-                        Async.RunSynchronously (syncTransferData connection userName LocalDB.ChangeDB)
-                        LocalDB.ChangeDB<-Dictionary()
-                    count<-count+1
+                        Async.RunSynchronously (syncTransferData connection userName  (JobManager.UIData LocalDB.jobDB))
+                      //  LocalDB.ChangeDB<-Dictionary()
+                  //  count<-count+1
                 do! Async.Sleep(syncInterval)
                 
         }

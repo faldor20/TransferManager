@@ -1,15 +1,14 @@
 namespace TransferClient.DataBase
 open System.Collections.Generic
 open System.Threading
+open TransferClient.JobManager
 module TokenDatabase=
-    let mutable CancellationTokens=new Dictionary<string,Dictionary<int,CancellationTokenSource> >()
-    let addCancellationToken groupName id token=
+    let mutable CancellationTokens=new Dictionary<JobID,CancellationTokenSource> ()
+    let addCancellationToken id token=
         lock CancellationTokens (fun()->
-            if not( CancellationTokens.ContainsKey groupName) then
-                TransferClient.Logging.debugf "Cancellation token DB doesn't contain group: %s adding it now" groupName
-                let res=CancellationTokens.TryAdd(groupName, new Dictionary<int,CancellationTokenSource>() )
-                if not res then TransferClient.Logging.errorf"{TokenDB} Something went wrong creating token list for %s " groupName
-            CancellationTokens.[groupName].Add(id,token)
+            if not( CancellationTokens.ContainsKey id) then
+                TransferClient.Logging.debugf "Cancellation token DB doesn't contain id: %A adding it now" id
+            CancellationTokens.Add(id,token)
         )
     let cancelToken groupName id =
-        CancellationTokens.[groupName].[id].Cancel()
+        CancellationTokens.[id].Cancel()
