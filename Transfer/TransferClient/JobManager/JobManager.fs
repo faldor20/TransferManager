@@ -254,3 +254,192 @@ module JobManager =
             JobList=JobListF.JobListAcessFuncs jobDB.JobList
             FreeTokens=FreeTokensF.FreeTokensAcessFuncs jobDB.FreeTokens
         }
+
+
+
+module simpleDB=
+    open JobManager
+    open System.Linq
+    //contains one schedule id for each job in each jobsource.
+    // source a=[job1,job2] b=[job1] jobOrder=[(a);(b);(a)]
+    type JobOrder= (ScheduleID)ResizeArray
+    type JobItem =
+        { Job: Job
+          ID:JobID
+          mutable TakenTokens: ScheduleID list }
+    
+    ///SoureOrder is a list of the sources that want the token. each time a token is issued the issuing sources id is put at the end
+    type TokenStore={
+        Token:ScheduleID;
+        mutable Remaining:int;
+        mutable SourceOrder: ScheduleID list 
+    }
+    type FreeTokens = Dictionary<ScheduleID, TokenStore>
+    type RunningJobs= List<JobID>
+    type FinishedJobs=List<JobID>
+    ///required tokens is last reuired to firstrequired
+    /// Rules:
+    /// A job with a lower number of tokens will allways sit below one with a higher number
+    /// Jobs will allways be removed from the list in the order they were added(assuming no user swap requests)
+    type Source= {Jobs:ResizeArray<JobItem>;RequiredTokens:ScheduleID list}
+    type Sources= Dictionary<ScheduleID,Source>
+    type UIData= {
+        TransferDataList:TransferDataList
+        Jobs:(JobID*HierarchyLocation)array
+    }
+    let countBefore (jobOrder:JobOrder) countItem index=
+            let mutable amount=0
+            for i in [0..index-1] do
+                if jobOrder.[i]=countItem then amount<-amount+1
+            amount
+    let countUp (jobOrder:IEnumerable<'a>)=
+        let counts=Dictionary<'a,int>()
+        jobOrder.Select(fun job->
+            if not (counts.ContainsKey(job)) then counts.[job]<-0
+            else counts.[job]<-counts.[job]+1
+            (job,counts.[job])
+        ).ToArray()
+        
+    module FreeTokensF =
+        let private takeToken'  tokenSource=
+            lock tokenSource (fun ()->
+                let newTokens, outp =
+                    match tokenSource.Remaining with
+                    | a when a > 0 -> tokenSource.Remaining - 1, Some tokenSource.Token
+                    | a when a = 0 -> 0, None
+                    | a when a < 0 -> failwithf "FreeTokens for tokenId %A under 0 this should never ever happen" id
+
+                tokenSource.Remaining <- newTokens
+                outp)
+        let takeToken  id (tokenDB: FreeTokens)=
+            takeToken' tokenDB.[id]
+        
+        let returnToken (tokenDB: FreeTokens) id = tokenDB.[id].Remaining <- tokenDB.[id].Remaining + 1
+        let setFreeTokens (tokenDB: FreeTokens) id amount = tokenDB.[id] <- amount
+        let rec attmeptIssuingToken  (sources: Sources) (tokenSource:TokenStore)=
+            ///This loop iterates jobs untill one is found that the token can be inserted into. At which point it returns true. if none is found it returns false
+            let rec jobLoop (source:Source) ID i=
+                if i=source.Jobs.Count then false 
+                else
+                    let job= source.Jobs.[i]
+                    let nextToken=source.RequiredTokens|>List.except job.TakenTokens|>List.last
+                    if nextToken= tokenSource.Token then
+                        match takeToken' tokenSource with
+                        |Some token->
+                            job.TakenTokens<- token::job.TakenTokens
+                            //This removes our item and then adds it at the end
+                            tokenSource.SourceOrder <-(tokenSource.SourceOrder|>List.except[ID])@[ID]
+                            //we then run it again just incase there are some tokens left
+                            true
+                        |None->
+                            Logging.errorf "Something has gone wrong an attempt was made to issue a token but it failed"
+                            true
+                    else jobLoop source ID i
+            ///loops until the jobloop returns true, then runs the main function again. this is incase multiple tokens were added at once
+            let rec iter (sourceIDs)=
+                match sourceIDs with
+                | head::tail-> 
+                    if jobLoop sources.[head] head  0 then tokenSource|>attmeptIssuingToken  sources
+                    else iter tail
+                |[]->()
+            if tokenSource.Remaining>0 then
+                iter tokenSource.SourceOrder
+                    
+    /// pos is the scheduleid and index within the source of a particular job
+    let switch (sources:Sources) (jobOrder:JobOrder) (downJob:ScheduleID*int) upJob =
+       
+        match downJob,upJob with
+        //if the sources are the same we move within a souceList
+        | ((source1,i1),(source2,i2)) when source1=source2->
+            let pos1=countBefore jobOrder source1 i1
+            let pos2=countBefore jobOrder source1 i1
+            let list= sources.[source1]
+            //this siwtches the jobs tokens
+            let downJobTokens =list.Jobs.[pos1].TakenTokens
+            list.Jobs.[pos1].TakenTokens<-list.Jobs.[pos2].TakenTokens
+            list.Jobs.[pos2].TakenTokens<-downJobTokens
+            //this switches the jobs themselves
+            if pos1=(pos2-1)then list.Jobs.Reverse(pos1,2)
+            else Logging.errorf "Jobs requested to be switched are not adjacent. This should not be."
+        //if the sources are differnet we change the position of scheduleids in the jobOrder
+        |(down,pos1),(up,pos2)  ->
+            //if the sources don't match we need to leve them as is and swap the positions of the scheduleID's in the joborder 
+            //this is how we can swap order of jobs between sources
+            jobOrder.[pos1] <- up
+            jobOrder.[pos2] <- down
+
+    let takeAvailableJobs (jobOrder:JobOrder) (sources:Sources)=
+        let indexed=countUp jobOrder
+        let jobsToRun=
+            seq{
+            for (jobSource,i) in indexed do
+                let job=sources.[jobSource].Jobs.[i]
+                if job.TakenTokens = sources.[jobSource].RequiredTokens then
+                    yield (jobSource,i)
+            }
+        
+        
+        jobsToRun|>Seq.iter(fun (id,index)->
+            match jobOrder.Remove(id) with
+            |true->()
+            |false->Logging.errorf "Tried to remove a job that should have been there but wasn't"
+            //this removes the job from the source list
+            sources.[id].Jobs.RemoveAt(index)
+            )
+        
+
+    ///this should
+    let rec getNextToken (freeTokens:FreeTokens)  (source:Source) (job:JobItem) =
+        if job.TakenTokens.Length =source.RequiredTokens.Length then
+            ()
+        else
+        //this is done very very often and so it could be made faster by precomputing the requiredToken.
+            let neededToken=
+                source.RequiredTokens
+                |>List.except job.TakenTokens
+                |>List.last
+            match freeTokens|> FreeTokensF.takeToken neededToken with
+            |Some token-> 
+                job.TakenTokens<- token::job.TakenTokens
+                getNextToken freeTokens source job
+            |None->()
+    ///Shold be run at regular intervals to give jobs the tokens they need to be picked up by the runner and run 
+    /// this makes ordering fair because it attemps to give tokens in the same alternating order as the jobqueue
+    let updateTokens  (freeTokens:FreeTokens)  (sources:Sources) =
+        sources|>Seq.iter (fun source->
+            for job in source.Value.Jobs do
+                getNextToken freeTokens source.Value job
+            
+        )
+    //there will be two main loops managing the jobs. One loop gives new tokens the other runs new jobs. 
+    //these jobs should relaly only be run occasionaly. The reasons they should be run are listed below
+    //A new job being added should recursiveley run get next token untill it has got all tokens and can be run or has not and can be left
+    //A job being removed should go through each token being put back in reverse order and attempt to give to a job
+    //those should be the only two times action needs to be taken
+    let addJob (freeTokens:FreeTokens)  (sources:Sources)  sourceID job=
+        let source=sources.[sourceID]
+        source.Jobs.Add(job)
+        getNextToken freeTokens 
+
+    let removeJob (freeTokens:FreeTokens) (finishedList:FinishedJobs) (sources:Sources)  sourceID job=
+
+        let source=sources.[sourceID]
+        if source.Jobs.Remove(job) then
+            job.TakenTokens
+            |> List.iter (fun id -> FreeTokensF.returnToken freeTokens id)
+            job.TakenTokens
+            |>List.rev
+            |>List.iter(fun id -> freeTokens.[id]|>FreeTokensF.attmeptIssuingToken sources)
+        else Logging.errorf "Job %A failed to be removed. something must have gone wrong" job
+    let getUIData (jobOrder:JobOrder) (finishedJobs:FinishedJobs) (runningJobs:RunningJobs)  (sources:Sources) (transferDataList:TransferDataList) (jobList:JobList) =
+                let orderdIDs= 
+                    countUp jobOrder
+                    |>Seq.map(fun (id,index)-> sources.[id].Jobs.[index].ID,sources.[id].RequiredTokens)
+                //this only works on jobs that have all the tokens they need.
+                //this is becuase the ScheduleIDList can be usefull in filtering at the ui end
+                let convertToOut (li:List<JobID>)=
+                    li.Select(fun x->x,jobList.[x].TakenTokens)
+
+                let jobIDs=(convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat( orderdIDs)
+                {Jobs=jobIDs.ToArray();TransferDataList=transferDataList}
+                
