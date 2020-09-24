@@ -27,7 +27,7 @@ module Commands =
             )
             |> Dictionary *)
 
-        ManagerCalls.overwriteTransferData connection userName (JobManager.UIData LocalDB.jobDB)
+        ManagerCalls.overwriteTransferData connection userName (JobManager.getUIData LocalDB.jobDB)
 
     let reconnect (connection:HubConnection) userName groupNames ct =
         let job =

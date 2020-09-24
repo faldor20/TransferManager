@@ -29,30 +29,6 @@ module Manager =
         //Start the Syncing Service
         //TODO: only start this if signalr connects sucesfully
         (ManagerSync.DBsyncer 500 conection configData.ClientName )|>ignore
-        
-
-        //TODO: remove this and repalce it with a job that only runs when certain things happen. such as object removal object addition etc
-        let shuffelJob=async{ 
-                while true do
-                    DataBase.LocalDB.AcessFuncs.Hierarchy.ShuffelUp()
-                    do!Async.Sleep 1000
-                }
-        let checkForJobs=async{
-            let rec jobCheck jobs=
-                match DataBase.LocalDB.AcessFuncs.Hierarchy.GetTopJob() with
-                |Some (jobID,location)->
-                    let job=TransferHandling.processTask LocalDB.AcessFuncs  location jobID
-                    jobCheck (job::jobs)
-                |None->jobs
-            while true do
-                jobCheck []
-                |>Async.Parallel
-                |>Async.RunSynchronously
-                |>ignore
-                do! Async.Sleep(1000)
-        }
-        Async.Start shuffelJob
-        Async.Start checkForJobs
 
         let jobs=schedulesInWatchDirs|>List.map(fun (schedules,grouList)->
             Logging.infof "Setting up observables for group: %A" grouList

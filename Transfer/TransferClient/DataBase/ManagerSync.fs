@@ -16,7 +16,7 @@ module ManagerSync=
                 if SignalR.Connection.connected then
                    // if LocalDB.ChangeDB.Count>0 then 
 
-                        Async.RunSynchronously (syncTransferData connection userName  (JobManager.UIData LocalDB.jobDB))
+                        Async.RunSynchronously (syncTransferData connection userName  (JobManager.getUIData LocalDB.jobDB))
                       //  LocalDB.ChangeDB<-Dictionary()
                   //  count<-count+1
                 do! Async.Sleep(syncInterval)

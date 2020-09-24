@@ -9,6 +9,7 @@ open SharedFs.SharedTypes
 open DataBase.Types
 open TransferClient.IO
 open FluentFTP
+open JobManager
 module Scheduler =
     type Availability=
     |Available=0
@@ -110,48 +111,53 @@ module Scheduler =
         {currentTransferData with
                 FileSize=fileSizeMB
         }
-     
-    let scheduleTransfer (file:FoundFile) moveData (dbAccess:JobManager.JobDBAccess) transcode =
-        async {
-            //this is only used for logging
-            let logFilePath=match file.FTPFileInfo with | Some f-> "FTP:"+f.FullName |None -> file.Path
-            let {DestinationDir=dest}:DirectoryData=moveData.DirData
-            let transferType=
+    let transferType moveData=
                 let{SourceFTPData= source; DestFTPData=dest;}=moveData
                 match (source,dest) with
                 |Some _,Some _->TransferTypes.FTPtoFTP
                 |None,Some _->TransferTypes.LocaltoFTP
                 |Some _,None->TransferTypes.FTPtoLocal
                 |None,None->TransferTypes.LocaltoLocal
-            let transData:TransferData=
+    let makeTransData moveData sourceFilePath id:TransferData=
                 { Percentage = 0.0
                   FileSize = 0.0
                   FileRemaining = 0.0
                   Speed = 0.0
-                  Destination = dest
-                  Source =  file.Path
+                  Destination = moveData.DirData.DestinationDir
+                  Source =  sourceFilePath
                   StartTime =  DateTime.Now
-                  jobID = -1
+                  jobID = id
                   location=moveData.GroupList
-                  TransferType=transferType 
+                  TransferType=transferType moveData 
                   Status = TransferStatus.Unavailable 
                   ScheduledTime=DateTime.Now
                   EndTime=new DateTime()}
+    let scheduleTransfer (file:FoundFile) moveData (dbAccess:JobManager.Access) transcode =
+        async {
+            let sourceID=(List.last(moveData.GroupList))
+            //this is only used for logging
+            let logFilePath=match file.FTPFileInfo with | Some f-> "FTP:"+f.FullName |None -> file.Path
+
+            let {DestinationDir=dest}:DirectoryData=moveData.DirData
+            let transData=makeTransData moveData file.Path
+            
             //TODO: make an event that is subscribed to this that cancells the job
             let ct = new CancellationTokenSource()
-            let jobID= dbAccess.JobList.AddJob  (fun id->{Job=Mover.MoveFile file.Path moveData  dbAccess id transcode ct;TakenTokens=List.Empty})
-            dbAccess.TransferDataList.Set jobID transData
+            let jobID= dbAccess.AddJob (sourceID)  (fun id->{Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct;ID=id; TakenTokens=List.Empty})
+            dbAccess.TransDataAccess.Set jobID (transData jobID)
             addCancellationToken jobID ct
+
+            let setStatus status = dbAccess.TransDataAccess.Set jobID {dbAccess.TransDataAccess.Get jobID with Status=status} 
+
             //We register a function that will cancell the job if cancellation is requested while it is waiting to be started
-            ct.Token.Register (Action (fun ()-> 
-                if(dbAccess.TransferDataList.Get(jobID).Status=TransferStatus.Waiting) then
+            let waitingCancel=ct.Token.Register (Action (fun ()-> 
+                if(dbAccess.TransDataAccess.Get(jobID).Status=TransferStatus.Waiting) then
                     Logging.infof "{Scheduler} File cancelled while waiting to be available Transfer file at: %s" logFilePath 
-                    dbAccess.TransferDataList.Set jobID {dbAccess.TransferDataList.Get jobID with Status=TransferStatus.Cancelled} 
-                    TransferHandling.cleaupTask dbAccess jobID moveData.GroupList TransferResult.Cancelled moveData.DirData.DeleteCompleted
+                    setStatus TransferStatus.Cancelled
+                    TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Cancelled moveData.DirData.DeleteCompleted
                         |>Async.RunSynchronously
                     ct.Dispose()
-                ))|>ignore
-            
+                ))
             
             let transType=
                 ""  |>fun s->if transcode then s+" transcode"else s
@@ -171,15 +177,15 @@ module Scheduler =
 
             if fileAvailable= Availability.Available then
                 Logging.infof "{Available} file at: %s is available" logFilePath 
-                dbAccess.TransferDataList.Set jobID (getFileData file ({dbAccess.TransferDataList.Get jobID with Status=TransferStatus.Waiting}) )  
+                setStatus TransferStatus.Waiting 
                 
             else if fileAvailable =Availability.Deleted then
                 Logging.warnf "{Scheduler} File Deleted  while waiting to be available Transfer file at: %s" logFilePath 
-                dbAccess.TransferDataList.Set jobID {dbAccess.TransferDataList.Get jobID with Status=TransferStatus.Failed} 
-                do! TransferHandling.cleaupTask dbAccess jobID moveData.GroupList TransferResult.Failed moveData.DirData.DeleteCompleted
+                setStatus TransferStatus.Failed
+                do! TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Failed moveData.DirData.DeleteCompleted
                 
             else 
                 Logging.infof "{Scheduler} File cancelled while waiting to be available Transfer file at: %s" logFilePath 
-                dbAccess.TransferDataList.Set jobID {dbAccess.TransferDataList.Get jobID with Status=TransferStatus.Cancelled} 
-                do! TransferHandling.cleaupTask dbAccess jobID moveData.GroupList TransferResult.Cancelled moveData.DirData.DeleteCompleted
+                setStatus TransferStatus.Cancelled
+                do! TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Cancelled moveData.DirData.DeleteCompleted
         }

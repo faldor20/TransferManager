@@ -37,18 +37,18 @@ module Mover =
         return! result 
     }
 
-    let MoveFile (sourceFilePath:string) moveData dbAccess jobID transcode (ct:CancellationTokenSource) = async {
+    let MoveFile (sourceFilePath:string) moveData (dbAccess:JobManager.Access) jobID transcode (ct:CancellationTokenSource) = async {
    
         let {DestinationDir=destination; }=moveData.DirData
         //let isFTP=moveData.FTPData.IsSome
         
         let fileName= Path.GetFileName sourceFilePath
         
-        let transData= {dbAccess.TransferDataList.Get(jobID) with StartTime=DateTime.Now}
+        let transData= {dbAccess.TransDataAccess.Get(jobID) with StartTime=DateTime.Now}
         
         let newDataHandler newTransData=
             
-            dbAccess.TransferDataList.Set(jobID) newTransData
+            dbAccess.TransDataAccess.Set(jobID) newTransData
 
         let progressHandler= Gethandler moveData transcode transData newDataHandler
 
@@ -61,7 +61,7 @@ module Mover =
         Logging.infof " {Starting} %s from %s to %s" transType sourceFilePath destination
        
         //We have to set the startTime here because we want the sartime to truly be when the task begins
-        dbAccess.TransferDataList.Set(jobID) {transData with StartTime=DateTime.Now}
+        dbAccess.TransDataAccess.Set(jobID) {transData with StartTime=DateTime.Now}
         
         let! result= doMove progressHandler moveData sourceFilePath destination fileName ct.Token
         //We need to dispose the sourceclient if there is one. If we getrid of this we would endlessly increase our number of active connections

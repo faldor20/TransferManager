@@ -10,29 +10,30 @@ open TransferClient.JobManager
 open Microsoft.AspNetCore.SignalR.Client
 
 module LocalDB =
-    let mutable ChangeDB =
-        JobDataBase
-    let mutable  jobDB = JobDataBase()
+    let mutable ChangeDB :JobDataBase= JobDataBase (fun _ _->())
+    let mutable  jobDB:JobDataBase =  JobDataBase(fun _ _->())
     //This is a saved copy of the database just after initialisation used for restting the database
-    let mutable private freshDB= JobDataBase()
-    let AcessFuncs = JobDBAccess jobDB
+    let mutable private freshDB:JobDataBase= JobDataBase (fun _ _->())
+    let AcessFuncs = access jobDB
 
-    let initDB (groups: int list list) freeTokens =
+    let initDB (groups: int list list) freeTokens runJob =
         TransferClient.Logging.infof "initialising DB"
-        let scheduluIDLevel =
+        let scheduleIDLevel =
             groups
             |> List.collect List.indexed
             |> List.groupBy (fun (x, y) -> x)
             |> List.map (fun (_, y) ->  (y |> List.map (fun (_, y) -> y) |> List.distinct))
-        let heirachyOrder =
+        let sources =
             groups
-            |> List.groupBy (fun x-> x.Length)
-            |> List.sortBy(fun (x,y)-> x)
-            |> List.map (fun (x,y)->y)
-        jobDB.HierarchyOrder<- heirachyOrder 
+            |>List.map(fun tokens->KeyValuePair( List.last tokens,{Source.Jobs=new List<JobItem>();Source.RequiredTokens=tokens}))
+            |>Dictionary<int,Source>
+        
+        jobDB.Sources<-sources
         jobDB.FreeTokens<-freeTokens
-        groups|>List.iter(fun x-> jobDB.JobHierarchy.[x]<-List.Empty)
+        jobDB.RunJob<-runJob
+        (* groups|>List.iter(fun x-> jobDB.JobHierarchy.[x]<-List.Empty) *)
         freshDB<-jobDB
+
 
 
     let reset () =

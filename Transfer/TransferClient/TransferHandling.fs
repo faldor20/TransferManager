@@ -17,9 +17,9 @@ module TransferHandling=
     let CancelledCompleteAction transferData source=
         Logging.infof "{Canceled} copying %s" source
         { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
-    let cleaupTask dbAcess jobID location transResult delete=
+    let cleaupTask (dbAcess:Access)  jobID sourceID transResult delete=
         async{
-            let transData= dbAcess.TransferDataList.Get jobID
+            let transData= dbAcess.TransDataAccess.Get jobID
             let source = transData.Source
 
            //LOGGING: printfn "DB: %A" dataBase
@@ -29,9 +29,9 @@ module TransferHandling=
                     |TransferResult.Cancelled-> CancelledCompleteAction transData source
                     |TransferResult.Failed-> FailedCompleteAction transData source
                     |_-> failwith "unknonw enum for transresult"
-            dbAcess.TransferDataList.Set jobID dataChange
-            dbAcess.FinishedJobs.Add jobID
-            match dbAcess.Hierarchy.DeleteJob jobID location with|true->()|false->Logging.errorf "something went wrong deleting job with id:%A" jobID
+            dbAcess.TransDataAccess.Set jobID dataChange
+            dbAcess.RemoveJob sourceID jobID
+           
            
             let rec del path iterCount= async{
                 if iterCount>10 
@@ -49,11 +49,11 @@ module TransferHandling=
             if delete then return! del source 0 
             else ()
         }
-    let processTask (dbAcess:JobDBAccess) location jobID =
+    let processTask (dbAcess:Access) sourceID jobID =
         async{
-            let task= dbAcess.JobList.GetJob(jobID).Job
+            let task= (dbAcess.GetJob jobID).Job
             let transResult, delete = Async.RunSynchronously task
-            return!cleaupTask dbAcess  jobID location transResult delete
+            return!cleaupTask dbAcess jobID sourceID transResult delete
 
         }
          

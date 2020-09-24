@@ -20,6 +20,15 @@
         <Compile Include="Mover/Types.fs" />
         <Compile Include="Mover/StreamPiping.fs" /> 
         <Compile Include="Mover/Fmove.fs" /> 
+        <Compile Include="JobManager\Types.fs" /> 
+
+        <Compile Include="JobManager\JobList.fs" /> 
+
+        <Compile Include="JobManager\TokenList.fs" /> 
+        <Compile Include="JobManager\SourceList.fs" /> 
+        <Compile Include="JobManager\JobOrder.fs" /> 
+        <Compile Include="JobManager\TransferDataList.fs" /> 
+        
         <Compile Include="JobManager/JobManager.fs" /> 
 		<Compile Include="SignalR/SignalR.fs" />
 		<Compile Include="SignalR/ManagerCalls.fs" />
@@ -42,7 +51,6 @@
 		<Compile Include="Manager.fs" />
 		<Compile Include="testing.fsx" />
 		<Compile Include="testing.fs" />
-		<Compile Include="Benchmark.fs" />
 		<Compile Include="Program.fs" />
 	</ItemGroup> 
 	<ItemGroup>
