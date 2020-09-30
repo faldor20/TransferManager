@@ -32,25 +32,17 @@ module SharedTypes =
           StartTime: DateTime
           EndTime: DateTime
           jobID:int
-          location:int list}
-
+          location:int array}
+//=========jobDB====
     type ScheduleID = int
     type JobID = int
-    ///A list of ScheduleIDs represetnig a specific place within the jobHeirachy with the highest level id at the beginning and the deepest at the end
-    type HierarchyLocation = ScheduleID list
-    /// a list where each value is  a level in the hierarchy, each level contains a list of Heiracheylocations
-    /// this is so that the jobHeirachy can be iterated bottom up during a shuffleup
-    /// eg:       1             index=2
-    ///    1,1       ;     1,2  index=1
-    /// 1,1,1; 1,1,2  ; 1,2,1    index=0
-    type HierarchyOrder = HierarchyLocation list list
-    type FinishedJobs= list<JobID>
     type TransferDataList =Dictionary<JobID, TransferData>
-
-    type JobHierarchy = Dictionary<HierarchyLocation, JobID list>
+    type UIJobInfo={JobID:JobID;RequiredTokens:ScheduleID array}
     [<CLIMutable>]
-    type UIData = {
-        mutable TransferDataList:TransferDataList
-        mutable JobHierarchy:JobHierarchy
-        mutable FinishedJobs:FinishedJobs
+    type UIData= {
+        Mapping:Dictionary<int,string>
+        TransferDataList:TransferDataList
+        mutable Jobs:UIJobInfo array
+        mutable NeedsSyncing:bool
     }
+    let UIData mapping={UIData.Jobs=Array.empty;UIData.NeedsSyncing=false;UIData.TransferDataList=TransferDataList();Mapping=mapping}

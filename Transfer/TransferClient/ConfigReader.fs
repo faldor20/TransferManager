@@ -12,13 +12,20 @@ open IO.Types
 open System.Collections.Generic
 module ConfigReader=
 
-   type ConfigMovementData =
+    type ConfigMovementData =
         { GroupList: string list
           DirData: DirectoryData
           SourceFTPData: FTPData option
           DestFTPData: FTPData option
           TranscodeData: TranscodeData option }
       
+    type YamlData = 
+        {
+            ManagerIP:string;
+            ClientName:string; 
+            MaxJobs:Dictionary<string,int>
+            WatchDirs: ConfigMovementData list 
+        }
     let directoryTest ftpData directory errorPrinter = 
         try 
             match ftpData with
@@ -38,17 +45,11 @@ module ConfigReader=
             | :? FluentFTP.FtpException-> 
                 errorPrinter "cannot be connected to" 
                 false
-            | _ as x -> 
+            | x -> 
                 errorPrinter (sprintf "not accessable for an handled reason \n reason: %A"  x.Message)
                 false    
+
     //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
-    type YamlData = 
-        {
-            ManagerIP:string;
-            ClientName:string; 
-            MaxJobs:Dictionary<string,int>
-            WatchDirs: ConfigMovementData list 
-        }
     let ReadFile configFilePath=
         Logging.infof "{Config} Reading config file at: %s" configFilePath
 
@@ -90,6 +91,7 @@ module ConfigReader=
                     |> List.distinct
                     |> List.mapi (fun i x -> KeyValuePair(x, i))
                     |>Dictionary<string,int> 
+        Logging.infof "{Config}Mapping: %A"mapping
         let freeTokens=yamlData.MaxJobs |>Seq.map(fun x ->  KeyValuePair(mapping.[x.Key],x.Value))|>Dictionary<int,int>
         let mappedGroups=
             groups

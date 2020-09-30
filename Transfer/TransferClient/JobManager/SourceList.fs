@@ -7,6 +7,8 @@ open TransferClient
 type SourceList= Dictionary<ScheduleID,Source>
 
 module SourceList =
+    //this is fair but we actually don't want fairness we want jobs to be issued d=tokens in the order defined by the JobOrder.
+    
     ///Attempts to give all the tokens in the tokenStore away to any jobs that want them. 
     /// Will iterate through every source provided and evey job within a source that desires the token in the tokenStore. Will probably be quite an expensive procedure
     let rec attmeptIssuingToken  (sources: SourceList) (tokenSource:TokenStore)=

@@ -2,7 +2,6 @@ namespace TransferClient
 open System
 open Serilog
 
-open Microsoft.Extensions.Configuration
 open Serilog.Sinks
 open Serilog.Configuration
 open Printf

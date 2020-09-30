@@ -21,11 +21,11 @@ namespace HostedBlazor.Data
     {
         public static Uri baseAddress;
         HttpClient http = new HttpClient { BaseAddress = baseAddress };
-        public Dictionary<string, Dictionary<string, Dictionary<int, TransferData>>> CopyTasks = null;
+        public Dictionary<string, UIData> CopyTasks = null;
         public List<(string group, string user, TransferData task)> AllTasks = null;
         public bool first = true;
         public bool GotFirstConnectData = false;
-        public Dictionary<string, Dictionary<string, Dictionary<int, Action>>> ComponentUpdateEvents = new Dictionary<string, Dictionary<string, Dictionary<int, Action>>>();
+        public Dictionary<string, Dictionary<int, Action>> ComponentUpdateEvents = new Dictionary<string, Dictionary<int, Action>>();
         public string transferServerUrl;
         public Status status = Status.Loading;
         public event Action newData;
@@ -70,54 +70,38 @@ namespace HostedBlazor.Data
                 .AddMessagePackProtocol()
                 .Build();
             hubConnection.Closed+= (ex=>Reconnect(hubConnection));
-                hubConnection.On<Dictionary<string, Tran>>("ReceiveData", dataList =>
+                hubConnection.On<Dictionary<string, UIData>>("ReceiveData", dataList =>
            {
                //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
-               foreach (var group in dataList)
+               foreach (var user in dataList)
                {
-                   foreach (var user in group.Value)
-                   {
-                       foreach (var i in user.Value)
+                   
+                       foreach (var i in user.Value.TransferDataList)
                        {
-                           dataList[group.Key][user.Key][i.Key].StartTime = i.Value.StartTime.ToLocalTime();
-                           dataList[group.Key][user.Key][i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
-                           dataList[group.Key][user.Key][i.Key].EndTime = i.Value.EndTime.ToLocalTime();
+                           dataList[user.Key].TransferDataList[i.Key].StartTime = i.Value.StartTime.ToLocalTime();
+                           dataList[user.Key].TransferDataList[i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
+                           dataList[user.Key].TransferDataList[i.Key].EndTime = i.Value.EndTime.ToLocalTime();
                        }
-                   }
+                   
                }
                CopyTasks = dataList;
                status = Status.Connected;
 
                newData.Invoke();
            });
-            hubConnection.On<string, Dictionary<string, Dictionary<int, TransferData>>>("ReceiveDataChange", (user, change) =>
+            hubConnection.On<string, UIData>("ReceiveDataChange", (user, change) =>
              {
                  lock (CopyTasks)
                  {
                      Console.WriteLine("recived changes from ClientManager");
                      var fullRefresh = false;
-                     foreach (var group in change)
+                     if (change.Jobs.Length>0){
+                         newData.Invoke();
+                     }else{
+                     foreach (var transData in change.TransferDataList)
                      {
-                         foreach (var index in group.Value)
-                         {
-
-                             if (!CopyTasks.ContainsKey(group.Key))
-                             {
-                                 CopyTasks[group.Key] = new Dictionary<string, Dictionary<int, TransferData>>();
-                                 fullRefresh = true;
-                             }
-                             if (!CopyTasks[group.Key].ContainsKey(user))
-                             {
-                                 CopyTasks[group.Key][user] = new Dictionary<int, TransferData>();
-                                 fullRefresh = true;
-                             }
-                             if (!CopyTasks[group.Key][user].ContainsKey(index.Key)) fullRefresh = true;
-                             var transferData = ConvertToLocalTime(index.Value);
-                             CopyTasks[group.Key][user][index.Key] = transferData;
-                             //If a fullrefresh is going to ccur anyway this would be pointless
-                             if (!fullRefresh)
-                                 ComponentUpdateEvents[group.Key][user][index.Key].Invoke();
-                         }
+                        ComponentUpdateEvents[user][transData.Key].Invoke();
+                     }
                      }
                      if (fullRefresh)
                      {
@@ -143,8 +127,8 @@ namespace HostedBlazor.Data
             await ContinuousSend();
 
         }
-        public Task Cancel(string groupName, string userName, int id) =>
-            hubConnection.SendAsync("CancelTransfer", groupName, userName, id);
+        public Task Cancel( string userName, int id) =>
+            hubConnection.SendAsync("CancelTransfer", userName, id);
         Task RequestData() =>
            hubConnection.SendAsync("GetTransferData");
         Task Confirm() =>

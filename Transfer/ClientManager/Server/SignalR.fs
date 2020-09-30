@@ -18,7 +18,7 @@ module SignalR=
     
 
     type ITransferClientApi = 
-      abstract member CancelTransfer :string -> int -> Task
+      abstract member CancelTransfer : int -> Task
       abstract member Testing :string -> Task
       abstract member ResetDB :unit -> Task
 
@@ -32,20 +32,17 @@ module SignalR=
             printfn "Registering new client. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
             DataBase.registerClient userName this.Context.ConnectionId 
             
-        member this.OverwriteTransferData(userName:string) ( changes:TransferClient.JobManager.UIData) =
+        member this.OverwriteTransferData(userName:string) ( changes:UIData) =
             printfn "overwriting local info with client info. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
             lock(DataBase.dataBase) (fun x->
             DataBase.dataBase.[userName]<- changes
             )
 
-        member this.SyncTransferData (userName:string) ( changes:TransferClient.JobManager.UIData) =
-            //printfn "syncing transferData "
-            lock(DataBase.dataBase) (fun x->
-            DataBase.dataBase.[userName]<- changes
-            )
-            (* DataBaseSync.syncDataBaseChanges userName changes
+        member this.SyncTransferData (userName:string) ( changes:UIData) =
+            printfn "syncing transferData "
+            DataBaseSync.mergeChanges userName changes
             frontEndManager.ReceiveDataChange userName changes
-            printfn "Synced transferData from %s" userName  *)
+            printfn "Synced transferData from %s" userName  
     
     and IFrontendApi = 
       abstract member ReceiveData :Dictionary<string, UIData> -> Task
@@ -55,10 +52,10 @@ module SignalR=
     and ClientManager (hubContext :IHubContext<ClientManagerHub,ITransferClientApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<ClientManagerHub, ITransferClientApi> = hubContext
-        member this.CancelTransfer  groupName user id=
+        member this.CancelTransfer   user id=
             let clientID = DataBase.getClientID user
             printfn "Sending Cancellation request to user:%s with connecionid %s" user clientID
-            (this.HubContext.Clients.All.CancelTransfer groupName id).Wait()
+            (this.HubContext.Clients.All.CancelTransfer id).Wait()
         member this.ResetDB ()=
             this.HubContext.Clients.All.ResetDB();
    
@@ -73,10 +70,10 @@ module SignalR=
             this.Clients.All.ReceiveData(data)
         member this.GetConfirmation()=
             this.Clients.All.Testing("hiya from the other side")
-        member this.CancelTransfer groupName user id=
-            printfn "recieved Cancellation request for item %i and user %s in group %s" id user groupName;
+        member this.CancelTransfer  user id=
+            printfn "recieved Cancellation request for item %i and user %s" id user ;
 
-            clientManager.CancelTransfer groupName user id
+            clientManager.CancelTransfer  user id
     and FrontEndManager (hubContext :IHubContext<DataHub,IFrontendApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<DataHub, IFrontendApi> = hubContext

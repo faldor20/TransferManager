@@ -9,7 +9,8 @@ open SharedFs.SharedTypes
 open DataBase.Types
 open TransferClient.IO
 open FluentFTP
-open JobManager
+open TransferClient.JobManager
+open JobManager.Main
 module Scheduler =
     type Availability=
     |Available=0
@@ -127,12 +128,12 @@ module Scheduler =
                   Source =  sourceFilePath
                   StartTime =  DateTime.Now
                   jobID = id
-                  location=moveData.GroupList
+                  location=moveData.GroupList|>List.toArray
                   TransferType=transferType moveData 
                   Status = TransferStatus.Unavailable 
                   ScheduledTime=DateTime.Now
                   EndTime=new DateTime()}
-    let scheduleTransfer (file:FoundFile) moveData (dbAccess:JobManager.Access) transcode =
+    let scheduleTransfer (file:FoundFile) moveData (dbAccess:Main.Access) transcode =
         async {
             let sourceID=(List.last(moveData.GroupList))
             //this is only used for logging
@@ -143,11 +144,11 @@ module Scheduler =
             
             //TODO: make an event that is subscribed to this that cancells the job
             let ct = new CancellationTokenSource()
-            let jobID= dbAccess.AddJob (sourceID)  (fun id->{Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct;ID=id; TakenTokens=List.Empty})
-            dbAccess.TransDataAccess.Set jobID (transData jobID)
+            let jobID= dbAccess.AddJob (sourceID)  (fun id->{Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct; ID=id; Available=false; TakenTokens=List.Empty})
+            dbAccess.TransDataAccess.SetAndSync jobID (transData jobID)
             addCancellationToken jobID ct
 
-            let setStatus status = dbAccess.TransDataAccess.Set jobID {dbAccess.TransDataAccess.Get jobID with Status=status} 
+            let setStatus status = dbAccess.TransDataAccess.SetAndSync jobID {dbAccess.TransDataAccess.Get jobID with Status=status} 
 
             //We register a function that will cancell the job if cancellation is requested while it is waiting to be started
             let waitingCancel=ct.Token.Register (Action (fun ()-> 
@@ -178,6 +179,8 @@ module Scheduler =
             if fileAvailable= Availability.Available then
                 Logging.infof "{Available} file at: %s is available" logFilePath 
                 setStatus TransferStatus.Waiting 
+                dbAccess.makeJobAvailable jobID
+                
                 
             else if fileAvailable =Availability.Deleted then
                 Logging.warnf "{Scheduler} File Deleted  while waiting to be available Transfer file at: %s" logFilePath 

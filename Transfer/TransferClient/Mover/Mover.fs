@@ -13,7 +13,8 @@ open TransferClient.DataBase.Types
 open FileMove
 open Types
 open TransferClient
-open JobManager
+open TransferClient.JobManager
+open TransferClient.JobManager.Main
 open FTPMove
 module Mover =
   
@@ -29,7 +30,7 @@ module Mover =
                 |(None ,Some dest,FtpProg cb)->
                     uploadFTP  dest sourceFilePath (destination+fileName) cb ct
                 |(None,None,FastFileProg cb)->
-                    FCopy fileName (destination+fileName) cb ct
+                    FCopy sourceFilePath (destination+fileName) cb ct
                 |source,dest,cb->
                     Logging.errorf "{Mover}Some combination of inputs made the mover not able to run. SourceFTP: %A DestFTP: %A callback : %A"source dest cb
                     failwith "See above"
@@ -37,7 +38,7 @@ module Mover =
         return! result 
     }
 
-    let MoveFile (sourceFilePath:string) moveData (dbAccess:JobManager.Access) jobID transcode (ct:CancellationTokenSource) = async {
+    let MoveFile (sourceFilePath:string) moveData (dbAccess:Access) jobID transcode (ct:CancellationTokenSource) = async {
    
         let {DestinationDir=destination; }=moveData.DirData
         //let isFTP=moveData.FTPData.IsSome
@@ -48,7 +49,7 @@ module Mover =
         
         let newDataHandler newTransData=
             
-            dbAccess.TransDataAccess.Set(jobID) newTransData
+            dbAccess.TransDataAccess.SetAndSync(jobID) newTransData
 
         let progressHandler= Gethandler moveData transcode transData newDataHandler
 
@@ -61,7 +62,7 @@ module Mover =
         Logging.infof " {Starting} %s from %s to %s" transType sourceFilePath destination
        
         //We have to set the startTime here because we want the sartime to truly be when the task begins
-        dbAccess.TransDataAccess.Set(jobID) {transData with StartTime=DateTime.Now}
+        dbAccess.TransDataAccess.SetAndSync(jobID) {transData with StartTime=DateTime.Now}
         
         let! result= doMove progressHandler moveData sourceFilePath destination fileName ct.Token
         //We need to dispose the sourceclient if there is one. If we getrid of this we would endlessly increase our number of active connections

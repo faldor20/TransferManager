@@ -1,7 +1,7 @@
 ﻿namespace TransferClient.JobManager
 open System.Collections.Generic
 open SharedFs.SharedTypes
-
+open Locking
 type JobList = Dictionary<JobID, JobItem>
 
 module JobList =
@@ -28,6 +28,6 @@ module JobList =
     let JobListAcessFuncs jobList=
         {
             GetJob=getJob jobList
-            RemoveJob=JobManager.lockedFunc jobList (removeJob jobList)
-            AddJob= JobManager.lockedFunc jobList (addJob jobList)
+            RemoveJob=lockedFunc jobList (removeJob jobList)
+            AddJob= lockedFunc jobList (addJob jobList)
         }

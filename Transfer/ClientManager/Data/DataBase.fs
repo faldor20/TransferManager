@@ -10,9 +10,8 @@ module DataBase=
 
 
     type TransferTaskDatabase=Dictionary<string,SortedDictionary<int,TransferData>>
-    //this db is keyed 
-    //groupName-> clientID->transferData index
-    //group-> client ->TransferData
+    
+    //key: clientname value: that clinets UIData 
     let mutable dataBase=Dictionary<string,UIData>()
     
     let getTransferData group id= dataBase.[group].TransferDataList.[id]

@@ -1,18 +1,13 @@
-namespace TransferClient
+namespace TransferClient.JobManager
 
 open System
 open System.Collections.Generic
 open SharedFs.SharedTypes
 open TransferClient.IO.Types
-open TransferClient.JobManager
-module JobManager =
+open SharedFs.SharedTypes
+open TransferClient
+module Main =
 
-    
-
-  
-
-    
-    type TransferDataList =Dictionary<JobID, SharedFs.SharedTypes.TransferData>
 
  
     open System.Linq
@@ -22,10 +17,6 @@ module JobManager =
     type RunningJobs= List<JobID>
     type FinishedJobs=List<JobID>
 
-    type UIData= {
-        TransferDataList:TransferDataList
-        Jobs:(JobID*HierarchyLocation)array
-    }
     type JobDataBase={
         JobOrder:JobOrder;
         mutable FreeTokens:TokenList
@@ -34,9 +25,10 @@ module JobManager =
         mutable Sources:SourceList
         TransferDataList:TransferDataList
         JobList:JobList
-        mutable RunJob:ScheduleID->JobID->unit
+        mutable RunJob:ScheduleID->JobID->Async<unit>
+        UIData: ref<UIData>
     }
-    let JobDataBase runJob={
+    let JobDataBase runJob mapping ={
         JobOrder=JobOrder();
         FreeTokens=TokenList()
         RunningJobs=RunningJobs()
@@ -45,12 +37,15 @@ module JobManager =
         TransferDataList=TransferDataList()
         JobList=JobList()
         RunJob=runJob
+        UIData=ref <|UIData mapping
     }
-    let tryRunJobs (jobDB:JobDataBase) processJob =
+    let tryRunJobs (jobDB:JobDataBase)  =
         let jobsTorun=
             JobOrder.takeAvailableJobs jobDB.JobOrder jobDB.Sources
-        jobsTorun|>Seq.iter(fun (x,i)->
-        jobDB.RunJob x i 
+        
+        jobsTorun|>List.iter(fun (x,i)->
+        jobDB.RunningJobs.Add(i)
+        jobDB.RunJob x i |>Async.Start
         )
 
         
@@ -62,16 +57,23 @@ module JobManager =
     //A job being removed should go through each token being put back in reverse order and attempt to give to a job
     //those should be the only two times action needs to be taken
     ///mkeJob is  function that takes an id and returns a job. this allows for a job to contain its own id
-    let addJob (freeTokens:TokenList)  (sources:SourceList) (jobList:JobList) sourceID makeJob=
+    let addJob  jobDB sourceID makeJob=
+        let {FreeTokens=freeTokens;  Sources=sources; JobList=jobList; }=jobDB
         let source=sources.[sourceID]
         let id=JobList.addJob jobList makeJob
+        jobDB.JobOrder.Add(sourceID)
         let job= jobList.[id]
         source.Jobs.Add(job)
         SourceList.getNextToken freeTokens source job
+        //run various actions that should trigger on Add
+        //TODO: test if this can be deleted. jobs most likel will not be able to be run after adding becuase teyneed to be confirmed as available
+        tryRunJobs jobDB 
+        //return
         id
-        //TODO: trigger an attempt to run any job with all its tokens
+        
     ///removes the job from the runningList and moves it to finished. Also returns tokens and trigger an attempt to distribute those tokens
-    let removeJob {FreeTokens=freeTokens; FinishedJobs=finishedList; Sources=sources; JobList=jobList; RunningJobs=runningJobs}  sourceID jobID=
+    let removeJob jobDB  sourceID jobID=
+        let {FreeTokens=freeTokens; FinishedJobs=finishedList; Sources=sources; JobList=jobList; RunningJobs=runningJobs} =jobDB
         let job= jobList.[jobID]
         
         if runningJobs.Remove(jobID) then
@@ -83,7 +85,7 @@ module JobManager =
             |>List.rev
             |>List.iter(fun id -> freeTokens.[id]|>SourceList.attmeptIssuingToken sources)
         else Logging.errorf "Job %A failed to be removed. something must have gone wrong" job
-
+        tryRunJobs jobDB 
         //TODO: trigger an attempt to run any job with all its tokensp
 
     ///makes the upjob higher up the order of jobs than the downjob
@@ -110,17 +112,20 @@ module JobManager =
             jobOrder.[pos1] <- up
             jobOrder.[pos2] <- down
 
-    let getUIData ({JobOrder=jobOrder;JobList=jobList;Sources=sources; FinishedJobs=finishedJobs; RunningJobs=runningJobs; TransferDataList=transferDataList; }:JobDataBase)=
+    let getUIData ({JobOrder=jobOrder;JobList=jobList;Sources=sources; FinishedJobs=finishedJobs; RunningJobs=runningJobs; TransferDataList=transferDataList; UIData=uIData; }:JobDataBase)=
                 let orderdIDs= 
                     JobOrder.countUp jobOrder
-                    |>Seq.map(fun (id,index)-> sources.[id].Jobs.[index].ID,sources.[id].RequiredTokens)
+                    |>Seq.map(fun (id,index)-> {JobID= sources.[id].Jobs.[index].ID; RequiredTokens= sources.[id].RequiredTokens.ToArray()})
                 //this only works on jobs that have all the tokens they need.
                 //this is becuase the ScheduleIDList can be usefull in filtering at the ui end
+                //we can use taken tokens becuase running and finished jobs will have all their tokens,
+                // it is easier than  getting the requiretokens from the source for each token
                 let convertToOut (li:List<JobID>)=
-                    li.Select(fun x->x,jobList.[x].TakenTokens)
-
+                    li.Select(fun x->{JobID=x;RequiredTokens=jobList.[x].TakenTokens.ToArray()})
+                //TODO: t
                 let jobIDs=(convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat( orderdIDs)
-                {Jobs=jobIDs.ToArray();TransferDataList=transferDataList}
+                
+                {  Jobs=jobIDs.ToArray();NeedsSyncing=true; UIData.Mapping= uIData.Value.Mapping ;UIData.TransferDataList=uIData.Value.TransferDataList } 
     type Access={
         GetJob:JobID->JobItem
         TransDataAccess:TransferDataList.Acess
@@ -128,14 +133,20 @@ module JobManager =
         SwitchJobs: (ScheduleID*int)->(ScheduleID*int)->unit
         RemoveJob:ScheduleID->JobID->unit
         AddJob: ScheduleID->(int->JobItem)->JobID
+        makeJobAvailable: JobID->unit
     }
-    let access (jobDB:JobDataBase)={
+    let access ( jobDB: JobDataBase)={
         
         GetJob=JobList.getJob jobDB.JobList 
-        TransDataAccess=TransferDataList.acessFuncs jobDB.TransferDataList
+        TransDataAccess=TransferDataList.acessFuncs jobDB.TransferDataList jobDB.UIData
         GetUIData=(fun ()->(getUIData jobDB));
         SwitchJobs=switch jobDB.Sources jobDB.JobOrder;
         RemoveJob = removeJob jobDB;
-        AddJob=addJob jobDB.FreeTokens jobDB.Sources jobDB.JobList
+        AddJob=addJob jobDB
+        //TODO move to won function
+        makeJobAvailable=(fun id->
+
+            jobDB.JobList.[id].Available<-true
+            tryRunJobs jobDB)
     }
                 

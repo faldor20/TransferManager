@@ -9,19 +9,19 @@
     [Parameter]
     public int index{get;set;}
     [Parameter]
-    public string GroupName{get;set;}
+    public int[] Groups{get;set;}
     [Parameter]
     public string UserName{get;set;}
     public SlidingArray etaArray = new SlidingArray(5);
 
     protected override async Task OnInitializedAsync()
-    {   if(!Getter.ComponentUpdateEvents.ContainsKey(GroupName)) Getter.ComponentUpdateEvents[GroupName]=new Dictionary<string, Dictionary<int,Action>>() ;
-        if(!Getter.ComponentUpdateEvents[GroupName].ContainsKey(UserName)) Getter.ComponentUpdateEvents[GroupName][UserName]=new Dictionary<int,Action>();
+    {   
+        if(!Getter.ComponentUpdateEvents.ContainsKey(UserName)) Getter.ComponentUpdateEvents[UserName]=new Dictionary<int,Action>();
         void changed () {
             this.StateHasChanged();
             Console.WriteLine("state changed for user: "+UserName+" Id:"+index);
         }
-        Getter.ComponentUpdateEvents[GroupName][UserName][index] = changed;
+        Getter.ComponentUpdateEvents[UserName][index] = changed;
 
     }
 }
@@ -30,7 +30,7 @@
     { var task= CopyTasks[i];
              *@
              @{
-                 var task=Getter.CopyTasks[GroupName][UserName][index];
+                 var task=Getter.CopyTasks[UserName].TransferDataList[index];
                  var type=task.Status switch
                  {
                      TransferStatus.Complete => Color.Success,
@@ -87,7 +87,7 @@
                     <h5>
                         <span ><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(Math.Round( task.FileSize,1))MB || </span><span style="font-size: 17px"> <BSBadge Color="Color.Secondary">From</BSBadge> { @task.Source.Remove(task.Source.Length - fileName.Length) } <BSBadge Color="Color.Secondary">--></BSBadge>  { @destination }</span>
                     </h5>
-                    <div>@task.Percentage.ToString("0") % Complete | @speed MB/s  |  @etaString  @if(task.Status== TransferStatus.Copying||task.Status==TransferStatus.Waiting){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(GroupName,UserName, task.ID))">Cancel</BSButton>} | Started: @task.StartTime.ToString("dd/MMM  HH:mm:ss")
+                    <div>@task.Percentage.ToString("0") % Complete | @speed MB/s  |  @etaString  @if(task.Status== TransferStatus.Copying||task.Status==TransferStatus.Waiting){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(UserName, task.jobID))">Cancel</BSButton>} | Started: @task.StartTime.ToString("dd/MMM  HH:mm:ss")
                         <div class="progress"> 
                             <div class="progress-bar" role="progressbar" style="width: @task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>

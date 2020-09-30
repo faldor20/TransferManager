@@ -3,6 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{D61C983F-53FB-4E19-93CA-DDE607519C00}"
+	ProjectSection(SolutionItems) = preProject
+		..\paket.dependencies = ..\paket.dependencies
+	EndProjectSection
+EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "TransferClient", "TransferClient\TransferClient.fsproj", "{02779CC6-8E89-410C-93D8-F24C2A043FC9}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "ClientManager", "ClientManager\ClientManager.fsproj", "{E4707A33-8874-4A99-B5B4-673456BCE213}"

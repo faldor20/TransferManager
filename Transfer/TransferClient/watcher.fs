@@ -30,6 +30,7 @@ module Watcher =
     
 
     let ActionNewFiles2 dbAcess (watchDir:WatchDir)   =
+       
         (asyncSeq{ 
             let mutable ignoreList= Array.empty  //We iterate through the list each pair contains watchdir and a list of the new files in that dir 
             use nullableFTPConnection= 
@@ -41,7 +42,7 @@ module Watcher =
                     con
                 |None -> 
                     null
-
+            Logging.infof "{Watcher} Watching : %A"watchDir.MovementData.DirData
             while true do
                 let newFilesFunc=
                     match nullableFTPConnection with 
@@ -56,7 +57,7 @@ module Watcher =
                         |None-> false
                     
                     let task = Scheduler.scheduleTransfer file watchDir.MovementData dbAcess transcode
-                    Logging.infof "{Found} and created scheduled task for file %s" (Path.GetFileName file.Path)
+                    Logging.infof "{Watcher} created scheduling task for file %s" (Path.GetFileName file.Path)
                     yield task
                 ignoreList<- ignoreList|> Array.append (newFiles|> Array.map(fun x->x.Path))
                 do! Async.Sleep(500);

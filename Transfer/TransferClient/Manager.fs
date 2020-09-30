@@ -6,35 +6,43 @@ open FSharp.Control.Reactive
 
 open TransferClient.DataBase
 open FSharp.Control
+open System.Collections.Generic
 open TransferHandling
 open IO.Types
 module Manager =
 
     let startUp =
-        //Read config file to get information about transfer source dest pairs
-        let configData= ConfigReader.ReadFile "./WatchDirs.yaml"
-        let mutable watchDirsData= configData.WatchDirs
-        let groups=watchDirsData|>List.map(fun x-> x.MovementData.GroupList)
-        //Create all the needed groups
-        LocalDB.initDB groups
-        //create a asyncstream that yields new schedule jobs when 
-        //a new file is detected in a watched source
-        let schedulesInWatchDirs = GetNewTransfers2  watchDirsData LocalDB.AcessFuncs
-        
-        
-        let signalrCT=new Threading.CancellationTokenSource()
-        //For reasons i entirely do not understand starting this just as async deosnt run connection in release mode
-        Logging.infof "{Manager} starting signalr connection process"
-        let conection= SignalR.Commands.connect configData.manIP  configData.ClientName groups signalrCT.Token|>Async.RunSynchronously
-        //Start the Syncing Service
-        //TODO: only start this if signalr connects sucesfully
-        (ManagerSync.DBsyncer 500 conection configData.ClientName )|>ignore
+        async{
+            //Read config file to get information about transfer source dest pairs
+            let configData= ConfigReader.ReadFile "./WatchDirs.yaml"
+            let mutable watchDirsData= configData.WatchDirs
+            let groups=watchDirsData|>List.map(fun x-> x.MovementData.GroupList)
+            //Create all the needed groups
+            let mapping=configData.ScheduleIDMapping|>Seq.map(fun x-> KeyValuePair( x.Value,x.Key))|>Dictionary
+            LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) mapping
+            //create a asyncstream that yields new schedule jobs when 
+            //a new file is detected in a watched source
+            let schedulesInWatchDirs = GetNewTransfers2  watchDirsData LocalDB.AcessFuncs
+            
+            
+            let signalrCT=new Threading.CancellationTokenSource()
+            //For reasons i entirely do not understand starting this just as async deosnt run connection in release mode
+            Logging.infof "{Manager} starting signalr connection process"
+            let conectionTask= SignalR.Commands.connect configData.manIP  configData.ClientName groups signalrCT.Token
+           
+            let jobs=schedulesInWatchDirs|>List.map(fun (schedules,grouList)->
+                Logging.infof "{Manager}Setting up observables for group: %A" grouList
+                schedules|>AsyncSeq.iterAsyncParallel( fun x->x)
+                )
+            
 
-        let jobs=schedulesInWatchDirs|>List.map(fun (schedules,grouList)->
-            Logging.infof "Setting up observables for group: %A" grouList
-            schedules|>AsyncSeq.iterAsyncParallel( fun x->x)
-            )
-        jobs|>Async.Parallel
+            //Start the Syncing Service
+            //TODO: only start this if signalr connects sucesfully
+            let! res= jobs|>Async.Parallel|>Async.StartChild
+            let! conection=conectionTask
+            do! ManagerSync.DBsyncer 500 conection configData.ClientName |>Async.AwaitTask
+            return! res
+        }
 
 
         

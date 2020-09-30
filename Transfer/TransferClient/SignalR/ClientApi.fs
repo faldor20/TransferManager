@@ -5,9 +5,9 @@ open Microsoft.AspNetCore.SignalR.Client;
 open TransferClient
 
 module ClientApi=
-    let CancelTransfer=Action<string,int>(fun  groupName id->
-        Logging.debugf "Cancellation request recieved for group %s id %i" groupName id
-        TokenDatabase.cancelToken groupName id
+    let CancelTransfer=Action<int>(fun  id->
+        Logging.debugf "Cancellation request recieved for id %i"  id
+        TokenDatabase.cancelToken id
       )
 
     let ResetDB=Action(fun ()->
@@ -21,5 +21,5 @@ module ClientApi=
         Logging.infof ("{ClientAPI} Initialising Client Signalr Triggers (connection.On...etc)")
 
         let types= [|string.GetType();  int.GetType()|]
-        connection.On<string,int>("CancelTransfer",CancelTransfer )|>ignore
+        connection.On<int>("CancelTransfer",CancelTransfer )|>ignore
         connection.On("ResetDB",ResetDB) |>ignore

@@ -3,7 +3,7 @@ open SharedFs.SharedTypes
 open IO.Types
 open System.IO
 open System
-open JobManager
+open JobManager.Main
 open DataBase.Types
 module TransferHandling=
 
@@ -29,7 +29,7 @@ module TransferHandling=
                     |TransferResult.Cancelled-> CancelledCompleteAction transData source
                     |TransferResult.Failed-> FailedCompleteAction transData source
                     |_-> failwith "unknonw enum for transresult"
-            dbAcess.TransDataAccess.Set jobID dataChange
+            dbAcess.TransDataAccess.SetAndSync jobID dataChange
             dbAcess.RemoveJob sourceID jobID
            
            
@@ -53,8 +53,7 @@ module TransferHandling=
         async{
             let task= (dbAcess.GetJob jobID).Job
             let transResult, delete = Async.RunSynchronously task
-            return!cleaupTask dbAcess jobID sourceID transResult delete
-
+            return! cleaupTask dbAcess jobID sourceID transResult delete
         }
          
         

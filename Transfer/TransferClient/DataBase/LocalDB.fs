@@ -7,16 +7,19 @@ open System.Threading
 open TransferClient.SignalR
 open Types
 open TransferClient.JobManager
+open TransferClient.JobManager.Main
 open Microsoft.AspNetCore.SignalR.Client
+open SharedFs.SharedTypes
 
 module LocalDB =
-    let mutable ChangeDB :JobDataBase= JobDataBase (fun _ _->())
-    let mutable  jobDB:JobDataBase =  JobDataBase(fun _ _->())
+   // let mutable ChangeDB :JobDataBase= JobDataBase (fun _ _->async{()}) (Dictionary())
+    let  jobDB:JobDataBase =  JobDataBase(fun _ _->async{()}) (Dictionary())
     //This is a saved copy of the database just after initialisation used for restting the database
-    let mutable private freshDB:JobDataBase= JobDataBase (fun _ _->())
-    let AcessFuncs = access jobDB
+    let mutable private freshDB:JobDataBase= JobDataBase (fun _ _->async{()}) (Dictionary())
+    
+    let  AcessFuncs = access jobDB
 
-    let initDB (groups: int list list) freeTokens runJob =
+    let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob iDMapping=
         TransferClient.Logging.infof "initialising DB"
         let scheduleIDLevel =
             groups
@@ -27,17 +30,47 @@ module LocalDB =
             groups
             |>List.map(fun tokens->KeyValuePair( List.last tokens,{Source.Jobs=new List<JobItem>();Source.RequiredTokens=tokens}))
             |>Dictionary<int,Source>
-        
+        let tokens=
+            freeTokens|>Seq.map(fun token ->
+                //A list of all the sources that would want this token
+                let sources=
+                    groups
+                    |>List.filter (List.contains token.Key)
+                    |>List.map List.last
+
+                KeyValuePair( token.Key,{Token=token.Key;Remaining= token.Value;SourceOrder=sources }))
+            |>Dictionary
+        let db={
+            jobDB with
+                Sources=sources
+                FreeTokens=tokens
+                RunJob=runJob
+                UIData=ref<|UIData iDMapping
+
+        }
         jobDB.Sources<-sources
-        jobDB.FreeTokens<-freeTokens
+        jobDB.FreeTokens<-tokens
         jobDB.RunJob<-runJob
+        jobDB.UIData:=UIData iDMapping
+       
         (* groups|>List.iter(fun x-> jobDB.JobHierarchy.[x]<-List.Empty) *)
-        freshDB<-jobDB
+        freshDB<-db
 
 
 
     let reset () =
         TransferClient.Logging.infof "{DataBase} Resetting DataBase"
-        jobDB<- freshDB
+        //We have to do this ugly monstrosity because if i make the jobDB mutable when it is reassigned Acessfuncs will point to a previous version of it
+        jobDB.RunningJobs.Clear()
+        jobDB.JobOrder.Clear()
+        jobDB.JobList.Clear()
+        jobDB.FinishedJobs.Clear()
+        jobDB.TransferDataList.Clear()
+        jobDB.FreeTokens<-freshDB.FreeTokens
+        jobDB.Sources<-freshDB.Sources
+        jobDB.RunJob<-freshDB.RunJob
+        jobDB.UIData:=freshDB.UIData.Value
+
+       
         
 

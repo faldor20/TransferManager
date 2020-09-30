@@ -2,6 +2,7 @@ namespace TransferClient.DataBase
 open System.Collections.Generic
 open System.Threading
 open TransferClient.JobManager
+open SharedFs.SharedTypes
 module TokenDatabase=
     let mutable CancellationTokens=new Dictionary<JobID,CancellationTokenSource> ()
     let addCancellationToken id token=
@@ -10,5 +11,5 @@ module TokenDatabase=
                 TransferClient.Logging.debugf "Cancellation token DB doesn't contain id: %A adding it now" id
             CancellationTokens.Add(id,token)
         )
-    let cancelToken groupName id =
+    let cancelToken id =
         CancellationTokens.[id].Cancel()

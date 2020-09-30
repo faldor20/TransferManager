@@ -12,27 +12,27 @@
 <div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
     <ul class="nav flex-column">
         <li class="nav-item px-3">
-            <NavLink class="nav-link" href="/All" @onclick='()=>selectedGroup="" '>>
+            <NavLink class="nav-link" href="/All" @onclick='()=>selectedUser="" '>>
                 <span class="oi oi-list-rich" aria-hidden="true"></span> All
             </NavLink>
         </li>
        @if(Getter.status==Status.Connected){ 
-        @foreach (var group in Getter.CopyTasks)
+        @foreach (var user in Getter.CopyTasks)
         {
-            string url= "/"+group.Key;
+            string url= "/"+user.Key;
 
             <li class="nav-item px-3">
-                <NavLink class="nav-link" href="@url" @onclick="()=>selectedGroup=group.Key">
-                    <span class="oi oi-list-rich" aria-hidden="true"></span> @group.Key
+                <NavLink class="nav-link" href="@url" @onclick="()=>selectedUser=user.Key">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> @user.Key
                 </NavLink>
-                @if(group.Key==selectedGroup){
+                @if(user.Key==selectedUser){
                     <ul class="nav flex-column">
-                        @foreach (var user in group.Value)
+                        @foreach (var group in user.Value.Mapping)
                         {
-                            string userUrl= "/"+group.Key+"/"+user.Key;
+                            string userUrl= "/"+user.Key+"/"+group.Value;
                             <li class="nav-item px-3">
                             <NavLink class="nav-link" href="@userUrl">
-                                <span class="oi oi-list-rich" aria-hidden="true"></span> @user.Key
+                                <span class="oi oi-list-rich" aria-hidden="true"></span> @group.Key
                             </NavLink>
                             </li>
                         }
@@ -62,13 +62,13 @@
 </div>
 
 @code {
-    private string selectedGroup="";
+    private string selectedUser="";
     private bool collapseNavMenu = true;
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
     protected override async Task OnInitializedAsync()
     {
         //We set the group from the url so that the subnav can be show even when a user hasn't clicked on a group
-        selectedGroup=UriHelper.Uri.Split('/')[3];
+        selectedUser=UriHelper.Uri.Split('/')[3];
         //TODO: this shoudl really only triger when the sie of the mian dictionary gets longer
         Getter.newData += StateHasChanged;
     }

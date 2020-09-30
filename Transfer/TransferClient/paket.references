@@ -1,0 +1,13 @@
+FFMpegCore
+FluentFTP
+FSharp.Control.AsyncSeq
+FSharp.Control.Reactive
+FSharp.Json
+Legivel
+Microsoft.AspNetCore.SignalR.Client
+Serilog
+Serilog.Exceptions
+Serilog.Sinks.File
+Serilog.Sinks.Console
+TaskBuilder.fs
+FSharp.Core
