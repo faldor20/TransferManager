@@ -46,11 +46,11 @@ else
             @if(User==null)
             {
                 
-                UriHelper.NavigateTo("/Users");
+                UriHelper.NavigateTo("/JobList/Users");
             }
             else if (User == "All")
             {  
-                var tasks=Getter.CopyTasks.SelectMany(user => user.Value.Jobs.Select(task=>(user:user.Key,task:task.Item1,scheduledTime:user.Value.TransferDataList[task.Item1].ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
+                var tasks=Getter.CopyTasks.SelectMany(user => user.Value.Jobs.Select(task=>(user:user.Key,task:task.JobID,scheduledTime:user.Value.TransferDataList[task.JobID].ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
                 Console.WriteLine("loading all tasks. Count= "+tasks.Count);
                 foreach (var task in tasks)
                 {   
@@ -78,15 +78,15 @@ else
                 if(Group==-1){
                 foreach (var task in uiData.Jobs)
                 {   
-                    <TransferTaskRender index="@task.Item1" userName="@User" > </TransferTaskRender>
+                    <TransferTaskRender index="@task.JobID" userName="@User" > </TransferTaskRender>
                 } 
                 }
                 else
                 {
-                    var jobs=uiData.Jobs.Where(x=> x.Item2.Contains(Group));
+                    var jobs=uiData.Jobs.Where(x=> x.RequiredTokens.Contains(Group));
                     foreach (var task in jobs)
                     {   
-                        <TransferTaskRender index="@task.Item1" userName="@User" > </TransferTaskRender>
+                        <TransferTaskRender index="@task.JobID" userName="@User" > </TransferTaskRender>
                     } 
                 }
                 }

@@ -44,7 +44,7 @@ namespace HostedBlazor.Data
             transData.EndTime = transData.EndTime.ToLocalTime();
             return transData;
         }
-         async Task Reconnect(HubConnection connection)
+        async Task Reconnect(HubConnection connection)
         {
             var connected = false;
             while (!connected)
@@ -67,41 +67,47 @@ namespace HostedBlazor.Data
 
             hubConnection = new HubConnectionBuilder()
                 .WithUrl(transferServerUrl + "/datahub")
-                .AddMessagePackProtocol()
+               // .AddMessagePackProtocol()
                 .Build();
-            hubConnection.Closed+= (ex=>Reconnect(hubConnection));
-                hubConnection.On<Dictionary<string, UIData>>("ReceiveData", dataList =>
+            hubConnection.Closed += (ex => Reconnect(hubConnection));
+
+            hubConnection.On<Dictionary<string, UIData>>("ReceiveData", dataList =>
            {
                //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
                foreach (var user in dataList)
                {
-                   
-                       foreach (var i in user.Value.TransferDataList)
-                       {
-                           dataList[user.Key].TransferDataList[i.Key].StartTime = i.Value.StartTime.ToLocalTime();
-                           dataList[user.Key].TransferDataList[i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
-                           dataList[user.Key].TransferDataList[i.Key].EndTime = i.Value.EndTime.ToLocalTime();
-                       }
-                   
+
+                   foreach (var i in user.Value.TransferDataList)
+                   {
+                       dataList[user.Key].TransferDataList[i.Key].StartTime = i.Value.StartTime.ToLocalTime();
+                       dataList[user.Key].TransferDataList[i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
+                       dataList[user.Key].TransferDataList[i.Key].EndTime = i.Value.EndTime.ToLocalTime();
+                   }
+
                }
                CopyTasks = dataList;
                status = Status.Connected;
 
                newData.Invoke();
            });
+           
             hubConnection.On<string, UIData>("ReceiveDataChange", (user, change) =>
              {
+                 Console.WriteLine("Got change:" + Newtonsoft.Json.JsonConvert.SerializeObject(change));
                  lock (CopyTasks)
                  {
                      Console.WriteLine("recived changes from ClientManager");
                      var fullRefresh = false;
-                     if (change.Jobs.Length>0){
-                         newData.Invoke();
-                     }else{
-                     foreach (var transData in change.TransferDataList)
+                     if (change.Jobs.Length > 0)
                      {
-                        ComponentUpdateEvents[user][transData.Key].Invoke();
+                         newData.Invoke();
                      }
+                     else
+                     {
+                         foreach (var transData in change.TransferDataList)
+                         {
+                             ComponentUpdateEvents[user][transData.Key].Invoke();
+                         }
                      }
                      if (fullRefresh)
                      {
@@ -127,7 +133,7 @@ namespace HostedBlazor.Data
             await ContinuousSend();
 
         }
-        public Task Cancel( string userName, int id) =>
+        public Task Cancel(string userName, int id) =>
             hubConnection.SendAsync("CancelTransfer", userName, id);
         Task RequestData() =>
            hubConnection.SendAsync("GetTransferData");
