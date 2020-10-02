@@ -119,20 +119,22 @@ module Scheduler =
                 |None,Some _->TransferTypes.LocaltoFTP
                 |Some _,None->TransferTypes.FTPtoLocal
                 |None,None->TransferTypes.LocaltoLocal
-    let makeTransData moveData sourceFilePath id:TransferData=
-                { Percentage = 0.0
-                  FileSize = 0.0
-                  FileRemaining = 0.0
-                  Speed = 0.0
-                  Destination = moveData.DirData.DestinationDir
-                  Source =  sourceFilePath
-                  StartTime =  DateTime.Now
-                  jobID = id
-                  location=moveData.GroupList|>List.toArray
-                  TransferType=transferType moveData 
-                  Status = TransferStatus.Unavailable 
-                  ScheduledTime=DateTime.Now
-                  EndTime=new DateTime()}
+    let makeTransData moveData sourceFilePath file id:TransferData=
+                getFileData 
+                    file
+                    { Percentage = 0.0
+                      FileSize = 0.0
+                      FileRemaining = 0.0
+                      Speed = 0.0
+                      Destination = moveData.DirData.DestinationDir
+                      Source =  sourceFilePath
+                      StartTime =  DateTime.Now
+                      jobID = id
+                      location=moveData.GroupList|>List.toArray
+                      TransferType=transferType moveData 
+                      Status = TransferStatus.Unavailable 
+                      ScheduledTime=DateTime.Now
+                      EndTime=new DateTime()}
     let scheduleTransfer (file:FoundFile) moveData (dbAccess:Main.Access) transcode =
         async {
             let sourceID=(List.last(moveData.GroupList))
@@ -140,7 +142,7 @@ module Scheduler =
             let logFilePath=match file.FTPFileInfo with | Some f-> "FTP:"+f.FullName |None -> file.Path
 
             let {DestinationDir=dest}:DirectoryData=moveData.DirData
-            let transData=makeTransData moveData file.Path
+            let transData=makeTransData moveData file.Path file
             
             //TODO: make an event that is subscribed to this that cancells the job
             let ct = new CancellationTokenSource()

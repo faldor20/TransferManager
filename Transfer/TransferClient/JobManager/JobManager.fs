@@ -39,18 +39,53 @@ module Main =
         RunJob=runJob
         UIData=ref <|UIData mapping
     }
+    let private runJob jobDB jobsToRun=
+        Logging.debugf "Running jobs%A"jobsToRun
+        lock jobDB.RunningJobs (fun ()->
+        jobsToRun|>List.iter(fun (x,i)->
+        jobDB.RunningJobs.Add(i)
+        jobDB.RunJob x i |>Async.Start
+        ))
+    ///trys to run the job. This will remove the job from it source, remove the first instance of the source from the jobOrder
+    /// and add it to runningjobsList
+    ///Can run a job out of order... but if only called when a job ebcaome avaiable order should be preserved
+    let tryrunJob (jobDB:JobDataBase) id=
+        Logging.debugf "Trying to run job %i"id
+        let job=JobList.getJob jobDB.JobList id
+        if job.TakenTokens.Length>1 then
+        
+            let sourceID=List.last job.TakenTokens
+            let source=jobDB.Sources.[sourceID]
+            
+            if source.RequiredTokens=job.TakenTokens then
+                lock jobDB.JobOrder (fun ()->
+                match jobDB.JobOrder.Remove(sourceID) with
+                    |true->()
+                    |false->Logging.errorf "Tried to remove job %i from source %A that should have been there but wasn't" id sourceID
+                )
+                //this removes the job from the source list
+                lock source.Jobs (fun ()->
+                let i=source.Jobs.FindIndex (Predicate( fun x->x.ID=id))
+                match  i with
+                    |(-1)->Logging.errorf "Tried to remove job %i from source %A that should have been there but wasn't" id sourceID
+                    |a->source.Jobs.RemoveAt a
+                )
+                Logging.debugf "Running job %i from source %A "id sourceID 
+                runJob jobDB [(sourceID,id)]
+
+
     let tryRunJobs (jobDB:JobDataBase)  =
     
         let jobsTorun=
             JobOrder.takeAvailableJobs jobDB.JobOrder jobDB.Sources
-        //Logging.debugf "Running jobs%A"jobsTorun
-        jobsTorun|>List.iter(fun (x,i)->
-        jobDB.RunningJobs.Add(i)
-        jobDB.RunJob x i |>Async.Start
-        )
+        runJob jobDB jobsTorun
+
+        
+        
 
 
     let getUIData ({JobOrder=jobOrder;JobList=jobList;Sources=sources; FinishedJobs=finishedJobs; RunningJobs=runningJobs; TransferDataList=transferDataList; UIData=uIData; }:JobDataBase)=
+                lock uIData (fun()->
                 let orderdIDs= 
                     JobOrder.countUp jobOrder
                     |>Seq.map(fun (id,index)-> {JobID= sources.[id].Jobs.[index].ID; RequiredTokens= sources.[id].RequiredTokens.ToArray()})
@@ -63,7 +98,7 @@ module Main =
                 //TODO: t
                 let jobIDs=(convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat( orderdIDs)
                 
-                {  Jobs=jobIDs.ToArray();NeedsSyncing=true; UIData.Mapping= uIData.Value.Mapping ;UIData.TransferDataList=uIData.Value.TransferDataList } 
+                {  Jobs=jobIDs.ToArray();NeedsSyncing=true; UIData.Mapping= uIData.Value.Mapping ;UIData.TransferDataList=uIData.Value.TransferDataList }) 
     let syncChangeJobOrder jobDB =
         jobDB.UIData:= getUIData jobDB
         
@@ -81,15 +116,18 @@ module Main =
         let {FreeTokens=freeTokens;  Sources=sources; JobList=jobList; }=jobDB
         let source=sources.[sourceID]
         let id=JobList.addJob jobList makeJob
-        lock jobDB.JobOrder (fun ()->
-        lock sources (fun ()->
+        lock jobDB.JobOrder (fun()->
         jobDB.JobOrder.Add(sourceID)
+        )
         let job= jobList.[id]
+        lock source.Jobs (fun ()->
         source.Jobs.Add(job)
-        SourceList.getNextToken freeTokens source job))
+        )
+        SourceList.getNextToken freeTokens source job
         //run various actions that should trigger on Add
         //TODO: test if this can be deleted. jobs most likel will not be able to be run after adding becuase teyneed to be confirmed as available
-        tryRunJobs jobDB 
+        
+        //tryRunJobs jobDB 
         jobOrderChanged jobDB
         //return
         Logging.debugf "Added job jobID %i"id
@@ -109,8 +147,9 @@ module Main =
             |>List.rev
             |>List.iter(fun id -> freeTokens.[id]|>SourceList.attmeptIssuingToken sources)
         else Logging.errorf "Job %A failed to be removed. something must have gone wrong" job
-        jobOrderChanged jobDB
         tryRunJobs jobDB 
+        jobOrderChanged jobDB
+        Logging.debugf"Removed job %i"jobID
         //TODO: trigger an attempt to run any job with all its tokensp
 
     ///makes the upjob higher up the order of jobs than the downjob
@@ -159,6 +198,7 @@ module Main =
         makeJobAvailable=(fun id->
 
             jobDB.JobList.[id].Available<-true
-            tryRunJobs jobDB)
+            //TODO: make this only try to run the one job you just got given
+            tryrunJob jobDB id)
     }
                 

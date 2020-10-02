@@ -29,8 +29,8 @@ module JobOrder =
    ///Returns a list of jobs from the joborder that have all their required tokens and are avilable
     ///Removes the jobs from the JobOrder and Source 
     let takeAvailableJobs (jobOrder:JobOrder) (sources:SourceList)=
-        lock jobOrder (fun ()->
             lock sources (fun()->
+        lock jobOrder (fun ()->
                 let indexed=countUp jobOrder
                 let jobsToRun=
                     seq{
@@ -47,8 +47,10 @@ module JobOrder =
                     |false->Logging.errorf "Tried to remove a job that should have been there but wasn't"
                     //this removes the job from the source list
                     sources.[source].Jobs.RemoveAt(index)
+                    Logging.debugf "Removed job %i from source %A "id source 
                     (source,id)
-                    ))
+                    )
+                    )
                 )
 
         
