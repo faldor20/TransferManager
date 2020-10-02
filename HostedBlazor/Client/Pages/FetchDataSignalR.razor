@@ -64,43 +64,10 @@ else
                 } 
             }
             else{
-              // Getter.ComponentUpdateEvents[User]=new Dictionary<int,Action>();
-               @*  var tasks= User switch 
-                {   
-                    ""=>Getter.CopyTasks.Select(x=>(x.Value.Jobs, x.Value.TransferDataList)),
-                    _=>  new[] { (Getter.CopyTasks[User].Jobs,Getter.CopyTasks[User].TransferDataList)}
-                        
-
-                };
-                
-                var jobs=tasks.SelectMany(x=>x.Jobs);
-                var transData=tasks.SelectMany(x=>x.TransferDataList)
-                var job= new Tuple<int,int[]>[];
-                foreach (var item in tasks)
-                {
-                    item.Jobs
-                }  *@
                 var uiData= Getter.CopyTasks[User];
-                @if(Group==-1){
-                    @foreach (var task in uiData.Jobs)
-                    {   
-                        <TransferTaskRender index="@task.JobID" userName="@User" > </TransferTaskRender>
-                    } 
+                <UserRender UserData="@uiData" Group="@Group" UserName="@User" />
+                    
                 }
-                else
-                {
-                    var jobs=uiData.Jobs.Where(x=> x.RequiredTokens.Contains(Group));
-                    @foreach (var task in jobs)
-                    {   
-                        <TransferTaskRender index="@task.JobID" userName="@User" > </TransferTaskRender>
-                    } 
-                }
-                }
-
-
-                
-            
-        
         </ol>
     </div>
 </table>

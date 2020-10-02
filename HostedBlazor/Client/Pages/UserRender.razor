@@ -1,7 +1,4 @@
-﻿@page "/JobList/{User}/{GroupString}"
-@page "/JobList/{User}/"
-@page "/JobList/"
-@using System.Collections.Generic
+﻿@using System.Collections.Generic
 @using blaz.Data
 @using System;
 @using System.Threading
@@ -13,33 +10,34 @@
 @inject NavigationManager UriHelper  
 
 @code{
-    
     [Parameter]
     public UIData UserData { get; set; }
     [Parameter]
     public int Group { get; set; }
- 
-    
+    [Parameter]
+    public string UserName { get; set; }
+
+
     protected override async Task OnInitializedAsync()
     {
-      
+        
+    }
+}
+@{Getter.userUpdates[UserName]= this.StateHasChanged;}
+@if(Group==-1){
+    @foreach (var task in UserData.Jobs)
+    {   var data=UserData.TransferDataList[ task.JobID];
+         <TransferTaskRender UserName="@UserName" Task="@data" > </TransferTaskRender>
     } 
 }
-
-                @if(Group==-1){
-                    @foreach (var task in UserData.Jobs)
-                    {   
-                       // <TransferTaskRender index="@task.JobID" userName="@User" > </TransferTaskRender>
-                    } 
-                }
-                else
-                {
-                    var jobs=UserData.Jobs.Where(x=> x.RequiredTokens.Contains(Group));
-                    @foreach (var task in jobs)
-                    {   
-                      //  <TransferTaskRender index="@task.JobID" userName="@User" > </TransferTaskRender>
-                    } 
-                }
+else
+{
+    var jobs=UserData.Jobs.Where(x=> x.RequiredTokens.Contains(Group));
+    @foreach (var task in jobs)
+    {   var data=UserData.TransferDataList[ task.JobID];
+         <TransferTaskRender UserName="@UserName" Task="@data" > </TransferTaskRender>
+    } 
+}
 
 
 

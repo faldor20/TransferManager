@@ -21,6 +21,7 @@ namespace HostedBlazor.Data
     {
         public static Uri baseAddress;
         HttpClient http = new HttpClient { BaseAddress = baseAddress };
+        public Dictionary<string,Action> userUpdates = new Dictionary<string, Action>();
         public Dictionary<string, UIData> CopyTasks = null;
         public List<(string group, string user, TransferData task)> AllTasks = null;
         public bool first = true;
@@ -108,31 +109,39 @@ namespace HostedBlazor.Data
                     }               
                      if (change.Jobs.Length > 0)
                      {
-                         /* Console.WriteLine($"new jobs in user : {user}. Doing full update ");
-                        var temp = CopyTasks;
+                          Console.WriteLine($"new jobs in user : {user}. Doing full update ");
+                        //var temp = CopyTasks;
                         
-                        temp[user].Jobs=change.Jobs;
+                        //CopyTasks[user].Jobs=change.Jobs;
                         
-                        foreach (var transData in change.TransferDataList)
+                        /* foreach (var transData in change.TransferDataList)
                          {
-                             temp[user].TransferDataList[transData.Key] = transData.Value;
+                             CopyTasks[user].TransferDataList[transData.Key] = transData.Value;
                          }
                          foreach (var transData in CopyTasks[user].TransferDataList)
                          {  
                             ComponentUpdateEvents[user][transData.Key].Invoke();
-                         }
-                         CopyTasks=temp;
-                         newData.Invoke(); */
-                         RequestData().Start();
+                         } */
+                         CopyTasks[user]=change;
+                         /* CopyTasks.Clear();
+                         CopyTasks=temp; */
+                         userUpdates[user].Invoke();
+                         newData.Invoke(); 
+                        
                      }
                      else
                      {
+                         //TODO:  by doing only partial updates t will make the rederd object keep its reference and that should prevent the need for a rerender or index reference
                          Console.WriteLine($"Doing incrimental update for user : {user} ");
                          foreach (var transData in change.TransferDataList)
                          {
-                           
+                            //TOOD: impliment rest of fields
                             ComponentUpdateEvents[user][transData.Key].Invoke();
-                            CopyTasks[user].TransferDataList[transData.Key] = transData.Value;
+                            CopyTasks[user].TransferDataList[transData.Key].Percentage = transData.Value.Percentage;
+                            CopyTasks[user].TransferDataList[transData.Key].Source = transData.Value.Source;
+                            CopyTasks[user].TransferDataList[transData.Key].Speed = transData.Value.Speed;
+                            CopyTasks[user].TransferDataList[transData.Key].Status = transData.Value.Status;
+                            CopyTasks[user].TransferDataList[transData.Key].StartTime = transData.Value.StartTime;
                          }
 
                      }
