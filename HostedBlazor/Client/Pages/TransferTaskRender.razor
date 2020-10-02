@@ -13,25 +13,35 @@
     [Parameter]
     public string UserName{get;set;}
     public SlidingArray etaArray = new SlidingArray(5);
-
+    private int id=0;
     protected override async Task OnInitializedAsync()
-    {   
+    {  
+        var task=Getter.CopyTasks[UserName].TransferDataList[index];
+        id=task.jobID;
         if(!Getter.ComponentUpdateEvents.ContainsKey(UserName)) Getter.ComponentUpdateEvents[UserName]=new Dictionary<int,Action>();
         void changed () {
             this.StateHasChanged();
-            //Console.WriteLine("state changed for user: "+UserName+" Id:"+index);
+          //  Console.WriteLine("state changed for user: "+UserName+" Id:"+id);
         }
-        Console.WriteLine("setup event trigger to update job with user: "+UserName +" and jobid: "+index);
-        Getter.ComponentUpdateEvents[UserName][index] = changed;
+        Console.WriteLine("setup event trigger to update job with user: "+UserName +" and jobid: "+id);
+        Getter.ComponentUpdateEvents[UserName][id] = changed;
 
     }
 }
 
-@* @for (int i = CopyTasks.Count - 1; i >= 0 ; i--)
-    { var task= CopyTasks[i];
-             *@
-             @{
-                 var task=Getter.CopyTasks[UserName].TransferDataList[index];
+             @{if(Getter.CopyTasks[UserName].TransferDataList.ContainsKey(index)){
+                var task=Getter.CopyTasks[UserName].TransferDataList[index];
+                if(index!=id){
+                    Console.WriteLine($"updating event beuase index{index} doesn not match id{id}");
+                    id=index;
+                    if(!Getter.ComponentUpdateEvents.ContainsKey(UserName)) Getter.ComponentUpdateEvents[UserName]=new Dictionary<int,Action>();
+                    void changed () {
+                        this.StateHasChanged();
+                      //  Console.WriteLine("state changed for user: "+UserName+" Id:"+id);
+                    }
+                    Console.WriteLine("setup event trigger to update job with user: "+UserName +" and jobid: "+id);
+                    Getter.ComponentUpdateEvents[UserName][id] = changed;
+                }
                  var type=task.Status switch
                  {
                      TransferStatus.Unavailable=>Color.Info,
@@ -65,11 +75,11 @@
                  };
                  var etaSecs=(double)(task.FileRemaining/task.Speed);
                  string etaString;
-                 etaArray.AddEta(etaSecs);
                  if(etaSecs>3600){
                      etaString= "ETA "+ ">1 hour";
                  }
                  else if(etaSecs>1){
+                    etaArray.AddEta(etaSecs);
                      var eta= TimeSpan.FromSeconds(etaArray.average);
                      etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
                  }
@@ -100,5 +110,5 @@
                     </div>
                   
                 </BSAlert>
-            }
+            }}
 

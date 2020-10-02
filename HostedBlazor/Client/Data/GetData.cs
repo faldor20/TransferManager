@@ -95,44 +95,54 @@ namespace HostedBlazor.Data
 
             hubConnection.On<string, UIData>("ReceiveDataChange", (user, change) =>
              {
+                  status = Status.Connected;
                 // Console.WriteLine("Got change for user: " + user);
-                 lock (CopyTasks)
-                 {
-                     var fullRefresh = false;
+                
+              
+
+                    foreach (var i in change.TransferDataList)
+                    {
+                        change.TransferDataList[i.Key].StartTime = i.Value.StartTime.ToLocalTime();
+                        change.TransferDataList[i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
+                        change.TransferDataList[i.Key].EndTime = i.Value.EndTime.ToLocalTime();
+                    }               
                      if (change.Jobs.Length > 0)
                      {
-                         Console.WriteLine($"new jobs in user : {user}. Doing full update ");
-                         CopyTasks[user].Jobs=change.Jobs;
-                         CopyTasks[user].TransferDataList=change.TransferDataList;
-                         newData.Invoke();
+                         /* Console.WriteLine($"new jobs in user : {user}. Doing full update ");
+                        var temp = CopyTasks;
+                        
+                        temp[user].Jobs=change.Jobs;
+                        
+                        foreach (var transData in change.TransferDataList)
+                         {
+                             temp[user].TransferDataList[transData.Key] = transData.Value;
+                         }
+                         foreach (var transData in CopyTasks[user].TransferDataList)
+                         {  
+                            ComponentUpdateEvents[user][transData.Key].Invoke();
+                         }
+                         CopyTasks=temp;
+                         newData.Invoke(); */
+                         RequestData().Start();
                      }
                      else
                      {
                          Console.WriteLine($"Doing incrimental update for user : {user} ");
                          foreach (var transData in change.TransferDataList)
                          {
-                             Console.WriteLine($"trigger update for job: {transData.Key} in user : {user} ");
-                             ComponentUpdateEvents[user][transData.Key].DynamicInvoke();
-                             CopyTasks[user].TransferDataList[transData.Key] = transData.Value;
+                           
+                            ComponentUpdateEvents[user][transData.Key].Invoke();
+                            CopyTasks[user].TransferDataList[transData.Key] = transData.Value;
                          }
 
                      }
-                     if (fullRefresh)
-                     {
-                         newData.Invoke();
-                     }
+                    
 
 
-                 }
+                 
 
              });
-            /*   hubConnection.On<Object> ("ReceiveData", dataList => {
 
-                  Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
-
-                  status = Status.Connected;
-                  newData.Invoke();
-              });  */
 
             hubConnection.On<string>("Testing", confirmed => { Console.WriteLine(confirmed); status = Status.Connected; });
             await hubConnection.StartAsync();

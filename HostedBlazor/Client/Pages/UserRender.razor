@@ -1,0 +1,46 @@
+﻿@page "/JobList/{User}/{GroupString}"
+@page "/JobList/{User}/"
+@page "/JobList/"
+@using System.Collections.Generic
+@using blaz.Data
+@using System;
+@using System.Threading
+@using System.Threading.Tasks
+@using static SharedFs.SharedTypes;
+@using System.Linq
+@using HostedBlazor.Data
+@inject DataGetter Getter
+@inject NavigationManager UriHelper  
+
+@code{
+    
+    [Parameter]
+    public UIData UserData { get; set; }
+    [Parameter]
+    public int Group { get; set; }
+ 
+    
+    protected override async Task OnInitializedAsync()
+    {
+      
+    } 
+}
+
+                @if(Group==-1){
+                    @foreach (var task in UserData.Jobs)
+                    {   
+                       // <TransferTaskRender index="@task.JobID" userName="@User" > </TransferTaskRender>
+                    } 
+                }
+                else
+                {
+                    var jobs=UserData.Jobs.Where(x=> x.RequiredTokens.Contains(Group));
+                    @foreach (var task in jobs)
+                    {   
+                      //  <TransferTaskRender index="@task.JobID" userName="@User" > </TransferTaskRender>
+                    } 
+                }
+
+
+
+
