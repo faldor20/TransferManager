@@ -23,6 +23,6 @@ module TokenList =
         let takeToken  id (tokenDB: TokenList)=
             takeToken' tokenDB.[id]
         ///Increases the remaing count by one
-        let returnToken (tokenDB: TokenList) id = tokenDB.[id].Remaining <- tokenDB.[id].Remaining + 1
-        let AddTokenSource (tokenDB: TokenList) id tokenSource = tokenDB.[id] <- tokenSource
+        let returnToken (tokenDB: TokenList) id = lock tokenDB (fun ()-> tokenDB.[id].Remaining <- tokenDB.[id].Remaining + 1)
+        let AddTokenSource (tokenDB: TokenList) id tokenSource =lock tokenDB (fun ()-> tokenDB.[id] <- tokenSource)
    

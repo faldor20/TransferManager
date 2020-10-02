@@ -19,7 +19,7 @@
        @if(Getter.status==Status.Connected){ 
         @foreach (var user in Getter.CopyTasks)
         {
-            string url= "/"+user.Key;
+            string url= "/JobList/"+user.Key+"/-1";
 
             <li class="nav-item px-3">
                 <NavLink class="nav-link" href="@url" @onclick="()=>selectedUser=user.Key">
@@ -29,10 +29,10 @@
                     <ul class="nav flex-column">
                         @foreach (var group in user.Value.Mapping)
                         {
-                            string userUrl= "/"+user.Key+"/"+group.Value;
+                            string userUrl= "/JobList/"+user.Key+"/"+group.Key;
                             <li class="nav-item px-3">
                             <NavLink class="nav-link" href="@userUrl">
-                                <span class="oi oi-list-rich" aria-hidden="true"></span> @group.Key
+                                <span class="oi oi-list-rich" aria-hidden="true"></span> @group.Value
                             </NavLink>
                             </li>
                         }

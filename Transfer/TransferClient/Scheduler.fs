@@ -145,6 +145,7 @@ module Scheduler =
             //TODO: make an event that is subscribed to this that cancells the job
             let ct = new CancellationTokenSource()
             let jobID= dbAccess.AddJob (sourceID)  (fun id->{Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct; ID=id; Available=false; TakenTokens=List.Empty})
+            
             dbAccess.TransDataAccess.SetAndSync jobID (transData jobID)
             addCancellationToken jobID ct
 

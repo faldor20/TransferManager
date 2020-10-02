@@ -67,12 +67,14 @@ namespace HostedBlazor.Data
 
             hubConnection = new HubConnectionBuilder()
                 .WithUrl(transferServerUrl + "/datahub")
-               // .AddMessagePackProtocol()
+                .AddMessagePackProtocol()
                 .Build();
             hubConnection.Closed += (ex => Reconnect(hubConnection));
 
             hubConnection.On<Dictionary<string, UIData>>("ReceiveData", dataList =>
            {
+               Console.WriteLine("Got initialData:" + Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
+
                //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
                foreach (var user in dataList)
                {
@@ -90,33 +92,38 @@ namespace HostedBlazor.Data
 
                newData.Invoke();
            });
-           
+
             hubConnection.On<string, UIData>("ReceiveDataChange", (user, change) =>
              {
-                 Console.WriteLine("Got change:" + Newtonsoft.Json.JsonConvert.SerializeObject(change));
+                // Console.WriteLine("Got change for user: " + user);
                  lock (CopyTasks)
                  {
-                     Console.WriteLine("recived changes from ClientManager");
                      var fullRefresh = false;
                      if (change.Jobs.Length > 0)
                      {
+                         Console.WriteLine($"new jobs in user : {user}. Doing full update ");
+                         CopyTasks[user].Jobs=change.Jobs;
+                         CopyTasks[user].TransferDataList=change.TransferDataList;
                          newData.Invoke();
                      }
                      else
                      {
+                         Console.WriteLine($"Doing incrimental update for user : {user} ");
                          foreach (var transData in change.TransferDataList)
                          {
-                             ComponentUpdateEvents[user][transData.Key].Invoke();
+                             Console.WriteLine($"trigger update for job: {transData.Key} in user : {user} ");
+                             ComponentUpdateEvents[user][transData.Key].DynamicInvoke();
+                             CopyTasks[user].TransferDataList[transData.Key] = transData.Value;
                          }
+
                      }
                      if (fullRefresh)
                      {
                          newData.Invoke();
                      }
 
+
                  }
-
-
 
              });
             /*   hubConnection.On<Object> ("ReceiveData", dataList => {

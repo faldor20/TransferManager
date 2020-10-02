@@ -17,19 +17,23 @@ module SourceList =
             if i=source.Jobs.Count then false 
             else
                 let job= source.Jobs.[i]
-                let nextToken=source.RequiredTokens|>List.except job.TakenTokens|>List.last
-                if nextToken= tokenSource.Token then
-                    match TokenList.takeToken' tokenSource with
-                    |Some token->
-                        job.TakenTokens<- token::job.TakenTokens
-                        //This removes our item and then adds it at the end
-                        tokenSource.SourceOrder <-(tokenSource.SourceOrder|>List.except[ID])@[ID]
-                        //we then run it again just incase there are some tokens left
-                        true
-                    |None->
-                        Logging.errorf "Something has gone wrong an attempt was made to issue a token but it failed"
-                        true
-                else jobLoop source ID i
+                let wantedTokens=source.RequiredTokens|>List.except job.TakenTokens
+                match wantedTokens with 
+                |[]-> jobLoop source ID (i+1)
+                |tokens->
+                    let nextToken=wantedTokens|>List.last
+                    if nextToken= tokenSource.Token then
+                        match TokenList.takeToken' tokenSource with
+                        |Some token->
+                            job.TakenTokens<- token::job.TakenTokens
+                            //This removes our item and then adds it at the end
+                            tokenSource.SourceOrder <-(tokenSource.SourceOrder|>List.except[ID])@[ID]
+                            //we then run it again just incase there are some tokens left
+                            true
+                        |None->
+                            Logging.errorf "Something has gone wrong an attempt was made to issue a token but it failed"
+                            true
+                    else jobLoop source ID (i+1)
         ///loops until the jobloop returns true, then runs the main function again. this is incase multiple tokens were added at once
         let rec iter (sourceIDs)=
             match sourceIDs with

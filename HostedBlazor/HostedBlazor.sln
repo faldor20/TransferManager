@@ -2,6 +2,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.0.0
 MinimumVisualStudioVersion = 16.0.0.0
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".paket", ".paket", "{BC8B1DEC-17B8-4FF1-89E9-09F1639E5C82}"
+	ProjectSection(SolutionItems) = preProject
+		paket.dependencies = paket.dependencies
+	EndProjectSection
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostedBlazor.Server", "Server\HostedBlazor.Server.csproj", "{BFF4B487-3DC3-43C5-9533-BA60F9D6ED94}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HostedBlazor.Client", "Client\HostedBlazor.Client.csproj", "{3D354D0D-D2F7-465C-95A2-D05BFEAB3C3A}"

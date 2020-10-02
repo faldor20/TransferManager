@@ -29,6 +29,7 @@ module Manager =
             //For reasons i entirely do not understand starting this just as async deosnt run connection in release mode
             Logging.infof "{Manager} starting signalr connection process"
             let conectionTask= SignalR.Commands.connect configData.manIP  configData.ClientName groups signalrCT.Token
+            
            
             let jobs=schedulesInWatchDirs|>List.map(fun (schedules,grouList)->
                 Logging.infof "{Manager}Setting up observables for group: %A" grouList
@@ -38,9 +39,9 @@ module Manager =
 
             //Start the Syncing Service
             //TODO: only start this if signalr connects sucesfully
-            let! res= jobs|>Async.Parallel|>Async.StartChild
             let! conection=conectionTask
-            do! ManagerSync.DBsyncer 500 conection configData.ClientName |>Async.AwaitTask
+            ManagerSync.DBsyncer 500 conection configData.ClientName 
+            let! res= jobs|>Async.Parallel|>Async.StartChild
             return! res
         }
 

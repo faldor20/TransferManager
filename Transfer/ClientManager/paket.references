@@ -1,2 +1,2 @@
 Saturn
-FSharp.Core
+Microsoft.AspNetCore.SignalR.Protocols.MessagePack

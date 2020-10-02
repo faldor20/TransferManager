@@ -3,7 +3,6 @@ open System
 open System.Diagnostics;
 open System.Threading
 open System.IO
-open FFMpegCore
 open System.Threading.Tasks
 open System.IO.Pipelines
 open FSharp.Control.Tasks
@@ -346,7 +345,7 @@ module Testing=
         
  *)
         
-    let ffmpegCore args sourceFile dest destFile (writer:Stream->Stream->Task<unit>)=
+  (*   let ffmpegCore args sourceFile dest destFile (writer:Stream->Stream->Task<unit>)=
             
         let ftp = new FluentFTP.FtpClient("***REMOVED***","***REMOVED***","***REMOVED***")
         let readStream= new FileStream(sourceFile,FileMode.Open)
@@ -363,9 +362,9 @@ module Testing=
         ftpWriter.Close() 
         let resply=ftp.GetReply() 
         printfn "reply= %A" resply.Message
-        printfn "worked?= %A" resply.Success
+        printfn "worked?= %A" resply.Success *)
         //ftp.UploadAsync(proc.StandardOutput.BaseStream,dest+"/ftpTest.mp4",FluentFTP.FtpRemoteExists.Overwrite)|>Async.AwaitTask 
-    let streamTest()=
+  (*   let streamTest()=
         let conf=File.ReadLines("config.txt")|>Seq.toList;
 
         let dest="***REMOVED***Transfers/SSC to BUN/testing/"
@@ -379,7 +378,7 @@ module Testing=
             ffmpegstream2 (conf.[0]+" pipe:1 ") dest conf.[1]
         else
             ffmpegstreamLibrary (conf.[0]+" pipe:1 ") dest conf.[1] writer   
-    
+     *)
     let test number=
 (*         printfn"testing %i"number
         let timer= Diagnostics.Stopwatch()

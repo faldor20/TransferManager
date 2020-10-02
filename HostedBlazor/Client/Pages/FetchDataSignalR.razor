@@ -1,4 +1,4 @@
-﻿@page "/JobList/{User}/{Group}"
+﻿@page "/JobList/{User}/{GroupString}"
 @page "/JobList/{User}/"
 @page "/JobList/"
 @using System.Collections.Generic
@@ -15,11 +15,15 @@
 @code{
     
     [Parameter]
-    public int Group { get; set; }
+    public string GroupString { get; set; }
+
     [Parameter]
     public string User { get; set; }
+    
+    public int Group;
     protected override async Task OnInitializedAsync()
     {
+        int.TryParse(GroupString,out Group);
         User = User ?? " ";
         Getter.newData += this.StateHasChanged;
     } 

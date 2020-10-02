@@ -1,0 +1,9 @@
+Microsoft.AspNetCore.Components.WebAssembly
+Microsoft.AspNetCore.Components.WebAssembly.Build
+Microsoft.AspNetCore.Components.WebAssembly.DevServer
+Microsoft.AspNetCore.Html.Abstractions
+Microsoft.AspNetCore.SignalR.Protocols.MessagePack
+System.Net.Http.Json
+Microsoft.AspNetCore.SignalR.Client
+Newtonsoft.Json
+BlazorStrap

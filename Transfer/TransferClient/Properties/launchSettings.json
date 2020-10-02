@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TransferClient": {
+      "commandName": "Project",
+      "workingDirectory": "C:\\Users\\***REMOVED***\\Desktop\\Code\\FSharp\\fs\\Transfer\\TransferClient"
+    }
+  }
+}

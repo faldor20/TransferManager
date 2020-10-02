@@ -3,17 +3,21 @@ open System.Collections.Generic
 open SharedFs.SharedTypes
 module TransferDataList =
     let set (transferDataList:TransferDataList) jobID data=
-        transferDataList.[jobID]<-data
+        lock transferDataList (fun ()-> 
+            transferDataList.[jobID]<-data
+        )
     ///This sets the transferData and allso writes it to te UIData. 
     /// This allows for the UIData to only contain changes
     let setAndSync transDat (uIData:ref<UIData>) jobID data=
         set transDat jobID data
+        lock UIData (fun ()->
         set uIData.Value.TransferDataList jobID data
-        uIData.Value.NeedsSyncing<-true
+        uIData.Value.NeedsSyncing<-true)
+    
     let get (transferDataList:TransferDataList) jobID=
         transferDataList.[jobID]
     let remove (transferDataList:TransferDataList) jobID=
-        transferDataList.Remove(jobID)
+        lock transferDataList (fun ()-> transferDataList.Remove(jobID))
     type Acess =
         {
             //Set:JobID ->TransferData->unit

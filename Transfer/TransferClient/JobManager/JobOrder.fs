@@ -29,24 +29,27 @@ module JobOrder =
    ///Returns a list of jobs from the joborder that have all their required tokens and are avilable
     ///Removes the jobs from the JobOrder and Source 
     let takeAvailableJobs (jobOrder:JobOrder) (sources:SourceList)=
-        let indexed=countUp jobOrder
-        let jobsToRun=
-            seq{
-            for (jobSource,i) in indexed do
-                let job=sources.[jobSource].Jobs.[i]
-                if job.TakenTokens = sources.[jobSource].RequiredTokens && job.Available then
-                    yield (jobSource,job.ID,i)
-            }|>Seq.toList
-        
-        //Removes each job from the joborder and its source
-        jobsToRun|>List.map(fun (source,id,index)->
-            match jobOrder.Remove(source) with
-            |true->()
-            |false->Logging.errorf "Tried to remove a job that should have been there but wasn't"
-            //this removes the job from the source list
-            sources.[source].Jobs.RemoveAt(index)
-            (source,id)
-            )
+        lock jobOrder (fun ()->
+            lock sources (fun()->
+                let indexed=countUp jobOrder
+                let jobsToRun=
+                    seq{
+                    for (jobSource,i) in indexed do
+                        let job=sources.[jobSource].Jobs.[i]
+                        if job.TakenTokens = sources.[jobSource].RequiredTokens && job.Available then
+                            yield (jobSource,job.ID,i)
+                    }|>Seq.toList
+                
+                //Removes each job from the joborder and its source
+                jobsToRun|>List.map(fun (source,id,index)->
+                    match jobOrder.Remove(source) with
+                    |true->()
+                    |false->Logging.errorf "Tried to remove a job that should have been there but wasn't"
+                    //this removes the job from the source list
+                    sources.[source].Jobs.RemoveAt(index)
+                    (source,id)
+                    ))
+                )
 
         
  

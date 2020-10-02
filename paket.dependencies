@@ -1,30 +1,32 @@
 source https://api.nuget.org/v3/index.json
 
 storage: none
-nuget BlazorStrap 1.3.2
-nuget coverlet.collector 1.2.0
-nuget Expecto 9.0.2
-nuget FFMpegCore 2.2.6
-nuget FluentFTP 32.4.3
-nuget FSharp.Control.AsyncSeq 3.0.1
-nuget FSharp.Control.Reactive 4.4.2
-nuget FSharp.Core
-nuget FSharp.Json 0.4.0
-nuget Legivel 0.4.3
-nuget Microsoft.AspNetCore.Components.WebAssembly 5.0.0-rc.1.20451.17 rc
-nuget Microsoft.AspNetCore.Components.WebAssembly.Build 3.2.0
-nuget Microsoft.AspNetCore.Components.WebAssembly.DevServer 5.0.0-rc.1.20451.17 rc
-nuget Microsoft.AspNetCore.Components.WebAssembly.Server 5.0.0-rc.1.20451.17 rc
-nuget Microsoft.AspNetCore.SignalR.Client 5.0.0-rc.1.20451.17 rc
-nuget Microsoft.AspNetCore.SignalR.Protocols.MessagePack 5.0.0-rc.1.20451.17 rc
-nuget Microsoft.NET.Test.Sdk 16.5.0
-nuget Newtonsoft.Json 12.0.3
-nuget Saturn 0.14.1
-nuget Serilog 2.9.0
-nuget Serilog.Exceptions 5.6.0
-nuget Serilog.Sinks.Console 3.1.1
-nuget Serilog.Sinks.File 4.1.0
-nuget System.Net.Http.Json 5.0.0-rc.1.20451.14 rc
-nuget TaskBuilder.fs 2.2.0-alpha alpha
-nuget xunit 2.4.0
-nuget xunit.runner.visualstudio 2.4.0
+nuget BlazorStrap 
+nuget coverlet.collector 
+nuget Expecto
+nuget FluentFTP 
+nuget FSharp.Control.AsyncSeq 
+nuget FSharp.Control.Reactive 
+nuget FSharp.Core 4.7.2
+nuget FSharp.Json 
+nuget Legivel 
+//We need to set the version to below 2 becuase otherwise aspnetcore brakes. When we move to version 5 we can go to version 2
+nuget MessagePack 1.9.11 
+nuget Microsoft.AspNetCore.Components.WebAssembly
+nuget Microsoft.AspNetCore.Components.WebAssembly.Build
+nuget Microsoft.AspNetCore.Components.WebAssembly.DevServer
+nuget Microsoft.AspNetCore.Components.WebAssembly.Server
+nuget Microsoft.AspNetCore.Html.Abstractions
+nuget Microsoft.AspNetCore.SignalR.Client 3.1.8
+nuget Microsoft.AspNetCore.SignalR.Protocols.MessagePack 3.1.8 
+nuget System.Net.Http.Json
+nuget Newtonsoft.Json
+
+nuget Microsoft.NET.Test.Sdk 
+nuget Saturn 
+nuget Serilog.Exceptions 
+nuget Serilog.Sinks.Console
+nuget Serilog.Sinks.File 
+
+nuget xunit 
+nuget xunit.runner.visualstudio 

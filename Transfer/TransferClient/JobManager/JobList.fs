@@ -8,9 +8,10 @@ module JobList =
     ///Adds a job to the list. mkaeJob is  function that takes in an int, the jobItems id and returns a jobItem.
     /// this allows for making a job that requires its own id 
     let addJob (list: JobList) (makeJob:int->JobItem) =
+      lock list (fun ()->  
         let id = list.Count
         list.[id] <- (makeJob id)
-        id
+        id)
     ///Returns a refernce to the job whos id is given
     let getJob (list: JobList) id = list.[id]
     ///Returns a refernce to the job whos id is given
@@ -28,6 +29,6 @@ module JobList =
     let JobListAcessFuncs jobList=
         {
             GetJob=getJob jobList
-            RemoveJob=lockedFunc jobList (removeJob jobList)
-            AddJob= lockedFunc jobList (addJob jobList)
+            RemoveJob=removeJob jobList
+            AddJob= addJob jobList
         }
