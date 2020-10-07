@@ -23,10 +23,18 @@
     public int Group;
     protected override async Task OnInitializedAsync()
     {
-        int.TryParse(GroupString,out Group);
-        User = User ?? " ";
-        Getter.newData += this.StateHasChanged;
+        Getter.newData +=new Action(()=>{
+        Console.WriteLine("StateChanged|Main");
+         this.StateHasChanged();});
+
     } 
+    protected override async Task OnParametersSetAsync()
+    {  int.TryParse(GroupString,out Group);
+        User = User ?? " ";
+    // This event will fire when the parameters change
+    // Put your code here.  
+    this.StateHasChanged();
+    }
 }
 
 <h1>Transfer Monitoring</h1>

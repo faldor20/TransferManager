@@ -30,6 +30,9 @@ namespace HostedBlazor.Data
         public string transferServerUrl;
         public Status status = Status.Loading;
         public event Action newData;
+        public void UpdateData(){
+            newData.Invoke();
+        }
         private HubConnection hubConnection;
         /*   public void UpDateAllTasks(){
               AllTasks=CopyTasks.SelectMany(
@@ -122,11 +125,16 @@ namespace HostedBlazor.Data
                          {  
                             ComponentUpdateEvents[user][transData.Key].Invoke();
                          } */
-                         CopyTasks[user]=change;
+                        //var temp= CopyTasks;
+                        //CopyTasks.Clear();
+                        //temp[user]=change;
+                     
+                        //CopyTasks=temp;
+                        CopyTasks[user]=change;
                          /* CopyTasks.Clear();
                          CopyTasks=temp; */
-                         userUpdates[user].Invoke();
-                         newData.Invoke(); 
+                        // userUpdates[user].Invoke();
+                        newData.Invoke(); 
                         
                      }
                      else
@@ -137,6 +145,10 @@ namespace HostedBlazor.Data
                          {
                             //TOOD: impliment rest of fields
                             ComponentUpdateEvents[user][transData.Key].Invoke();
+                            CopyTasks[user].TransferDataList[transData.Key].FileRemaining = transData.Value.FileRemaining;
+                            CopyTasks[user].TransferDataList[transData.Key].FileSize = transData.Value.FileSize;
+                            CopyTasks[user].TransferDataList[transData.Key].EndTime = transData.Value.EndTime;
+                            CopyTasks[user].TransferDataList[transData.Key].ScheduledTime = transData.Value.ScheduledTime;
                             CopyTasks[user].TransferDataList[transData.Key].Percentage = transData.Value.Percentage;
                             CopyTasks[user].TransferDataList[transData.Key].Source = transData.Value.Source;
                             CopyTasks[user].TransferDataList[transData.Key].Speed = transData.Value.Speed;

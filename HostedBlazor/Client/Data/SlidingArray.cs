@@ -11,7 +11,7 @@ namespace HostedBlazor.Data
         public double[] array = new double[5];
         private int index = 0;
         public double average {
-            get { return array.Average(); } 
+            get { return array.Where(x=>x!=0).Average(); } 
         }
 
         public SlidingArray(int length )

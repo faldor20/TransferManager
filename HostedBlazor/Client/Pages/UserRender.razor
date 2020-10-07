@@ -22,8 +22,17 @@
     {
         
     }
+        protected override async Task OnParametersSetAsync()
+    {  
+    // This event will fire when the parameters change
+    // Put your code here.  
+    this.StateHasChanged();
+    }
+
 }
-@{Getter.userUpdates[UserName]= this.StateHasChanged;}
+@{  var uiData= Getter.CopyTasks[UserName];
+    Getter.userUpdates[UserName]= ()=>{Console.WriteLine($"StateChanged|User|{UserName}"); this.StateHasChanged();};
+    }
 @if(Group==-1){
     @foreach (var task in UserData.Jobs)
     {   var data=UserData.TransferDataList[ task.JobID];

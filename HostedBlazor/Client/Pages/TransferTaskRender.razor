@@ -10,7 +10,7 @@
     [Parameter]
     public string UserName {get;set;}
     private int id;
-    public SlidingArray etaArray = new SlidingArray(5);
+    public SlidingArray etaArray = new SlidingArray(7);
    
     protected override async Task OnInitializedAsync()
     {  
@@ -19,11 +19,17 @@
         if(!Getter.ComponentUpdateEvents.ContainsKey(UserName)) Getter.ComponentUpdateEvents[UserName]=new Dictionary<int,Action>();
         void changed () {
             this.StateHasChanged();
-          //  Console.WriteLine("state changed for user: "+UserName+" Id:"+id);
+            Console.WriteLine($"StateChanged|Task|{UserName}:{id}");
         }
         Console.WriteLine("setup event trigger to update job with user: "+UserName +" and jobid: "+Task.jobID);
         Getter.ComponentUpdateEvents[UserName][Task.jobID] = changed;
 
+    }
+     protected override async Task OnParametersSetAsync()
+    {  
+    // This event will fire when the parameters change
+    // Put your code here.  
+    this.StateHasChanged();
     }
 }
 
@@ -76,7 +82,7 @@
                  if(etaSecs>3600){
                      etaString= "ETA "+ ">1 hour";
                  }
-                 else if(etaSecs>1){
+                 else if(etaSecs>0.01){
                     etaArray.AddEta(etaSecs);
                      var eta= TimeSpan.FromSeconds(etaArray.average);
                      etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
@@ -92,21 +98,21 @@
                  else destination=Task.Destination;
                 <BSAlert Color="@type">
                     <div style="display: flex;">
-                        
-                    <h2 style="margin-right: 1rem;">
-                    @icon 
-                    </h2>
-                    <div>
-                    <h5>
-                        <span ><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(Math.Round( Task.FileSize,1))MB || </span> <span style="font-size: 17px">{ @Task.Source.Remove(Task.Source.Length - fileName.Length) } <BSBadge Color="Color.Secondary">-></BSBadge>  { @destination }</span>
-                    </h5>
-                    <div>@Task.Percentage.ToString("0") % Complete | @speed MB/s  |  @etaString  @if(Task.Status== TransferStatus.Copying||Task.Status==TransferStatus.Waiting){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(UserName, Task.jobID))">Cancel</BSButton>} | Started: @Task.StartTime.ToString("dd/MMM  HH:mm:ss")
-                        <div class="progress"> 
-                            <div class="progress-bar" role="progressbar" style="width: @Task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                        <h2 style="margin-right: 1rem;">
+                        @icon 
+                        </h2>
+                        <div style="width: 100%;">
+                            <h5>
+                                <span ><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(Math.Round( Task.FileSize,1))MB || </span> <span style="font-size: 17px">{ @Task.Source.Remove(Task.Source.Length - fileName.Length) } <BSBadge Color="Color.Secondary">-></BSBadge>  { @destination }</span>
+                            </h5>
+                            <div>@Task.Percentage.ToString("0") % Complete | @speed MB/s  |  @etaString  @if(Task.Status== TransferStatus.Copying||Task.Status==TransferStatus.Waiting){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(UserName, Task.jobID))">Cancel</BSButton>} | Started: @Task.StartTime.ToString("dd/MMM  HH:mm:ss")
+                                <div class="progress"> 
+                                    <div class="progress-bar" role="progressbar" style="width: @Task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+                                </div>
+                            </div>
                         </div>
-                    </div></div>
                     </div>
                   
                 </BSAlert>
-            }}
+            }
 
