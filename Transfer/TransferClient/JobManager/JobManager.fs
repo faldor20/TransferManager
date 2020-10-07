@@ -50,10 +50,10 @@ module Main =
     /// and add it to runningjobsList
     ///Can run a job out of order... but if only called when a job ebcaome avaiable order should be preserved
     let tryrunJob (jobDB:JobDataBase) id=
+        lock jobDB.Sources (fun ()->
         Logging.debugf "Trying to run job %i"id
         let job=JobList.getJob jobDB.JobList id
         if job.TakenTokens.Length>1 then
-        
             let sourceID=List.last job.TakenTokens
             let source=jobDB.Sources.[sourceID]
             
@@ -70,15 +70,17 @@ module Main =
                     |(-1)->Logging.errorf "Tried to remove job %i from source %A that should have been there but wasn't" id sourceID
                     |a->source.Jobs.RemoveAt a
                 )
-                Logging.debugf "Running job %i from source %A "id sourceID 
+                Logging.debugf "Running Specifically job %i from source %A "id sourceID 
                 runJob jobDB [(sourceID,id)]
+               )
 
 
     let tryRunJobs (jobDB:JobDataBase)  =
-    
+        lock jobDB.Sources (fun ()-> 
         let jobsTorun=
             JobOrder.takeAvailableJobs jobDB.JobOrder jobDB.Sources
         runJob jobDB jobsTorun
+        )
 
         
         
@@ -96,9 +98,9 @@ module Main =
                 let convertToOut (li:List<JobID>)=
                     li.Select(fun x->{JobID=x;RequiredTokens=jobList.[x].TakenTokens.ToArray()})
                 //TODO: t
-                let jobIDs=(convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat( orderdIDs)
+                let jobIDs=(convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat( orderdIDs).Reverse()
                 
-                {  Jobs=jobIDs.ToArray();NeedsSyncing=true; UIData.Mapping= uIData.Value.Mapping ;UIData.TransferDataList=uIData.Value.TransferDataList }) 
+                {  Jobs=jobIDs.ToArray();NeedsSyncing=true; UIData.Mapping= uIData.Value.Mapping ;UIData.TransferDataList=transferDataList }) 
     let syncChangeJobOrder jobDB =
         jobDB.UIData:= getUIData jobDB
         
@@ -137,7 +139,7 @@ module Main =
     let removeJob jobDB  sourceID jobID=
         let {FreeTokens=freeTokens; FinishedJobs=finishedList; Sources=sources; JobList=jobList; RunningJobs=runningJobs} =jobDB
         let job= jobList.[jobID]
-        
+        lock jobDB.FinishedJobs (fun ()->
         if runningJobs.Remove(jobID) then
             finishedList.Add(jobID)
             job.TakenTokens
@@ -147,6 +149,7 @@ module Main =
             |>List.rev
             |>List.iter(fun id -> freeTokens.[id]|>SourceList.attmeptIssuingToken sources)
         else Logging.errorf "Job %A failed to be removed. something must have gone wrong" job
+        )
         tryRunJobs jobDB 
         jobOrderChanged jobDB
         Logging.debugf"Removed job %i"jobID

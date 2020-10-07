@@ -53,7 +53,7 @@ module TransferHandling=
         async{
             let task= (dbAcess.GetJob jobID).Job
             let transResult, delete = Async.RunSynchronously task
-            return! cleaupTask dbAcess jobID sourceID transResult delete
+            cleaupTask dbAcess jobID sourceID transResult delete |>Async.Start
         }
          
         

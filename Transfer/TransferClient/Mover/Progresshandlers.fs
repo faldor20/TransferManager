@@ -38,7 +38,7 @@ module ProgressHandlers=
                         {lastTransferData with 
                                 Percentage = percentage
                                 Speed = float speed
-                                FileRemaining=float((fileSize- transferred)/int64 1000/int64 1000)
+                                FileRemaining=double((fileSize- transferred)/int64 1000)/ 1000.0
                                 EndTime=DateTime.Now
                                 Status=TransferStatus.Copying}
             newDataHandler lastTransferData 

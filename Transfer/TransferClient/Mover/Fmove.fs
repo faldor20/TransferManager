@@ -109,11 +109,6 @@ module FileMove =
 
             let buffLength = int (Math.Pow(2.0, 19.0))
 
-
-
-
-
-
             let res =
                 doFileTransfer source dest progress buffLength ct
 

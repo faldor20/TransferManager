@@ -3,6 +3,7 @@ open System.Collections.Generic
 open SharedFs.SharedTypes
 open System.Linq
 open TransferClient
+open System
 
 
 ///contains one schedule id for each job in each jobsource.
@@ -29,25 +30,31 @@ module JobOrder =
    ///Returns a list of jobs from the joborder that have all their required tokens and are avilable
     ///Removes the jobs from the JobOrder and Source 
     let takeAvailableJobs (jobOrder:JobOrder) (sources:SourceList)=
-            lock sources (fun()->
-        lock jobOrder (fun ()->
+        lock sources (fun()->
+            lock jobOrder (fun ()->
                 let indexed=countUp jobOrder
                 let jobsToRun=
                     seq{
                     for (jobSource,i) in indexed do
                         let job=sources.[jobSource].Jobs.[i]
                         if job.TakenTokens = sources.[jobSource].RequiredTokens && job.Available then
-                            yield (jobSource,job.ID,i)
+                            yield (jobSource,job.ID)
                     }|>Seq.toList
                 
                 //Removes each job from the joborder and its source
-                jobsToRun|>List.map(fun (source,id,index)->
+                jobsToRun|>List.map(fun (source,id)->
                     match jobOrder.Remove(source) with
                     |true->()
                     |false->Logging.errorf "Tried to remove a job that should have been there but wasn't"
                     //this removes the job from the source list
-                    sources.[source].Jobs.RemoveAt(index)
-                    Logging.debugf "Removed job %i from source %A "id source 
+                    lock sources.[source].Jobs (fun ()->
+                        let i=sources.[source].Jobs.FindIndex (Predicate( fun x->x.ID=id))
+                        match  i with
+                        |(-1)->Logging.errorf "Tried to remove job %i from source %A that should have been there but wasn't" id source
+                        |a->
+                            sources.[source].Jobs.RemoveAt a
+                            Logging.debugf "Removed job %i from source %A at position %i "id source i
+                    )
                     (source,id)
                     )
                     )

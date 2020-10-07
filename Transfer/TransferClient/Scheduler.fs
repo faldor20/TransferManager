@@ -63,10 +63,15 @@ module Scheduler =
                         loop<- false
                     else
                         try 
+                            if not (client.FileExists(source)) then failwith "" 
                             let! newModDate = Async.AwaitTask<|client.GetModifiedTimeAsync(source,token= ct)
                             if modifiedDate=  newModDate then
-                                availability<-Availability.Available
-                                loop<-false
+                                try
+                                    let read=client.OpenRead(source)
+                                    availability<-Availability.Available
+                                    loop<-false
+                                    read.Close()
+                                with|_->()
                              else
                                 modifiedDate<-newModDate
                                 

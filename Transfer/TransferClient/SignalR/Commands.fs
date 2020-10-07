@@ -36,7 +36,7 @@ module Commands =
                 while not connected do
                     try
                         Logging.infof "{Signalr} -Attempting- to connect to clientmanager"
-                        connection.StartAsync(ct).Wait()
+                        connection.StartAsync(ct).Wait();
                         Logging.infof "{Signalr} -Connecting- to ClientManager"
                         Async.RunSynchronously (postconnection connection userName groupNames)
                         Logging.infof "{Signalr} -Successfully connected- to ClientManager"
