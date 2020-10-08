@@ -51,9 +51,11 @@ module TransferHandling=
         }
     let processTask (dbAcess:Access) sourceID jobID =
         async{
+            try
             let task= (dbAcess.GetJob jobID).Job
             let transResult, delete = Async.RunSynchronously task
             cleaupTask dbAcess jobID sourceID transResult delete |>Async.Start
+            with|e-> Logging.errorf"Exception throw while running job %i source: %i \n EX: %A"jobID sourceID e
         }
          
         
