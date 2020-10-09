@@ -17,7 +17,7 @@ module JobList =
     ///Returns a refernce to the job whos id is given
     let setJob (list: JobList) id = list.[id]
     ///Returns a refernce to the job whos id is given
-    let removeJob (list: JobList) id= list.Remove id
+    let private removeJob (list: JobList) id= list.Remove id
     let giveToken  id token (list: JobList)= list.[id].TakenTokens<-token::list.[id].TakenTokens
     type JobListAcessFuncs =
         {

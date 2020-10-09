@@ -30,7 +30,7 @@ module TransferHandling=
                     |TransferResult.Failed-> FailedCompleteAction transData source
                     |_-> failwith "unknonw enum for transresult"
             dbAcess.TransDataAccess.SetAndSync jobID dataChange
-            dbAcess.RemoveJob sourceID jobID
+            dbAcess.MakeJobFinished sourceID jobID
            
            
             let rec del path iterCount= async{
@@ -55,7 +55,12 @@ module TransferHandling=
             let task= (dbAcess.GetJob jobID).Job
             let transResult, delete = Async.RunSynchronously task
             cleaupTask dbAcess jobID sourceID transResult delete |>Async.Start
-            with|e-> Logging.errorf"Exception throw while running job %i source: %i \n EX: %A"jobID sourceID e
+            with|e->
+                dbAcess.MakeJobFinished sourceID jobID
+                let transdata=dbAcess.TransDataAccess.Get jobID
+                dbAcess.TransDataAccess.SetAndSync jobID (FailedCompleteAction transdata transdata.Source )
+
+                Logging.errorf"Exception throw while running job %i source: %i \n EX: %A"jobID sourceID e
         }
          
         

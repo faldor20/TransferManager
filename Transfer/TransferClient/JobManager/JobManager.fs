@@ -136,7 +136,7 @@ module Main =
         id
         
     ///removes the job from the runningList and moves it to finished. Also returns tokens and trigger an attempt to distribute those tokens
-    let removeJob jobDB  sourceID jobID=
+    let MakeJobFinished jobDB  sourceID jobID=
         let {FreeTokens=freeTokens; FinishedJobs=finishedList; Sources=sources; JobList=jobList; RunningJobs=runningJobs} =jobDB
         let job= jobList.[jobID]
         lock jobDB.FinishedJobs (fun ()->
@@ -185,8 +185,8 @@ module Main =
         TransDataAccess:TransferDataList.Acess
         GetUIData:unit->UIData
         SwitchJobs: (ScheduleID*int)->(ScheduleID*int)->unit
-        RemoveJob:ScheduleID->JobID->unit
         AddJob: ScheduleID->(int->JobItem)->JobID
+        MakeJobFinished:ScheduleID->JobID->unit
         makeJobAvailable: JobID->unit
     }
     let access ( jobDB: JobDataBase)={
@@ -195,7 +195,7 @@ module Main =
         TransDataAccess=TransferDataList.acessFuncs jobDB.TransferDataList jobDB.UIData
         GetUIData=(fun ()->(getUIData jobDB));
         SwitchJobs=switch jobDB;
-        RemoveJob = removeJob jobDB;
+        MakeJobFinished = MakeJobFinished jobDB;
         AddJob=addJob jobDB
         //TODO move to won function
         makeJobAvailable=(fun id->
