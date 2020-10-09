@@ -1,6 +1,7 @@
 ﻿@using System.Collections.Generic
 @using blaz.Data
 @using System;
+@using Microsoft.AspNetCore.Html
 @using System.Threading
 @using System.Threading.Tasks
 @using static SharedFs.SharedTypes;
@@ -30,22 +31,27 @@
     }
 
 }
+
 @{  var uiData= Getter.CopyTasks[UserName];
     Getter.userUpdates[UserName]= ()=>{Console.WriteLine($"StateChanged|User|{UserName}"); this.StateHasChanged();};
-    }
+    void thing(IEnumerable<UIJobInfo> jobs){
+        <div>
+        @{var lastID=-1;}
+        @foreach (var task in jobs)
+        {   
+            var data=UserData.TransferDataList[ task.JobID];
+            <TransferTaskRender LastID="@lastID" UserName="@UserName" Task="@data" > </TransferTaskRender>
+            lastID=data.jobID;
+        } 
+        </div>;
+    }}
 @if(Group==-1){
-    @foreach (var task in UserData.Jobs)
-    {   var data=UserData.TransferDataList[ task.JobID];
-         <TransferTaskRender UserName="@UserName" Task="@data" > </TransferTaskRender>
-    } 
+    thing (UserData.Jobs);
 }
 else
 {
     var jobs=UserData.Jobs.Where(x=> x.RequiredTokens.Contains(Group));
-    @foreach (var task in jobs)
-    {   var data=UserData.TransferDataList[ task.JobID];
-         <TransferTaskRender UserName="@UserName" Task="@data" > </TransferTaskRender>
-    } 
+    thing (jobs);
 }
 
 
