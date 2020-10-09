@@ -7,6 +7,7 @@ type Job = Async<TransferResult*bool>
 
 type JobItem =
     { Job: Job
+      SourceID:ScheduleID
       ID:JobID
       mutable Available:bool
       mutable TakenTokens: ScheduleID list }

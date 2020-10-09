@@ -10,6 +10,11 @@ open System.Threading.Tasks
 open TransferClient
 open Microsoft.AspNetCore.SignalR.Protocol
 open Microsoft.Extensions.DependencyInjection;
+open Microsoft.Extensions.Logging
+open Serilog.Extensions.Hosting
+open Serilog
+open Serilog.Extensions.Logging
+open Serilog.Sinks.SystemConsole
 module Commands =
     
     let postconnection (connection:HubConnection) userName groupNames =
@@ -52,9 +57,11 @@ module Commands =
         async{
         Logging.infof "{SignalR} Building  connection to ip= %s" managerIP
         let newConnection=
+            
             (HubConnectionBuilder())
                 .WithUrl(sprintf "http://%s:8085/ClientManagerHub" managerIP )
                 .AddMessagePackProtocol()
+                .ConfigureLogging(fun (builder:ILoggingBuilder) -> builder.AddSerilog(Logging.logger,false)|>ignore ) //<- Add this line
                 .Build()
        
         // Create connection to the ClientManager Server

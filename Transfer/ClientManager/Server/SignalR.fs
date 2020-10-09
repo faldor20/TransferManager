@@ -20,6 +20,7 @@ module SignalR=
     type ITransferClientApi = 
       abstract member CancelTransfer : int -> Task
       abstract member Testing :string -> Task
+      abstract member SwitchJobs:(JobID)->(JobID)->Task
       abstract member ResetDB :unit -> Task
 
     and ClientManagerHub(manager:FrontEndManager)=
@@ -56,6 +57,10 @@ module SignalR=
             let clientID = DataBase.getClientID user
             printfn "Sending Cancellation request to user:%s with connecionid %s" user clientID
             (this.HubContext.Clients.All.CancelTransfer id).Wait()
+        member this.SwitchJobs  user job1 job2=
+            let clientID = DataBase.getClientID user
+            printfn "Switching Jobs %A , %A user:%s " job1 job2 user 
+            (this.HubContext.Clients.All.SwitchJobs job1 job2).Wait()
         member this.ResetDB ()=
             this.HubContext.Clients.All.ResetDB();
    
@@ -74,6 +79,9 @@ module SignalR=
             printfn "recieved Cancellation request for item %i and user %s" id user ;
 
             clientManager.CancelTransfer  user id
+        member this.SwitchJobs  (user:string) (job1:int) (job2:int)=
+
+            clientManager.SwitchJobs  user job1 job2
     and FrontEndManager (hubContext :IHubContext<DataHub,IFrontendApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<DataHub, IFrontendApi> = hubContext

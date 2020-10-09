@@ -154,38 +154,65 @@ module Main =
         jobOrderChanged jobDB
         Logging.debugf"Removed job %i"jobID
         //TODO: trigger an attempt to run any job with all its tokensp
-
     ///makes the upjob higher up the order of jobs than the downjob
-    /// pos is the scheduleid and index within the source of a particular job
-    let switch  jobDB (downJob:ScheduleID*int) upJob =
+    let switch  jobDB (downJob:JobID) upJob =
         let {Sources=sources ;JobOrder=jobOrder} =jobDB
-        match downJob,upJob with
+        let job1Source=jobDB.JobList.[downJob].SourceID
+        let job2Source=jobDB.JobList.[upJob].SourceID
+        lock sources.[job1Source] (fun ()->
+        lock sources.[job2Source] (fun ()->
+        let pos1=sources.[job1Source].Jobs.FindIndex(Predicate(fun x->x.ID=downJob))
+        let pos2=sources.[job2Source].Jobs.FindIndex(Predicate(fun x->x.ID=upJob))
+        match (job1Source,downJob),(job2Source,upJob) with
         //if the sources are the same we move within a souceList
-        | ((source1,i1),(source2,i2)) when source1=source2->
-            let pos1=JobOrder.countBefore jobOrder source1 i1
-            let pos2=JobOrder.countBefore jobOrder source1 i1
-            let list= sources.[source1]
-            //this siwtches the jobs tokens
-            let downJobTokens =list.Jobs.[pos1].TakenTokens
-            list.Jobs.[pos1].TakenTokens<-list.Jobs.[pos2].TakenTokens
-            list.Jobs.[pos2].TakenTokens<-downJobTokens
-            //this switches the jobs themselves
-            if pos1=(pos2-1)then list.Jobs.Reverse(pos1,2)
-            else Logging.errorf "Jobs requested to be switched are not adjacent. This should not be."
-        //if the sources are differnet we change the position of scheduleids in the jobOrder
-        |(down,pos1),(up,pos2)  ->
-            //if the sources don't match we need to leve them as is and swap the positions of the scheduleID's in the joborder 
-            //this is how we can swap order of jobs between sources
-            jobOrder.[pos1] <- up
-            jobOrder.[pos2] <- down
-            jobOrderChanged jobDB
+        | ((source1,id1),(source2,id2)) when source1=source2->
+                let list= sources.[source1]
+                //this siwtches the jobs tokens
+                let downJobTokens =list.Jobs.[pos1].TakenTokens
+                list.Jobs.[pos1].TakenTokens<-list.Jobs.[pos2].TakenTokens
+                list.Jobs.[pos2].TakenTokens<-downJobTokens
+                //this switches the jobs themselves
+                if pos1=(pos2-1)then list.Jobs.Reverse(pos1,2)
+                else if (pos1-1)=pos2 then list.Jobs.Reverse(pos2,2) 
+                else Logging.errorf "Jobs requested to be switched are not adjacent. At positions %i and %i This should not be."pos1 pos2
+
+            //if the sources are differnet we change the position of scheduleids in the jobOrder
+        |(source1,id1),(source2,id2)  ->
+            lock jobOrder (fun ()->
+
+                //if the sources don't match we need to leve them as is and swap the positions of the scheduleID's in the joborder 
+                            
+                //Essentially what we do is count instances of each source in the jobOrder untill we get to the source that is the same depth in the jobOrder as the job we are switching is in the source itself
+                //eg: jobOrder:[a,b,a,a,b,a,b] a:[j1,j2,j4,j5,] b:[j3,j6,j7] 
+                //we want to switch job j6 and j4.      ^             ^
+                // that would be the 2nd "b job" and 3rd "a job"
+                //so we fnd the index in the joborder of the 3rd a instance and 2nd b instance
+                let mutable index1=0
+                let mutable count1=0
+                let mutable index2=0
+                let mutable count2=0
+                for id in {0..jobOrder.Count}do
+                    if jobOrder.[id]=job1Source then
+                        count1<-count1+1
+                        if count1=pos1+1 then
+                            index1<-id
+                    else if jobOrder.[id]=job2Source then
+                        count2<-count2+1
+                        if count2=pos2+1 then
+                            index2<-id
+
+                jobOrder.[index1] <- job2Source
+                jobOrder.[index2] <- job1Source
+            )
+        jobOrderChanged jobDB
+        ))
 
     type Access={
         GetJob:JobID->JobItem
         TransDataAccess:TransferDataList.Acess
         GetUIData:unit->UIData
-        SwitchJobs: (ScheduleID*int)->(ScheduleID*int)->unit
         AddJob: ScheduleID->(int->JobItem)->JobID
+        SwitchJobs: (int)->(int)->unit
         MakeJobFinished:ScheduleID->JobID->unit
         makeJobAvailable: JobID->unit
     }
