@@ -147,13 +147,21 @@ module Scheduler =
             let logFilePath=match file.FTPFileInfo with | Some f-> "FTP:"+f.FullName |None -> file.Path
 
             let {DestinationDir=dest}:DirectoryData=moveData.DirData
-            let transData=makeTransData moveData file.Path file
-            
             //TODO: make an event that is subscribed to this that cancells the job
             let ct = new CancellationTokenSource()
-            let jobID= dbAccess.AddJob (sourceID)  (fun id->{Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct; ID=id; Available=false; TakenTokens=List.Empty})
+
+            //these two functions can be passed into the AddJob function where they will be given the id and added to the DB
+            let makeTrans id=makeTransData moveData file.Path file id
             
-            dbAccess.TransDataAccess.SetAndSync jobID (transData jobID)
+            let makeJob id={Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct; SourceID=sourceID; ID=id; Available=false; TakenTokens=List.Empty}
+
+            let jobID= 
+                dbAccess.AddJob
+                    (sourceID)
+                    makeJob
+                    makeTrans
+            
+            
             addCancellationToken jobID ct
 
             let setStatus status = dbAccess.TransDataAccess.SetAndSync jobID {dbAccess.TransDataAccess.Get jobID with Status=status} 

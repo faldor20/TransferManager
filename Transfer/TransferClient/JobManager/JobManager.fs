@@ -113,7 +113,7 @@ module Main =
     //A job being removed should go through each token being put back in reverse order and attempt to give to a job
     //those should be the only two times action needs to be taken
     ///mkeJob is  function that takes an id and returns a job. this allows for a job to contain its own id
-    let addJob  jobDB sourceID makeJob=
+    let addJob  jobDB sourceID  makeJob transData=
         
         let {FreeTokens=freeTokens;  Sources=sources; JobList=jobList; }=jobDB
         let source=sources.[sourceID]
@@ -126,6 +126,8 @@ module Main =
         source.Jobs.Add(job)
         )
         SourceList.getNextToken freeTokens source job
+
+        TransferDataList.setAndSync jobDB.TransferDataList jobDB.UIData id (transData id)
         //run various actions that should trigger on Add
         //TODO: test if this can be deleted. jobs most likel will not be able to be run after adding becuase teyneed to be confirmed as available
         
@@ -211,9 +213,9 @@ module Main =
         GetJob:JobID->JobItem
         TransDataAccess:TransferDataList.Acess
         GetUIData:unit->UIData
-        AddJob: ScheduleID->(int->JobItem)->JobID
         SwitchJobs: (int)->(int)->unit
         MakeJobFinished:ScheduleID->JobID->unit
+        AddJob: (ScheduleID)->(int->JobItem)->(int->TransferData)->JobID
         makeJobAvailable: JobID->unit
     }
     let access ( jobDB: JobDataBase)={
