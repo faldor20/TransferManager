@@ -49,7 +49,12 @@ app {
 .sidebar {
     background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
 }
-
+    
+    .sidebar .nav-list{
+        margin-left: 20;
+        color: #1861ac;
+        
+    }
     .sidebar .top-row {
         background-color: rgba(0,0,0,0.4);
     }
@@ -67,15 +72,15 @@ app {
 
     .sidebar .nav-item {
         font-size: 0.9rem;
-        padding-bottom: 0.5rem;
+        padding-bottom: 0rem;
     }
 
         .sidebar .nav-item:first-of-type {
-            padding-top: 1rem;
+            padding-top: 0rem;
         }
 
         .sidebar .nav-item:last-of-type {
-            padding-bottom: 1rem;
+            padding-bottom: 0rem;
         }
 
         .sidebar .nav-item a {

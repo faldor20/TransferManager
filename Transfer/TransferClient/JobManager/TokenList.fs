@@ -16,6 +16,7 @@ module TokenList =
                     | a when a > 0 -> tokenSource.Remaining - 1, Some tokenSource.Token
                     | a when a = 0 -> 0, None
                     | a when a < 0 -> failwithf "FreeTokens for tokenId %A under 0 this should never ever happen" id
+                    |_->failwith "pattern failed to match despite being inclusive"
 
                 tokenSource.Remaining <- newTokens
                 outp)

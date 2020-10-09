@@ -42,7 +42,8 @@ module SharedTypes =
     type UIData= {
         Mapping:Dictionary<int,string>
         TransferDataList:TransferDataList
+        Heirachy:Dictionary<int,List<int>> array
         mutable Jobs:UIJobInfo array
         mutable NeedsSyncing:bool
     }
-    let UIData mapping={UIData.Jobs=Array.empty;UIData.NeedsSyncing=false;UIData.TransferDataList=TransferDataList();Mapping=mapping}
+    let UIData mapping heirachy={UIData.Jobs=Array.empty;UIData.NeedsSyncing=false;UIData.TransferDataList=TransferDataList();Mapping=mapping; Heirachy=heirachy; }

@@ -15,11 +15,12 @@ module ManagerSync=
             while true do
             //TODO: i need to make sure we are actualy regeistered wih the clientManager
                 if SignalR.Connection.connected then
-                    if LocalDB.jobDB.UIData.Value.NeedsSyncing then
+                    let uiDat=LocalDB.jobDB.UIData
+                    if uiDat.Value.NeedsSyncing then
                         Logging.debugf "Sending database update to ClientManager"
-                        lock LocalDB.jobDB.UIData (fun ()->
-                            Async.RunSynchronously (syncTransferData connection userName  LocalDB.jobDB.UIData.Value)
-                            LocalDB.jobDB.UIData:=(UIData LocalDB.jobDB.UIData.Value.Mapping)
+                        lock uiDat (fun ()->
+                            Async.RunSynchronously (syncTransferData connection userName  !uiDat)
+                            uiDat:=(UIData (!uiDat).Mapping (!uiDat).Heirachy)
                             )
                   //  count<-count+1
                 do! Async.Sleep(syncInterval)

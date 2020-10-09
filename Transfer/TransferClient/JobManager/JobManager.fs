@@ -28,7 +28,7 @@ module Main =
         UIData: ref<UIData>
         
     }
-    let JobDataBase runJob mapping ={
+    let JobDataBase runJob mapping heirachy={
         JobOrder=JobOrder();
         FreeTokens=TokenList()
         RunningJobs=RunningJobs()
@@ -37,7 +37,7 @@ module Main =
         TransferDataList=TransferDataList()
         JobList=JobList()
         RunJob=runJob
-        UIData=ref <|UIData mapping
+        UIData=ref <|UIData mapping heirachy
     }
     let private runJob jobDB jobsToRun=
         Logging.debugf "Running jobs%A"jobsToRun
@@ -100,7 +100,7 @@ module Main =
                 //TODO: t
                 let jobIDs=(convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat( orderdIDs).Reverse()
                 
-                {  Jobs=jobIDs.ToArray();NeedsSyncing=true; UIData.Mapping= uIData.Value.Mapping ;UIData.TransferDataList=transferDataList }) 
+                {!uIData with Jobs=jobIDs.ToArray();NeedsSyncing=true ;UIData.TransferDataList=transferDataList; }) 
     let syncChangeJobOrder jobDB =
         jobDB.UIData:= getUIData jobDB
         
@@ -168,6 +168,7 @@ module Main =
         match (job1Source,downJob),(job2Source,upJob) with
         //if the sources are the same we move within a souceList
         | ((source1,id1),(source2,id2)) when source1=source2->
+            if pos1=(pos2-1)||pos1-1=pos2 then
                 let list= sources.[source1]
                 //this siwtches the jobs tokens
                 let downJobTokens =list.Jobs.[pos1].TakenTokens
@@ -177,7 +178,7 @@ module Main =
                 if pos1=(pos2-1)then list.Jobs.Reverse(pos1,2)
                 else if (pos1-1)=pos2 then list.Jobs.Reverse(pos2,2) 
                 else Logging.errorf "Jobs requested to be switched are not adjacent. At positions %i and %i This should not be."pos1 pos2
-
+            else Logging.warnf "Jobs requested to be switched are in the same source but not adjacent. At positions %i and %i This should not be. Jobs have not been switched"pos1 pos2
             //if the sources are differnet we change the position of scheduleids in the jobOrder
         |(source1,id1),(source2,id2)  ->
             lock jobOrder (fun ()->
@@ -193,7 +194,7 @@ module Main =
                 let mutable count1=0
                 let mutable index2=0
                 let mutable count2=0
-                for id in {0..jobOrder.Count}do
+                for id in {0..jobOrder.Count-1}do
                     if jobOrder.[id]=job1Source then
                         count1<-count1+1
                         if count1=pos1+1 then

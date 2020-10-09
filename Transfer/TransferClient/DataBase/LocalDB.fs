@@ -13,13 +13,14 @@ open SharedFs.SharedTypes
 
 module LocalDB =
    // let mutable ChangeDB :JobDataBase= JobDataBase (fun _ _->async{()}) (Dictionary())
-    let  jobDB:JobDataBase =  JobDataBase(fun _ _->async{()}) (Dictionary())
+    let  jobDB:JobDataBase =  JobDataBase(fun _ _->async{()}) (Dictionary())(Array.empty)
     //This is a saved copy of the database just after initialisation used for restting the database
-    let mutable private freshDB:JobDataBase= JobDataBase (fun _ _->async{()}) (Dictionary())
+    let mutable private freshDB:JobDataBase= JobDataBase (fun _ _->async{()}) (Dictionary())(Array.empty)
     
     let  AcessFuncs = access jobDB
 
-    let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob iDMapping=
+    let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob iDMapping heirachy=
+        //the groups that is passed in should be each of the watchdirs "GroupList"
         TransferClient.Logging.infof "initialising DB"
         let scheduleIDLevel =
             groups
@@ -45,13 +46,13 @@ module LocalDB =
                 Sources=sources
                 FreeTokens=tokens
                 RunJob=runJob
-                UIData=ref<|UIData iDMapping
+                UIData=ref<|UIData iDMapping heirachy
 
         }
         jobDB.Sources<-sources
         jobDB.FreeTokens<-tokens
         jobDB.RunJob<-runJob
-        jobDB.UIData:=UIData iDMapping
+        jobDB.UIData:=UIData iDMapping heirachy
        
         (* groups|>List.iter(fun x-> jobDB.JobHierarchy.[x]<-List.Empty) *)
         freshDB<-db
