@@ -10,7 +10,7 @@
 @using System.Linq
 @using HostedBlazor.Data
 @inject DataGetter Getter
-@inject NavigationManager UriHelper  
+@inject NavigationManager UriHelper
 
 @code{
     
@@ -26,16 +26,23 @@
         Getter.newData +=new Action(()=>{
         Console.WriteLine("StateChanged|Main");
          this.StateHasChanged();});
+        if(GroupString==null||GroupString=="") int.TryParse(GroupString,out Group);
+        else  Group=-1;
+        User = User ?? "All";
 
-    } 
+    }
+    
     protected override async Task OnParametersSetAsync()
-    {  int.TryParse(GroupString,out Group);
-        User = User ?? " ";
+    {  
+        if(GroupString==null||GroupString=="") int.TryParse(GroupString,out Group);
+        else  Group=-1;
+        User = User ?? "All";
+        
     // This event will fire when the parameters change
     // Put your code here.  
     this.StateHasChanged();
     }
-}
+    }
 
 <h1>Transfer Monitoring</h1>
 <p>Connected to transfer server at: @Getter.transferServerUrl</p>
@@ -56,22 +63,18 @@ else
     <div>
         <ol>
 
-            @if(User==null)
-            {
-                
-                UriHelper.NavigateTo("/JobList/Users");
-            }
-            else if (User == "All")
+            @if (User == "All"||!Getter.CopyTasks.ContainsKey(User))
             {  
-                var tasks=Getter.CopyTasks.SelectMany(user => user.Value.Jobs.Select(task=>(user:user.Key,task:task.JobID,scheduledTime:user.Value.TransferDataList[task.JobID].ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
+                @* var tasks=Getter.CopyTasks.SelectMany(user => user.Value.Jobs.Select(task=>(user:user.Key,task:task.JobID,scheduledTime:user.Value.TransferDataList[task.JobID].ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
                 Console.WriteLine("loading all tasks. Count= "+tasks.Count);
                 foreach (var task in tasks)
                 {   
                     <TransferTaskRender index="@task.task" userName="@task.user" > </TransferTaskRender>
                     
-                } 
+                }  *@
+                <div> please select a group from the left side</div>
             }
-            else{
+            else {
                 var uiData= Getter.CopyTasks[User];
                 <UserRender UserData="@uiData" Group="@Group" UserName="@User" />
                     
