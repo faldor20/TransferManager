@@ -13,6 +13,11 @@ module Logging=
             .WriteTo.Console(theme=Sinks.SystemConsole.Themes.SystemConsoleTheme.Literate)
             .WriteTo.File("./logs/log-.log" ,Serilog.Events.LogEventLevel.Verbose)
             .CreateLogger();
+    let signalrLogger =
+        Serilog.LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.File("./logs/SignalrLog-.log" ,Serilog.Events.LogEventLevel.Verbose)
+            .CreateLogger();
 
 
     let initLogging()=
