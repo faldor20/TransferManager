@@ -11,7 +11,7 @@ open System
 type JobOrder= (ScheduleID)ResizeArray
 
 module JobOrder =
-    ///Counts the number of ScheduleID's of the same time in the jobid before the one given
+    ///Counts the number of ScheduleID's of the same type in the jobOrder before the one given
     let countBefore (jobOrder:JobOrder) countItem index=
             let mutable amount=0
             for i in [0..index-1] do
