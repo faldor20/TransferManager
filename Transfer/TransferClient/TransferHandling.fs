@@ -40,13 +40,20 @@ module TransferHandling=
                     return ()
                 else
                     try 
+                        
                         File.Delete(path) 
                     with 
-                        |_-> do! Async.Sleep(1000)
-                             Logging.warnf "Couldn't delete file, probably in use somehow retrying"
-                             do! del path (iterCount+1)
+                        | :?IOException-> 
+                            do! Async.Sleep(1000)
+                            Logging.warnf "Couldn't delete file, probably in use somehow retrying"
+                            do! del path (iterCount+1)
+                        |e->Logging.errorf "file deletion failed because of an unhandled reason %s\n Full exception: \n %A"e.Message e
                 }
-            if delete then return! del source 0 
+            if delete then
+                match transData.TransferType with
+                |local when local=TransferTypes.LocaltoLocal|| local=TransferTypes.LocaltoFTP->
+                    return! del source 0 
+                |ftp-> Logging.warnf "Deleting files after transfer that are only acessable via ftp is not currently supported. Pleases set that watchdir to not delete in config"
             else ()
         }
     let processTask (dbAcess:Access) sourceID jobID =
