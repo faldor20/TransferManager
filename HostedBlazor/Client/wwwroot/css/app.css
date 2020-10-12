@@ -51,7 +51,7 @@ app {
 }
     
     .sidebar .nav-list{
-        margin-left: 20;
+        padding-left: 0.8rem;
         color: #1861ac;
         
     }
