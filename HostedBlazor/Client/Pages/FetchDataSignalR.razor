@@ -26,16 +26,16 @@
         Getter.newData +=new Action(()=>{
         Console.WriteLine("StateChanged|Main");
          this.StateHasChanged();});
-        if(GroupString==null||GroupString=="") int.TryParse(GroupString,out Group);
-        else  Group=-1;
+        if(GroupString==null||GroupString=="") Group=-1;
+        else int.TryParse(GroupString,out Group); 
         User = User ?? "All";
 
     }
     
     protected override async Task OnParametersSetAsync()
     {  
-        if(GroupString==null||GroupString=="") int.TryParse(GroupString,out Group);
-        else  Group=-1;
+        if(GroupString==null||GroupString=="") Group=-1; 
+        else  int.TryParse(GroupString,out Group);
         User = User ?? "All";
         
     // This event will fire when the parameters change
