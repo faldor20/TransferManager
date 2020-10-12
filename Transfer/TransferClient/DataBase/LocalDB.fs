@@ -46,14 +46,12 @@ module LocalDB =
                 Sources=sources
                 FreeTokens=tokens
                 RunJob=runJob
-                UIData=ref<|UIData iDMapping heirachy
-
+                
         }
         jobDB.Sources<-sources
         jobDB.FreeTokens<-tokens
         jobDB.RunJob<-runJob
-        jobDB.UIData:=UIData iDMapping heirachy
-       
+        
         (* groups|>List.iter(fun x-> jobDB.JobHierarchy.[x]<-List.Empty) *)
         freshDB<-db
 
@@ -70,7 +68,7 @@ module LocalDB =
         jobDB.FreeTokens<-freshDB.FreeTokens
         jobDB.Sources<-freshDB.Sources
         jobDB.RunJob<-freshDB.RunJob
-        jobDB.UIData:=freshDB.UIData.Value
+       
 
        
         

@@ -10,6 +10,8 @@ open System.Collections.Generic
 open TransferHandling
 open IO.Types
 open System.Linq
+open SharedFs.SharedTypes
+open TransferClient.SignalR.ManagerCalls
 
 module Manager =
     ///this ungodly monstrosity transforms the input into a list that has the distinct items from every layer of the groups
@@ -70,7 +72,8 @@ module Manager =
             let heirachy=makeHeirachy groups
             LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) mapping heirachy
 
-
+            //This is the A UIData object with the unchanging parts filled out
+            let baseUIData=(UIData mapping heirachy)
             //create a asyncstream that yields new schedule jobs when
             //a new file is detected in a watched source
             let schedulesInWatchDirs =
@@ -82,15 +85,16 @@ module Manager =
             Logging.infof "{Manager} starting signalr connection process"
 
             let conectionTask =
-                SignalR.Commands.connect configData.manIP configData.ClientName groups signalrCT.Token
+                SignalR.Commands.connect configData.manIP configData.ClientName baseUIData signalrCT.Token
 
             let jobs =
                 schedulesInWatchDirs
                 |> List.toArray
                 |> Array.map (fun (schedules, grouList) ->
                     Logging.infof "{Manager}Setting up observables for group: %A" grouList
-                    schedules
-                    |> AsyncSeq.iterAsyncParallel (fun x -> x))
+                    schedules|> AsyncSeq.toObservable
+                    )
+                |>Observable.mergeArray
 
 
 
@@ -99,9 +103,12 @@ module Manager =
             //TODO: only start this if signalr connects sucesfully
             //let res= jobs|>Observable.mergeArray|>Observable.subscribe(fun x->x|>Async.StartImmediate)
             let! conection = conectionTask
-            ManagerSync.DBsyncer 500 conection configData.ClientName|>ignore
+            JobManager.Syncer.startSyncer LocalDB.jobDB.SyncEvents  500.0 (fun uiDat ->  Async.RunSynchronously (syncTransferData conection configData.ClientName uiDat)) baseUIData
 
-            let! a = jobs |> Async.Parallel |> Async.StartChild
+            let runJobs = 
+               // jobs|>Observable
+                jobs|> Observable.map(fun x->x|>Async.Start)
+            runJobs|>Observable.wait
 
             return! async {
                         while true do

@@ -25,7 +25,7 @@ module Main =
         TransferDataList:TransferDataList
         JobList:JobList
         mutable RunJob:ScheduleID->JobID->Async<unit>
-        UIData: ref<UIData>
+        SyncEvents: Syncer.SyncEvents
         
     }
     let JobDataBase runJob mapping heirachy={
@@ -37,7 +37,7 @@ module Main =
         TransferDataList=TransferDataList()
         JobList=JobList()
         RunJob=runJob
-        UIData=ref <|UIData mapping heirachy
+        SyncEvents=Syncer.SyncEvents()
     }
     let private runJob jobDB jobsToRun=
         Logging.debugf "Running jobs%A"jobsToRun
@@ -86,23 +86,25 @@ module Main =
         
 
 
-    let getUIData ({JobOrder=jobOrder;JobList=jobList;Sources=sources; FinishedJobs=finishedJobs; RunningJobs=runningJobs; TransferDataList=transferDataList; UIData=uIData; }:JobDataBase)=
-                lock uIData (fun()->
-                let orderdIDs= 
-                    JobOrder.countUp jobOrder
-                    |>Seq.map(fun (id,index)-> {JobID= sources.[id].Jobs.[index].ID; RequiredTokens= sources.[id].RequiredTokens.ToArray()})
-                //this only works on jobs that have all the tokens they need.
-                //this is becuase the ScheduleIDList can be usefull in filtering at the ui end
-                //we can use taken tokens becuase running and finished jobs will have all their tokens,
-                // it is easier than  getting the requiretokens from the source for each token
-                let convertToOut (li:List<JobID>)=
-                    li.Select(fun x->{JobID=x;RequiredTokens=jobList.[x].TakenTokens.ToArray()})
-                //TODO: t
-                let jobIDs=(convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat( orderdIDs).Reverse()
-                
-                {!uIData with Jobs=jobIDs.ToArray();NeedsSyncing=true ;UIData.TransferDataList=transferDataList; }) 
+    let getUIData (jobDB)=
+        lock jobDB.Sources (fun ()->
+        lock jobDB.JobOrder (fun ()->
+            let {JobOrder=jobOrder;JobList=jobList;Sources=sources; FinishedJobs=finishedJobs; RunningJobs=runningJobs; TransferDataList=transferDataList; }=jobDB
+            let orderdIDs= 
+                JobOrder.countUp jobOrder
+                |>Seq.map(fun (id,index)-> {JobID= sources.[id].Jobs.[index].ID; RequiredTokens= sources.[id].RequiredTokens.ToArray()})
+            //this only works on jobs that have all the tokens they need.
+            //this is becuase the ScheduleIDList can be usefull in filtering at the ui end
+            //we can use taken tokens becuase running and finished jobs will have all their tokens,
+            // it is easier than  getting the requiretokens from the source for each token
+            let convertToOut (li:List<JobID>)=
+                li.Select(fun x->{JobID=x;RequiredTokens=jobList.[x].TakenTokens.ToArray()})
+            //TODO: t
+            let jobIDs=(convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat( orderdIDs).Reverse()
+            (jobIDs.ToArray(),transferDataList) 
+        ))
     let syncChangeJobOrder jobDB =
-        jobDB.UIData:= getUIData jobDB
+        jobDB.SyncEvents.FullUpdate.Trigger (getUIData jobDB)
         
     let jobOrderChanged jobDB=
         syncChangeJobOrder jobDB
@@ -127,7 +129,7 @@ module Main =
         )
         SourceList.getNextToken freeTokens source job
 
-        TransferDataList.setAndSync jobDB.TransferDataList jobDB.UIData id (transData id)
+        TransferDataList.setAndSync jobDB.TransferDataList jobDB.SyncEvents id (transData id)
         //run various actions that should trigger on Add
         //TODO: test if this can be deleted. jobs most likel will not be able to be run after adding becuase teyneed to be confirmed as available
         
@@ -213,7 +215,7 @@ module Main =
     type Access={
         GetJob:JobID->JobItem
         TransDataAccess:TransferDataList.Acess
-        GetUIData:unit->UIData
+        GetUIData:unit->UIJobInfo[]*TransferDataList
         SwitchJobs: (int)->(int)->unit
         MakeJobFinished:ScheduleID->JobID->unit
         AddJob: (ScheduleID)->(int->JobItem)->(int->TransferData)->JobID
@@ -222,7 +224,7 @@ module Main =
     let access ( jobDB: JobDataBase)={
         
         GetJob=JobList.getJob jobDB.JobList 
-        TransDataAccess=TransferDataList.acessFuncs jobDB.TransferDataList jobDB.UIData
+        TransDataAccess=TransferDataList.acessFuncs jobDB.TransferDataList jobDB.SyncEvents
         GetUIData=(fun ()->(getUIData jobDB));
         SwitchJobs=switch jobDB;
         MakeJobFinished = MakeJobFinished jobDB;

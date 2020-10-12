@@ -3,7 +3,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <GenerateLibraryOutput>True</GenerateLibraryOutput>
-    <TargetFramework>netcoreApp3.1</TargetFramework>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
@@ -22,6 +22,8 @@
     <Compile Include="Mover/Fmove.fs" />
     <Compile Include="JobManager\Types.fs" />
     <Compile Include="JobManager\JobList.fs" />
+    <Compile Include="JobManager\Syncer.fs" />
+
     <Compile Include="JobManager\TokenList.fs" />
     <Compile Include="JobManager\SourceList.fs" />
     <Compile Include="JobManager\JobOrder.fs" />
@@ -30,7 +32,6 @@
     <Compile Include="SignalR/SignalR.fs" />
     <Compile Include="SignalR/ManagerCalls.fs" />
     <Compile Include="DataBase/LocalDB.fs" />
-    <Compile Include="DataBase/ManagerSync.fs" />
     <Compile Include="DataBase/TokenDatabase.fs" />
     <Compile Include="SignalR/ClientApi.fs" />
     <Compile Include="SignalR/Commands.fs" />

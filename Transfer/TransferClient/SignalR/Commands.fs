@@ -17,7 +17,7 @@ open Serilog.Extensions.Logging
 open Serilog.Sinks.SystemConsole
 module Commands =
     
-    let postconnection (connection:HubConnection) userName groupNames =
+    let postconnection (connection:HubConnection) userName  baseUIData =
         Async.RunSynchronously(ManagerCalls.RegisterSelf connection userName)
         //Here we convert the Dictionary< list> to a dictionary< dictionary>
         //let dic =
@@ -31,10 +31,11 @@ module Commands =
                     )
             )
             |> Dictionary *)
+        //get an updated full snapshot of the Jobs and transferData and send it off.
+        let (jobs,trans)=LocalDB.AcessFuncs.GetUIData()
+        ManagerCalls.overwriteTransferData connection userName  {baseUIData with Jobs=jobs;TransferDataList=trans}
 
-        ManagerCalls.overwriteTransferData connection userName (JobManager.Main.getUIData LocalDB.jobDB)
-
-    let reconnect (connection:HubConnection) userName groupNames ct =
+    let reconnect (connection:HubConnection) userName baseUIData ct =
         let job =
             async {
                 connected<-false
@@ -43,7 +44,7 @@ module Commands =
                         Logging.infof "{Signalr} -Attempting- to connect to clientmanager"
                         connection.StartAsync(ct).Wait();
                         Logging.infof "{Signalr} -Connecting- to ClientManager"
-                        Async.RunSynchronously (postconnection connection userName groupNames)
+                        Async.RunSynchronously (postconnection connection userName baseUIData)
                         Logging.infof "{Signalr} -Successfully connected- to ClientManager"
                         connected<-true
                     with  ex ->  Logging.warnf "{Signalr} -Failed Connection- to ClientManager retrying in 10S. Reason= \"%s\"" ex.Message
@@ -53,7 +54,7 @@ module Commands =
         Task.Run(fun () -> Async.RunSynchronously job)
 
     /// Begins a connection and registers client with the manager
-    let connect managerIP userName groupNames ct =
+    let connect managerIP userName baseUIData ct =
         async{
         Logging.infof "{SignalR} Building  connection to ip= %s" managerIP
         let newConnection=
@@ -65,11 +66,11 @@ module Commands =
                 .Build()
        
         // Create connection to the ClientManager Server
-        newConnection.add_Closed (fun error -> reconnect newConnection userName groupNames ct)
+        newConnection.add_Closed (fun error -> reconnect newConnection userName baseUIData ct)
         ClientApi.InitManagerCalls newConnection
         // Start connection and login
         Logging.infof "{SignalR} Running connection task" 
-        (reconnect newConnection userName groupNames ct).Wait()
+        (reconnect newConnection userName baseUIData ct).Wait()
         connection<- Some newConnection
         return newConnection
         }
