@@ -92,7 +92,7 @@ module ConfigReader=
                     |> List.mapi (fun i x -> KeyValuePair(x, i))
                     |>Dictionary<string,int> 
         Logging.infof "{Config}Mapping: %A"mapping
-        let freeTokens=yamlData.MaxJobs |>Seq.map(fun x ->  KeyValuePair(mapping.[x.Key],x.Value))|>Dictionary<int,int>
+        let freeTokens=yamlData.MaxJobs |>Seq.choose(fun x ->  if(mapping.ContainsKey x.Key) then Some<|KeyValuePair(mapping.[x.Key],x.Value)else None ) |>Dictionary<int,int>
         let mappedGroups=
             groups
             |> List.map (List.map (fun x ->  mapping.[x]))
