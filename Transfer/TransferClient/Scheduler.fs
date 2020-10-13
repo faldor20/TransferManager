@@ -164,13 +164,15 @@ module Scheduler =
             
             addCancellationToken jobID ct
 
-            let setStatus status = dbAccess.TransDataAccess.SetAndSync jobID {dbAccess.TransDataAccess.Get jobID with Status=status} 
-
+            let setStatus status data =
+                   {data with Status=status} 
+            let updateTransData data =
+                dbAccess.TransDataAccess.SetAndSync jobID data
             //We register a function that will cancell the job if cancellation is requested while it is waiting to be started
             let waitingCancel=ct.Token.Register (Action (fun ()-> 
                 if(dbAccess.TransDataAccess.Get(jobID).Status=TransferStatus.Waiting) then
                     Logging.infof "{Scheduler} File cancelled while waiting to be available Transfer file at: %s" logFilePath 
-                    setStatus TransferStatus.Cancelled
+                    updateTransData( setStatus TransferStatus.Cancelled (dbAccess.TransDataAccess.Get jobID))
                     TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Cancelled moveData.DirData.DeleteCompleted
                         |>Async.RunSynchronously
                     ct.Dispose()
@@ -191,20 +193,20 @@ module Scheduler =
                         Async.RunSynchronously<| (file.Path|>isAvailableFTP  ct.Token client)
                     |None-> Async.RunSynchronously( isAvailable file.Path ct.Token)
         
-
+            let trans= dbAccess.TransDataAccess.Get jobID
             if fileAvailable= Availability.Available then
                 Logging.infof "{Available} file at: %s is available" logFilePath 
-                setStatus TransferStatus.Waiting 
+                trans|>setStatus TransferStatus.Waiting |>getFileData file |>updateTransData
                 dbAccess.makeJobAvailable jobID
                 
                 
             else if fileAvailable =Availability.Deleted then
                 Logging.warnf "{Scheduler} File Deleted  while waiting to be available Transfer file at: %s" logFilePath 
-                setStatus TransferStatus.Failed
+                trans|>setStatus TransferStatus.Failed |>getFileData file |>updateTransData
                 do! TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Failed moveData.DirData.DeleteCompleted
                 
             else 
                 Logging.infof "{Scheduler} File cancelled while waiting to be available Transfer file at: %s" logFilePath 
-                setStatus TransferStatus.Cancelled
+                trans|>setStatus TransferStatus.Cancelled |>getFileData file |>updateTransData
                 do! TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Cancelled moveData.DirData.DeleteCompleted
         }
