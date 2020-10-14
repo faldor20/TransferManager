@@ -8,7 +8,7 @@ open SharedFs.SharedTypes
 module ClientApi=
     let CancelTransfer=Action<int>(fun  id->
         Logging.debugf "Cancellation request recieved for id %i"  id
-        TokenDatabase.cancelToken id
+        LocalDB.AcessFuncs.CancelJob id
       )
 
     let ResetDB=Action(fun ()->

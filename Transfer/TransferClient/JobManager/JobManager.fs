@@ -214,6 +214,7 @@ module Main =
 
     type Access={
         GetJob:JobID->JobItem
+        CancelJob:JobID->unit
         TransDataAccess:TransferDataList.Acess
         GetUIData:unit->UIJobInfo[]*TransferDataList
         SwitchJobs: (int)->(int)->unit
@@ -235,5 +236,6 @@ module Main =
             jobDB.JobList.[id].Available<-true
             //TODO: make this only try to run the one job you just got given
             tryrunJob jobDB id)
+        CancelJob=(fun id->(JobList.getJob jobDB.JobList id).CancelToken.Cancel())
     }
                 

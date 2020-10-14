@@ -1,6 +1,7 @@
 ﻿namespace TransferClient.JobManager
 open SharedFs.SharedTypes
 open TransferClient.IO.Types
+open System.Threading
 
 
 type Job = Async<TransferResult*bool>
@@ -10,6 +11,7 @@ type JobItem =
       SourceID:ScheduleID
       ID:JobID
       mutable Available:bool
+      CancelToken:CancellationTokenSource
       mutable TakenTokens: ScheduleID list }
  ///A list of ScheduleIDs represetnig a specific place within the jobHeirachy with the highest level id at the beginning and the deepest at the end
 type HierarchyLocation = ScheduleID list

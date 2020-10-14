@@ -32,7 +32,6 @@
     <Compile Include="SignalR/SignalR.fs" />
     <Compile Include="SignalR/ManagerCalls.fs" />
     <Compile Include="DataBase/LocalDB.fs" />
-    <Compile Include="DataBase/TokenDatabase.fs" />
     <Compile Include="SignalR/ClientApi.fs" />
     <Compile Include="SignalR/Commands.fs" />
     <Compile Include="ConfigReader.fs" />

@@ -3,7 +3,6 @@ namespace TransferClient
 open System.IO
 open System.Threading
 open System
-open TransferClient.DataBase.TokenDatabase
 open TransferClient.IO.Types
 open SharedFs.SharedTypes
 open DataBase.Types
@@ -153,7 +152,7 @@ module Scheduler =
             //these two functions can be passed into the AddJob function where they will be given the id and added to the DB
             let makeTrans id=makeTransData moveData file.Path file id
             
-            let makeJob id={Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct; SourceID=sourceID; ID=id; Available=false; TakenTokens=List.Empty}
+            let makeJob id={Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct; SourceID=sourceID; ID=id; Available=false; TakenTokens=List.Empty ;CancelToken=ct}
 
             let jobID= 
                 dbAccess.AddJob
@@ -161,8 +160,6 @@ module Scheduler =
                     makeJob
                     makeTrans
             
-            
-            addCancellationToken jobID ct
 
             let setStatus status data =
                    {data with Status=status} 
