@@ -22,7 +22,7 @@ module Main=
     [<EntryPoint>]
     let main argv =
         logTest()
-        Logging.infof("Latest change: removed tokenDB 15/10")
+        Logging.infof("Latest change: Better exception handling in watcher 2/11")
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler
         
      //   printfn"Begining"

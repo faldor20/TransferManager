@@ -27,7 +27,11 @@
         Console.WriteLine("StateChanged|Main");
          this.StateHasChanged();});
         if(GroupString==null||GroupString=="") Group=-1;
-        else int.TryParse(GroupString,out Group); 
+        else if( int.TryParse(GroupString,out Group));
+        else if(Getter.CopyTasks[User].Mapping.ContainsValue(GroupString)){
+            //TODO: this wil not necissarily work if there are groups with the same names
+            Getter.CopyTasks[User].Mapping.First(x=>x.Value==GroupString);
+        }
         User = User ?? "All";
 
     }
