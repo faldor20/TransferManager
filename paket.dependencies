@@ -7,18 +7,18 @@ nuget Expecto
 nuget FluentFTP 
 nuget FSharp.Control.AsyncSeq 
 nuget FSharp.Control.Reactive 
-nuget FSharp.Core 4.7.2
+nuget FSharp.Core 
 nuget FSharp.Json 
 nuget Legivel 
 //We need to set the version to below 2 becuase otherwise aspnetcore brakes. When we move to version 5 we can go to version 2
-nuget MessagePack 1.9.11 
+nuget MessagePack  
 nuget Microsoft.AspNetCore.Components.WebAssembly
 nuget Microsoft.AspNetCore.Components.WebAssembly.Build
 nuget Microsoft.AspNetCore.Components.WebAssembly.DevServer
 nuget Microsoft.AspNetCore.Components.WebAssembly.Server
 nuget Microsoft.AspNetCore.Html.Abstractions
-nuget Microsoft.AspNetCore.SignalR.Client 3.1.8
-nuget Microsoft.AspNetCore.SignalR.Protocols.MessagePack 3.1.8 
+nuget Microsoft.AspNetCore.SignalR.Client 
+nuget Microsoft.AspNetCore.SignalR.Protocols.MessagePack 
 nuget Serilog.AspNetCore
 nuget Serilog.Extensions.Hosting
 nuget System.Net.Http.Json

@@ -1,8 +1,9 @@
 ﻿@inherits LayoutComponentBase
 @using HostedBlazor.Data
 @inject DataGetter Getter
+<div class="page">
 <div class="sidebar">
-    <NavMenu />
+    <NavMenu/>
 </div>
 
 <div class="main">
@@ -10,7 +11,7 @@
         @Body
     </div>
 </div>
-
+</div>
 @code {
     
     protected override async Task OnInitializedAsync()

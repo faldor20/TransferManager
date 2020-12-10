@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project Sdk="Microsoft.NET.Sdk" Version="3.1.301">
+<Project Sdk="Microsoft.NET.Sdk" Version="5">
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <GenerateLibraryOutput>True</GenerateLibraryOutput>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
