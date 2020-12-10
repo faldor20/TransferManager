@@ -46,6 +46,23 @@ module Main =
         jobDB.RunningJobs.Add(i)
         jobDB.RunJob x i |>Async.Start
         ))
+    let removeWaitingJob jobDB (source:Source) sourceID (id:JobID) =
+        lock jobDB.Sources (fun ()->
+            lock jobDB.JobOrder (fun ()->
+                
+                match jobDB.JobOrder.Remove(sourceID) with
+                            |true->()
+                            |false->Logging.errorf "Tried to remove job %i from source %A that should have been there but wasn't" id sourceID
+                    )
+            //this removes the job from the source list
+            lock source.Jobs (fun ()->
+            
+                let i=source.Jobs.FindIndex (Predicate( fun x->x.ID=id))
+                match  i with
+                    |(-1)->Logging.errorf "Tried to remove job %i from source %A that should have been there but wasn't" id sourceID
+                    |a->source.Jobs.RemoveAt a
+            )
+        )
     ///trys to run the job. This will remove the job from it source, remove the first instance of the source from the jobOrder
     /// and add it to runningjobsList
     ///Can run a job out of order... but if only called when a job ebcaome avaiable order should be preserved
@@ -143,16 +160,24 @@ module Main =
     let MakeJobFinished jobDB  sourceID jobID=
         let {FreeTokens=freeTokens; FinishedJobs=finishedList; Sources=sources; JobList=jobList; RunningJobs=runningJobs} =jobDB
         let job= jobList.[jobID]
-        lock jobDB.FinishedJobs (fun ()->
-        if runningJobs.Remove(jobID) then
+        
+        let finish()=
             finishedList.Add(jobID)
+            
+        lock jobDB.FinishedJobs (fun ()->
+            if runningJobs.Remove(jobID) then
+                finish()
+            else
+                try
+                    removeWaitingJob jobDB (sources.[sourceID])  sourceID jobID
+                    finish()
+                with| a->Logging.errorf "Job %A failed to be removed. Reason: %A" job a
             job.TakenTokens
             |> List.iter (fun id -> TokenList.returnToken freeTokens id)
 
             job.TakenTokens
             |>List.rev
             |>List.iter(fun id -> freeTokens.[id]|>SourceList.attmeptIssuingToken sources)
-        else Logging.errorf "Job %A failed to be removed. something must have gone wrong" job
         )
         tryRunJobs jobDB 
         jobOrderChanged jobDB
@@ -211,7 +236,7 @@ module Main =
             )
         jobOrderChanged jobDB
         ))
-
+    
     type Access={
         GetJob:JobID->JobItem
         CancelJob:JobID->unit
