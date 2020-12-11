@@ -4,9 +4,9 @@ open SharedFs.SharedTypes
 module TransferDataList =
     let set (transferDataList:TransferDataList) jobID data=
         (* TransferClient.Logging.infof " %A %A %A"transferDataList jobID data *)
-        lock transferDataList (fun x->
-            transferDataList.[jobID]<-data
-        )
+       
+        transferDataList.[jobID]<-data
+        
             
   
     ///This sets the transferData and allso writes it to te UIData. 
@@ -18,8 +18,7 @@ module TransferDataList =
     
     let get (transferDataList:TransferDataList) jobID=
         transferDataList.[jobID]
-    let remove (transferDataList:TransferDataList) jobID=
-        lock transferDataList (fun ()-> transferDataList.Remove(jobID))
+    let remove (transferDataList:TransferDataList) jobID=transferDataList.Remove(jobID)
     type Acess =
         {
             //Set:JobID ->TransferData->unit
