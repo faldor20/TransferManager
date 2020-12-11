@@ -18,13 +18,9 @@ type RequestComplete<'T> = Event<'T>
 let requestHandler (requests: Requests) =
     TransferClient.Logging.infof "{JobManager} Starting request handler"
     requests.Publish
-    |> Observable.subscribe (fun ( b,a) ->
-        debugf "{RequestHandler} starting job"
+    |> Observable.subscribe (fun ( b,a) ->  
         let res = b ()
-
         a.WriteAsync(res).AsTask().Wait()
-        
-        debugf "{RequestHandler} finished job, result %A"res
         ())
 ///schedules a job to interact with the database and returns an async function to return the result
 let doRequest (req: Requests) (f:'a->'c) a =
@@ -39,5 +35,5 @@ let doSyncReq (req:Requests) (f:'a->'c) a =
     req.Trigger ((fun ()-> (f a ):>Object ),finished.Writer)
     let res= finished.Reader.ReadAsync().AsTask()|>Async.AwaitTask|>Async.RunSynchronously
     //let res=finished.Publish|>Observable.head|> Observable.wait 
-    debugf "Finished request, got res %A" res
+    
     res :?>'c
