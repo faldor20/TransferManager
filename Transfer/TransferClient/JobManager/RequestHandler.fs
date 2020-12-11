@@ -6,28 +6,38 @@ open TransferClient.JobManager.Main
 open SharedFs.SharedTypes
 open FSharp.Control.Reactive
 open System
+open System.Threading.Channels
 open System.Threading
+open TransferClient.Logging;
 //open System.Reactive.Linq
 ///Contains a request to do an operation on the job database
-type Requests = Event<( (unit -> Object)*Event<Object> )>
+type Requests = Event<( (unit -> Object)*ChannelWriter<Object> )>
 ///A callback that will be triggered once the requsted operation si complete
 type RequestComplete<'T> = Event<'T>
 ///Handles incoming requests and executes them one by one
 let requestHandler (requests: Requests) =
+    TransferClient.Logging.infof "{JobManager} Starting request handler"
     requests.Publish
     |> Observable.subscribe (fun ( b,a) ->
+        debugf "{RequestHandler} starting job"
         let res = b ()
-        a.Trigger(res)
+
+        a.WriteAsync(res).AsTask().Wait()
+        
+        debugf "{RequestHandler} finished job, result %A"res
         ())
 ///schedules a job to interact with the database and returns an async function to return the result
 let doRequest (req: Requests) (f:'a->'c) a =
     async{
-        let finished = RequestComplete<Object>()
-        req.Trigger ((fun ()-> (f a ):>Object ),finished)
-        let! a=Async.AwaitEvent(finished.Publish)
+        let finished = Channel.CreateUnbounded<Object>()
+        req.Trigger ((fun ()-> (f a ):>Object ),finished.Writer)
+        let! a=finished.Reader.ReadAsync().AsTask()|>Async.AwaitTask
         return a:?>'c
-    }
+    } 
 let doSyncReq (req:Requests) (f:'a->'c) a =
-    let finished = RequestComplete<Object>()
-    req.Trigger ((fun ()-> (f a ):>Object ),finished)
-    Async.AwaitEvent(finished.Publish)|>Async.RunSynchronously:?>'c
+    let finished = Channel.CreateUnbounded<Object>() //TODO:This is proabbly very unperforamnt. it may be worth poolnig the channels 
+    req.Trigger ((fun ()-> (f a ):>Object ),finished.Writer)
+    let res= finished.Reader.ReadAsync().AsTask()|>Async.AwaitTask|>Async.RunSynchronously
+    //let res=finished.Publish|>Observable.head|> Observable.wait 
+    debugf "Finished request, got res %A" res
+    res :?>'c

@@ -227,6 +227,7 @@ type TransDataAccess(transDataList:TransferDataList,req,syncer) =
 ///Each function call will have to wait for any calls before it to complete before being run. 
 type DBAccess(jobDB:JobDataBase)=
     let req= Requests()
+    let reqHandler=requestHandler(req)
     let d(f:'a->'c)=doSyncReq req f
     let a x= x:>Object 
     member this.JobListAccess= JobListAccess(jobDB.JobList, req)

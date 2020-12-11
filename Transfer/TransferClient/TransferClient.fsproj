@@ -4,7 +4,7 @@
     <OutputType>Exe</OutputType>
     <GenerateLibraryOutput>True</GenerateLibraryOutput>
     <TargetFramework>net5.0</TargetFramework>
-    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
     <PublishSingleFile>true</PublishSingleFile>
   </PropertyGroup>
   <ItemGroup>
