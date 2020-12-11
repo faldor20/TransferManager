@@ -3,7 +3,7 @@ open SharedFs.SharedTypes
 open IO.Types
 open System.IO
 open System
-open JobManager.Main
+open JobManager.Access
 open DataBase.Types
 module TransferHandling=
 
@@ -17,7 +17,7 @@ module TransferHandling=
     let CancelledCompleteAction transferData source=
         Logging.infof "{Canceled} copying %s" source
         { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
-    let cleaupTask (dbAcess:Access)  jobID sourceID transResult delete=
+    let cleaupTask (dbAcess:DBAccess)  jobID sourceID transResult delete=
         async{
             let transData= dbAcess.TransDataAccess.Get jobID
             let source = transData.Source
@@ -56,10 +56,10 @@ module TransferHandling=
                 |ftp-> Logging.warnf "Deleting files after transfer that are only acessable via ftp is not currently supported. Pleases set that watchdir to not delete in config"
             else ()
         }
-    let processTask (dbAcess:Access) sourceID jobID =
+    let processTask (dbAcess:DBAccess) sourceID jobID =
         async{
             try
-            let task= (dbAcess.GetJob jobID).Job
+            let task= (dbAcess.JobListAccess.GetJob jobID).Job
             let transResult, delete = Async.RunSynchronously task
             cleaupTask dbAcess jobID sourceID transResult delete |>Async.Start
             with|e->

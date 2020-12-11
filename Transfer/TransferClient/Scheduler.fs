@@ -139,7 +139,7 @@ module Scheduler =
                       Status = TransferStatus.Unavailable 
                       ScheduledTime=DateTime.Now
                       EndTime=new DateTime()}
-    let scheduleTransfer (file:FoundFile) moveData (dbAccess:Main.Access) transcode =
+    let scheduleTransfer (file:FoundFile) moveData (dbAccess:Access.DBAccess) transcode =
         async {
             let sourceID=(List.last(moveData.GroupList))
             //this is only used for logging
@@ -194,7 +194,7 @@ module Scheduler =
             if fileAvailable= Availability.Available then
                 Logging.infof "{Available} file at: %s is available" logFilePath 
                 trans|>setStatus TransferStatus.Waiting |>getFileData file |>updateTransData
-                dbAccess.makeJobAvailable jobID
+                dbAccess.MakeJobAvailable jobID
                 
                 
             else if fileAvailable =Availability.Deleted then

@@ -13,7 +13,7 @@ open TransferClient.DataBase.Types
 open FileMove
 open Types
 open TransferClient
-open TransferClient.JobManager
+open TransferClient.JobManager.Access;
 open TransferClient.JobManager.Main
 open FTPMove
 module Mover =
@@ -38,7 +38,7 @@ module Mover =
         return! result 
     }
 
-    let MoveFile (sourceFilePath:string) moveData (dbAccess:Access) jobID transcode (ct:CancellationTokenSource) = async {
+    let MoveFile (sourceFilePath:string) moveData (dbAccess:DBAccess) jobID transcode (ct:CancellationTokenSource) = async {
    
         let {DestinationDir=destination; }=moveData.DirData
         //let isFTP=moveData.FTPData.IsSome

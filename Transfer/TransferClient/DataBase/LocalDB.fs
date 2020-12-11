@@ -8,6 +8,7 @@ open TransferClient.SignalR
 open Types
 open TransferClient.JobManager
 open TransferClient.JobManager.Main
+open TransferClient.JobManager.Access
 open Microsoft.AspNetCore.SignalR.Client
 open SharedFs.SharedTypes
 
@@ -17,7 +18,7 @@ module LocalDB =
     //This is a saved copy of the database just after initialisation used for restting the database
     let mutable private freshDB:JobDataBase= JobDataBase (fun _ _->async{()}) (Dictionary())(Array.empty)
     
-    let  AcessFuncs = access jobDB
+    let  AcessFuncs = DBAccess jobDB
 
     let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob iDMapping heirachy=
         //the groups that is passed in should be each of the watchdirs "GroupList"

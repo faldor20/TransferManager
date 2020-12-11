@@ -14,21 +14,8 @@ module JobList =
         id)
     ///Returns a refernce to the job whos id is given
     let getJob (list: JobList) id = list.[id]
+   
     ///Returns a refernce to the job whos id is given
-    let setJob (list: JobList) id = list.[id]
-    ///Returns a refernce to the job whos id is given
-    let private removeJob (list: JobList) id= list.Remove id
+    let removeJob (list: JobList) id= list.Remove id
     let giveToken  id token (list: JobList)= list.[id].TakenTokens<-token::list.[id].TakenTokens
-    type JobListAcessFuncs =
-        {
-            GetJob:JobID->JobItem
-            RemoveJob:JobID->bool
-            AddJob:(int->JobItem) ->int
-        }
-
-    let JobListAcessFuncs jobList=
-        {
-            GetJob=getJob jobList
-            RemoveJob=removeJob jobList
-            AddJob= addJob jobList
-        }
+  

@@ -15,6 +15,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+  
     <Compile Include="Logging.fs" />
     <Compile Include="DataBase/Types.fs" />
     <Compile Include="Mover/Types.fs" />
@@ -28,7 +29,10 @@
     <Compile Include="JobManager\SourceList.fs" />
     <Compile Include="JobManager\JobOrder.fs" />
     <Compile Include="JobManager\TransferDataList.fs" />
+    
     <Compile Include="JobManager/JobManager.fs" />
+    <Compile Include="JobManager\RequestHandler.fs" />
+     <Compile Include="JobManager/Access.fs" />
     <Compile Include="SignalR/SignalR.fs" />
     <Compile Include="SignalR/ManagerCalls.fs" />
     <Compile Include="DataBase/LocalDB.fs" />
