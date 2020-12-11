@@ -262,7 +262,7 @@ type DBAccess(jobDB: JobDataBase) =
     member this.JobListAccess = JobListAccess(jobDB.JobList, req)
 
     member this.TransDataAccess =
-        TransferDataList.acessFuncs jobDB.TransferDataList jobDB.SyncEvents
+        TransDataAccess( jobDB.TransferDataList,req, jobDB.SyncEvents)
 
     member this.GetUIData() = d getUIData jobDB
     member this.MakeJobFinished id = d (MakeJobFinished jobDB) id

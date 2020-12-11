@@ -19,18 +19,4 @@ module TransferDataList =
     let get (transferDataList:TransferDataList) jobID=
         transferDataList.[jobID]
     let remove (transferDataList:TransferDataList) jobID=transferDataList.Remove(jobID)
-    type Acess =
-        {
-            //Set:JobID ->TransferData->unit
-            SetAndSync:JobID ->TransferData->unit
-            Get:JobID->TransferData
-            Remove:JobID ->bool
-        }
 
-    let acessFuncs transDataList uiData=
-        {
-           // Set=set transDataList
-            SetAndSync=setAndSync transDataList uiData
-            Get= get transDataList 
-            Remove= remove transDataList
-        }    
