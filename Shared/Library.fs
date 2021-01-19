@@ -34,10 +34,10 @@ module SharedTypes =
           jobID:int
           location:int array}
 //=========jobDB====
-    type ScheduleID = int
+    type SourceID = int
     type JobID = int
     type TransferDataList =Dictionary<JobID, TransferData>
-    type UIJobInfo={JobID:JobID;RequiredTokens:ScheduleID array}
+    type UIJobInfo={JobID:JobID;RequiredTokens:SourceID array}
     [<CLIMutable>]
     type UIData= {
         Mapping:Dictionary<int,string>

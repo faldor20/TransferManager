@@ -120,4 +120,4 @@ module ConfigReader=
             )
         
         watchDirsData|>List.iter(fun watchDir->Logging.infof "Watching: %s" watchDir.MovementData.DirData.SourceDir )
-        {|manIP= yamlData.ManagerIP; ClientName=yamlData.ClientName;FreeTokens=freeTokens;ScheduleIDMapping= mapping;WatchDirs= watchDirsData|}
+        {|manIP= yamlData.ManagerIP; ClientName=yamlData.ClientName;FreeTokens=freeTokens;SourceIDMapping= mapping;WatchDirs= watchDirsData|}

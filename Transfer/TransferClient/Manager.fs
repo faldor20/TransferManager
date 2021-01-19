@@ -66,7 +66,7 @@ module Manager =
                 |> List.map (fun x -> x.MovementData.GroupList)
 
             let mapping =
-                configData.ScheduleIDMapping
+                configData.SourceIDMapping
                 |> Seq.map (fun x -> KeyValuePair(x.Value, x.Key))
                 |> Dictionary
             let heirachy=makeHeirachy groups

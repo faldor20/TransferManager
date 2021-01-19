@@ -4,7 +4,7 @@ open SharedFs.SharedTypes
 open TransferClient
 
 
-type SourceList= Dictionary<ScheduleID,Source>
+type SourceList= Dictionary<SourceID,Source>
 
 module SourceList =
     //this is fair but we actually don't want fairness we want jobs to be issued d=tokens in the order defined by the JobOrder.

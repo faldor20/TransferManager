@@ -2,11 +2,11 @@ namespace TransferClient.JobManager
 open System.Collections.Generic
 open SharedFs.SharedTypes
 type TokenStore={
-    Token:ScheduleID;
+    Token:SourceID;
     mutable Remaining:int;
-    mutable SourceOrder: ScheduleID list 
+    mutable SourceOrder: SourceID list 
 }
-type TokenList = Dictionary<ScheduleID, TokenStore>
+type TokenList = Dictionary<SourceID, TokenStore>
 module TokenList =
         ///Decriments the tokenSources Remaing number if possible. returns a token if it was and None if it wasn't
         let  takeToken'  tokenSource=

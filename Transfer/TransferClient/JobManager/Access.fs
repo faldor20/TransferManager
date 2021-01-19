@@ -96,7 +96,7 @@ let getUIData (jobDB) =
             { JobID = sources.[id].Jobs.[index].ID
               RequiredTokens = sources.[id].RequiredTokens.ToArray() })
     //this only works on jobs that have all the tokens they need.
-    //this is becuase the ScheduleIDList can be usefull in filtering at the ui end
+    //this is becuase the SourceIDList can be usefull in filtering at the ui end
     //we can use taken tokens becuase running and finished jobs will have all their tokens,
     // it is easier than  getting the requiretokens from the source for each token
     let convertToOut (li: List<JobID>) =
@@ -210,7 +210,7 @@ let switch jobDB (downJob: JobID) upJob =
                 "Jobs requested to be switched are in the same source but not adjacent. At positions %i and %i This should not be. Jobs have not been switched"
                 pos1
                 pos2
-    //If the sources are differnet we change the position of ScheduleIds in the JobOrder
+    //If the sources are differnet we change the position of SourceIDs in the JobOrder
     else
     
         //Essentially what we do is count instances of a source in the jobOrder untill we get to the instance that is the same depth

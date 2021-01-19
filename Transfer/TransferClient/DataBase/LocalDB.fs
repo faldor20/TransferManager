@@ -23,7 +23,7 @@ module LocalDB =
     let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob iDMapping heirachy=
         //the groups that is passed in should be each of the watchdirs "GroupList"
         TransferClient.Logging.infof "initialising DB"
-        let scheduleIDLevel =
+        let SourceIDLevel =
             groups
             |> List.collect List.indexed
             |> List.groupBy (fun (x, y) -> x)

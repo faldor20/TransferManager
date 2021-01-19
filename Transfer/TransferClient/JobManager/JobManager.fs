@@ -24,7 +24,7 @@ module Main =
         mutable Sources:SourceList
         TransferDataList:TransferDataList
         JobList:JobList
-        mutable RunJob:ScheduleID->JobID->Async<unit>
+        mutable RunJob:SourceID->JobID->Async<unit>
         SyncEvents: Syncer.SyncEvents
         
     }

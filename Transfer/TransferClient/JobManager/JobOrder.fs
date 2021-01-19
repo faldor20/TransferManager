@@ -8,16 +8,16 @@ open System
 
 ///contains one schedule id for each job in each jobsource.
 /// source a=[job1,job2] b=[job1] jobOrder=[(a);(b);(a)]
-type JobOrder= (ScheduleID)ResizeArray
+type JobOrder= (SourceID)ResizeArray
 
 module JobOrder =
-    ///Counts the number of ScheduleID's of the same type in the jobOrder before the one given
+    ///Counts the number of SourceID's of the same type in the jobOrder before the one given
     let countBefore (jobOrder:JobOrder) countItem index=
             let mutable amount=0
             for i in [0..index-1] do
                 if jobOrder.[i]=countItem then amount<-amount+1
             amount
-    ///Returns each scheduleid along with its count in the list
+    ///Returns each SourceID along with its count in the list
     /// eg [a,0;b,0;b,1;c,0]
     let countUp (jobOrder:IEnumerable<'a>)=
         let counts=Dictionary<'a,int>()
