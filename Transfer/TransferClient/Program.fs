@@ -22,7 +22,7 @@ module Main=
     [<EntryPoint>]
     let main argv =
         logTest()
-        Logging.infof("Latest change: Better exception handling in watcher 2/11")
+        Logging.infof("Latest change: refactor of much of the code and switched from locks to single threaded db access")
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler
         
      //   printfn"Begining"
