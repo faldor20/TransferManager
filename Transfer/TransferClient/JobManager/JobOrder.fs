@@ -27,9 +27,9 @@ module JobOrder =
             (job,counts.[job])
         ).ToArray()
 
-   ///Returns a list of jobs from the joborder that have all their required tokens and are avilable
+    ///Returns a list of jobs from the joborder that have all their required tokens and are avilable
     ///Removes the jobs from the JobOrder and Source 
-    let takeAvailableJobs (jobOrder:JobOrder) (sources:SourceList)=
+    let takeJobsReadyToRun (jobOrder:JobOrder) (sources:SourceList)=
         let indexed=countUp jobOrder
         let jobsToRun=
             seq{
@@ -39,7 +39,7 @@ module JobOrder =
                     yield (jobSource,job.ID)
             }|>Seq.toList
         
-        //Removes each job from the joborder and its source
+        //Removes each job from the joborder and removes its associated source instance from the jobOrder
         jobsToRun|>List.map(fun (source,id)->
             match jobOrder.Remove(source) with
             |true->()
