@@ -13,6 +13,11 @@ module FTPMove=
         |FtpStatus.Failed->TransferResult.Failed
         |FtpStatus.Success->TransferResult.Success
         |_-> failwith "ftpresult return unhandled enum value"
+    let makeReturn (client:FtpClient) result returnClient =
+        if returnClient then
+            client.Dispose()
+            (result,Some client)
+        else  (result,None)
     let FTPtoFTP sourceFTPData destFTPData  sourceFilePath destFilePath callBack (ct:CancellationToken)=async{
         use sourceClient=ftpClient sourceFTPData
         sourceClient.Connect()
@@ -55,7 +60,6 @@ module FTPMove=
         with 
         | :? OperationCanceledException-> return TransferResult.Cancelled 
     }
-
     let downloadFTP ftpData filePath destFilePath callBack (ct:CancellationToken)=async{
         use client=new FtpClient(ftpData.Host,ftpData.User,ftpData.Password)
         client.Connect()
@@ -69,8 +73,8 @@ module FTPMove=
                     callBack ,
                     ct ))
         try 
-            let! a= task
-            return ftpResToTransRes a
+            let! status= task
+            return ftpResToTransRes status
         with 
         | :? OperationCanceledException-> return TransferResult.Cancelled 
     }
@@ -88,8 +92,8 @@ module FTPMove=
                     callBack ,
                     ct ))
         try 
-            let! a= task
-            return ftpResToTransRes a
+            let! status= task
+            return ftpResToTransRes status
         with 
         | :? OperationCanceledException-> return TransferResult.Cancelled 
     }

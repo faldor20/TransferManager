@@ -13,6 +13,8 @@ open TransferClient.DataBase.Types
 open FileMove
 open Types
 open TransferClient
+open TransferClient.JobManager.Access;
+open TransferClient.JobManager.Main
 open FTPMove
 module Mover =
   
@@ -28,7 +30,7 @@ module Mover =
                 |(None ,Some dest,FtpProg cb)->
                     uploadFTP  dest sourceFilePath (destination+fileName) cb ct
                 |(None,None,FastFileProg cb)->
-                    FCopy fileName (destination+fileName) cb ct
+                    FCopy sourceFilePath (destination+fileName) cb ct
                 |source,dest,cb->
                     Logging.errorf "{Mover}Some combination of inputs made the mover not able to run. SourceFTP: %A DestFTP: %A callback : %A"source dest cb
                     failwith "See above"
@@ -36,18 +38,18 @@ module Mover =
         return! result 
     }
 
-    let MoveFile (sourceFilePath:string) moveData dbAccess transcode (ct:CancellationTokenSource) = async {
+    let MoveFile (sourceFilePath:string) moveData (dbAccess:DBAccess) jobID transcode (ct:CancellationTokenSource) = async {
    
-        let {DestinationDir=destination; GroupName= groupName}=moveData.DirData
+        let {DestinationDir=destination; }=moveData.DirData
         //let isFTP=moveData.FTPData.IsSome
         
         let fileName= Path.GetFileName sourceFilePath
         
-        let transData= {dbAccess.Get() with StartTime=DateTime.Now}
+        let transData= {dbAccess.TransDataAccess.Get(jobID) with StartTime=DateTime.Now}
         
         let newDataHandler newTransData=
             
-            dbAccess.Set newTransData
+            dbAccess.TransDataAccess.SetAndSync(jobID) newTransData
 
         let progressHandler= Gethandler moveData transcode transData newDataHandler
 
@@ -60,12 +62,12 @@ module Mover =
         Logging.infof " {Starting} %s from %s to %s" transType sourceFilePath destination
        
         //We have to set the startTime here because we want the sartime to truly be when the task begins
-        dbAccess.Set {transData with StartTime=DateTime.Now}
+        dbAccess.TransDataAccess.SetAndSync(jobID) {transData with StartTime=DateTime.Now}
         
         let! result= doMove progressHandler moveData sourceFilePath destination fileName ct.Token
         //We need to dispose the sourceclient if there is one. If we getrid of this we would endlessly increase our number of active connections
        
 
         Logging.infof " {Finished} copy from %s to %s"sourceFilePath destination
-        return (result,dbAccess,moveData.DirData.DeleteCompleted)
+        return (result,moveData.DirData.DeleteCompleted)
     }

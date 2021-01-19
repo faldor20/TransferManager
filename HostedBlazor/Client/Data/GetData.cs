@@ -21,14 +21,19 @@ namespace HostedBlazor.Data
     {
         public static Uri baseAddress;
         HttpClient http = new HttpClient { BaseAddress = baseAddress };
-        public Dictionary<string, Dictionary<string, Dictionary<int, TransferData>>> CopyTasks = null;
+        public Dictionary<string, Action> userUpdates = new Dictionary<string, Action>();
+        public Dictionary<string, UIData> CopyTasks = null;
         public List<(string group, string user, TransferData task)> AllTasks = null;
         public bool first = true;
         public bool GotFirstConnectData = false;
-        public Dictionary<string, Dictionary<string, Dictionary<int, Action>>> ComponentUpdateEvents = new Dictionary<string, Dictionary<string, Dictionary<int, Action>>>();
+        public Dictionary<string, Dictionary<int, Action>> ComponentUpdateEvents = new Dictionary<string, Dictionary<int, Action>>();
         public string transferServerUrl;
         public Status status = Status.Loading;
         public event Action newData;
+        public void UpdateData()
+        {
+            newData.Invoke();
+        }
         private HubConnection hubConnection;
         /*   public void UpDateAllTasks(){
               AllTasks=CopyTasks.SelectMany(
@@ -44,7 +49,7 @@ namespace HostedBlazor.Data
             transData.EndTime = transData.EndTime.ToLocalTime();
             return transData;
         }
-         async Task Reconnect(HubConnection connection)
+        async Task Reconnect(HubConnection connection)
         {
             var connected = false;
             while (!connected)
@@ -69,73 +74,79 @@ namespace HostedBlazor.Data
                 .WithUrl(transferServerUrl + "/datahub")
                 .AddMessagePackProtocol()
                 .Build();
-            hubConnection.Closed+= (ex=>Reconnect(hubConnection));
-                hubConnection.On<Dictionary<string, Dictionary<string, Dictionary<int, TransferData>>>>("ReceiveData", dataList =>
+            hubConnection.Closed += (ex => Reconnect(hubConnection));
+
+            hubConnection.On<Dictionary<string, UIData>>("ReceiveData", dataList =>
            {
+               Console.WriteLine("Got initialData:" + Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
+
                //this is necissary to convert the time into local time from utc because when sending datetime strings using signalR Time gets cnverted to utc
-               foreach (var group in dataList)
+               foreach (var user in dataList)
                {
-                   foreach (var user in group.Value)
+
+                   foreach (var i in user.Value.TransferDataList)
                    {
-                       foreach (var i in user.Value)
-                       {
-                           dataList[group.Key][user.Key][i.Key].StartTime = i.Value.StartTime.ToLocalTime();
-                           dataList[group.Key][user.Key][i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
-                           dataList[group.Key][user.Key][i.Key].EndTime = i.Value.EndTime.ToLocalTime();
-                       }
+                       dataList[user.Key].TransferDataList[i.Key].StartTime = i.Value.StartTime.ToLocalTime();
+                       dataList[user.Key].TransferDataList[i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
+                       dataList[user.Key].TransferDataList[i.Key].EndTime = i.Value.EndTime.ToLocalTime();
                    }
+
                }
                CopyTasks = dataList;
                status = Status.Connected;
 
                newData.Invoke();
            });
-            hubConnection.On<string, Dictionary<string, Dictionary<int, TransferData>>>("ReceiveDataChange", (user, change) =>
-             {
-                 lock (CopyTasks)
-                 {
-                     Console.WriteLine("recived changes from ClientManager");
-                     var fullRefresh = false;
-                     foreach (var group in change)
-                     {
-                         foreach (var index in group.Value)
-                         {
 
-                             if (!CopyTasks.ContainsKey(group.Key))
-                             {
-                                 CopyTasks[group.Key] = new Dictionary<string, Dictionary<int, TransferData>>();
-                                 fullRefresh = true;
-                             }
-                             if (!CopyTasks[group.Key].ContainsKey(user))
-                             {
-                                 CopyTasks[group.Key][user] = new Dictionary<int, TransferData>();
-                                 fullRefresh = true;
-                             }
-                             if (!CopyTasks[group.Key][user].ContainsKey(index.Key)) fullRefresh = true;
-                             var transferData = ConvertToLocalTime(index.Value);
-                             CopyTasks[group.Key][user][index.Key] = transferData;
-                             //If a fullrefresh is going to ccur anyway this would be pointless
-                             if (!fullRefresh)
-                                 ComponentUpdateEvents[group.Key][user][index.Key].Invoke();
-                         }
-                     }
-                     if (fullRefresh)
+            hubConnection.On<string, UIData>("ReceiveDataChange", (user, change) =>
+             {
+                 status = Status.Connected;
+                 // Console.WriteLine("Got change for user: " + user);
+
+
+
+                 foreach (var i in change.TransferDataList)
+                 {
+                     change.TransferDataList[i.Key].StartTime = i.Value.StartTime.ToLocalTime();
+                     change.TransferDataList[i.Key].ScheduledTime = i.Value.ScheduledTime.ToLocalTime();
+                     change.TransferDataList[i.Key].EndTime = i.Value.EndTime.ToLocalTime();
+                 }
+                 if (change.Jobs.Length > 0)
+                 {
+                     Console.WriteLine($"new jobs in user : {user}. Doing full update ");
+                     
+                     CopyTasks[user] = change;             
+                     newData.Invoke();
+
+                 }
+                 else
+                 {
+                     //TODO:  by doing only partial updates t will make the rederd object keep its reference and that should prevent the need for a rerender or index reference
+                     Console.WriteLine($"Doing incrimental update for user : {user} ");
+                     foreach (var transData in change.TransferDataList)
                      {
-                         newData.Invoke();
+                         //TOOD: impliment rest of fields
+                         CopyTasks[user].TransferDataList[transData.Key].FileRemaining = transData.Value.FileRemaining;
+                         CopyTasks[user].TransferDataList[transData.Key].FileSize = transData.Value.FileSize;
+                         CopyTasks[user].TransferDataList[transData.Key].EndTime = transData.Value.EndTime;
+                         CopyTasks[user].TransferDataList[transData.Key].ScheduledTime = transData.Value.ScheduledTime;
+                         CopyTasks[user].TransferDataList[transData.Key].Percentage = transData.Value.Percentage;
+                         CopyTasks[user].TransferDataList[transData.Key].Source = transData.Value.Source;
+                         CopyTasks[user].TransferDataList[transData.Key].Speed = transData.Value.Speed;
+                         CopyTasks[user].TransferDataList[transData.Key].Status = transData.Value.Status;
+                         CopyTasks[user].TransferDataList[transData.Key].StartTime = transData.Value.StartTime;
+
+                         ComponentUpdateEvents[user][transData.Key].Invoke();
                      }
 
                  }
 
 
 
+
+
              });
-            /*   hubConnection.On<Object> ("ReceiveData", dataList => {
 
-                  Console.WriteLine(Newtonsoft.Json.JsonConvert.SerializeObject(dataList));
-
-                  status = Status.Connected;
-                  newData.Invoke();
-              });  */
 
             hubConnection.On<string>("Testing", confirmed => { Console.WriteLine(confirmed); status = Status.Connected; });
             await hubConnection.StartAsync();
@@ -143,13 +154,15 @@ namespace HostedBlazor.Data
             await ContinuousSend();
 
         }
-        public Task Cancel(string groupName, string userName, int id) =>
-            hubConnection.SendAsync("CancelTransfer", groupName, userName, id);
+        public Task Cancel(string userName, int id) =>
+            hubConnection.SendAsync("CancelTransfer", userName, id);
+        ///Each job is represented by its source and its jobID
+        public Task SwitchJobs(string userName, int job1, int job2) =>
+            hubConnection.SendAsync("SwitchJobs", userName, job1, job2);
         Task RequestData() =>
            hubConnection.SendAsync("GetTransferData");
         Task Confirm() =>
            hubConnection.SendAsync("GetConfirmation");
-
         async Task ContinuousSend()
         {
             var timer = new System.Timers.Timer(1000 * 60);

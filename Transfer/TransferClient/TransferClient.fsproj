@@ -1,71 +1,81 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<OutputType>Exe</OutputType>
-		<GenerateLibraryOutput>True</GenerateLibraryOutput>
-		<TargetFramework>netcoreapp3.1</TargetFramework>
-        <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-       <PublishSingleFile>true</PublishSingleFile>
-	</PropertyGroup>
- 	<ItemGroup>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk" Version="5">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <GenerateLibraryOutput>True</GenerateLibraryOutput>
+    <TargetFramework>net5.0</TargetFramework>
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+    <PublishSingleFile>true</PublishSingleFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Shared/SharedData.fsproj" />
+    <!--<ProjectReference Include="../ClientManager/ClientManager.fsproj" />-->
+  <Reference Include="FFmpeg.Net">
+      <HintPath>./FFmpeg.NET.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+  
+    <Compile Include="Logging.fs" />
+    <Compile Include="DataBase/Types.fs" />
+    <Compile Include="Mover/Types.fs" />
+    <Compile Include="Mover/StreamPiping.fs" />
+    <Compile Include="Mover/Fmove.fs" />
+    <Compile Include="JobManager\Types.fs" />
+    <Compile Include="JobManager\JobList.fs" />
+    <Compile Include="JobManager\Syncer.fs" />
 
-        <ProjectReference Include="../../Shared/SharedData.fsproj" />
-        <!--<ProjectReference Include="../ClientManager/ClientManager.fsproj" />-->
-        <Reference Include="FFmpeg.Net">
-            <HintPath>./FFmpeg.NET.dll</HintPath>
-          </Reference>
-	</ItemGroup> 
-	<ItemGroup>
-        <Compile Include="Logging.fs" />
-		<Compile Include="SignalR/SignalR.fs" />
-		<Compile Include="SignalR/ManagerCalls.fs" />
-        <Compile Include="DataBase/Types.fs" /> 
-        <Compile Include="Mover/Types.fs" />
-        <Compile Include="Mover/StreamPiping.fs" /> 
-        <Compile Include="Mover/Fmove.fs" /> 
-        <Compile Include="DataBase/LocalDB.fs" />
-        <Compile Include="DataBase/ManagerSync.fs" />
-        <Compile Include="DataBase/TokenDatabase.fs" /> 
-        <Compile Include="SignalR/ClientApi.fs" /> 
-        <Compile Include="SignalR/Commands.fs" />
-        <Compile Include="ConfigReader.fs" />
-        <Compile Include="FTParser.fs" />
-        <Compile Include="Mover\FTPMove.fs" />
-
-        <Compile Include="Mover/Progresshandlers.fs" />
-        <Compile Include="Mover/VideoMover.fs" />
-		<Compile Include="Mover/Mover.fs" />
-        <Compile Include="Scheduler.fs" />
-		<Compile Include="watcher.fs" />
-        <Compile Include="TransferHandling.fs" />
-		<Compile Include="Manager.fs" />
-		<Compile Include="testing.fsx" />
-		<Compile Include="testing.fs" />
-		<Compile Include="Benchmark.fs" />
-		<Compile Include="Program.fs" />
-	</ItemGroup> 
-	<ItemGroup>
-	  <None Include="WatchDirs.yaml" />
-	</ItemGroup>
-	<ItemGroup>
-		<!-- <PackageReference Include="FSharp.Data" Version="3.3.3" /> -->
-		<PackageReference Include="FFMpegCore" Version="2.2.6" />
+    <Compile Include="JobManager\TokenList.fs" />
+    <Compile Include="JobManager\SourceList.fs" />
+    <Compile Include="JobManager\JobOrder.fs" />
+    <Compile Include="JobManager\TransferDataList.fs" />
+    
+    <Compile Include="JobManager/JobManager.fs" />
+    <Compile Include="JobManager\RequestHandler.fs" />
+     <Compile Include="JobManager/Access.fs" />
+    <Compile Include="SignalR/SignalR.fs" />
+    <Compile Include="SignalR/ManagerCalls.fs" />
+    <Compile Include="DataBase/LocalDB.fs" />
+    <Compile Include="SignalR/ClientApi.fs" />
+    <Compile Include="SignalR/Commands.fs" />
+    <Compile Include="ConfigReader.fs" />
+    <Compile Include="FTParser.fs" />
+    <Compile Include="Mover\FTPMove.fs" />
+    <Compile Include="Mover/Progresshandlers.fs" />
+    <Compile Include="Mover/VideoMover.fs" />
+    <Compile Include="Mover/Mover.fs" />
+    <Compile Include="TransferHandling.fs" />
+    <Compile Include="Scheduler.fs" />
+    <Compile Include="watcher.fs" />
+    <Compile Include="Manager.fs" />
+    <Compile Include="testing.fsx" />
+    <Compile Include="testing.fs" />
+    <Compile Include="Program.fs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="WatchDirs.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+ <!--    	<PackageReference Include="FFMpegCore" Version="2.2.6" />
 		<PackageReference Include="FluentFTP" Version="32.4.3" />
 		<PackageReference Include="FSharp.Control.AsyncSeq" Version="3.0.1" />
 		<PackageReference Include="FSharp.Control.Reactive" Version="4.4.2" />
 		<PackageReference Include="FSharp.Json" Version="0.4.0" />
 		<PackageReference Include="Legivel" Version="0.4.3" />
 		
-		<!--<PackageReference Include="Logary" Version="5.0.1" />-->
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.6" />
-		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.6" />
-		<!--<PackageReference Include="MiniProfiler.AspNetCore" Version="4.2.1" />-->
+	
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="3.1.8" />
+		<PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="3.1.8" />
+	
 		<PackageReference Include="Serilog" Version="2.9.0" />
 		<PackageReference Include="Serilog.Exceptions" Version="5.6.0" />
         <PackageReference Include="Serilog.Sinks.File" Version="4.1.0" />
 		<PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
-		<PackageReference Update="FSharp.Core" Version="4.7.2" />
-		<!-- <PackageReference Include="Xabe.FFMpeg" Version="4.1.1" />
-		<PackageReference Include="xFFmpeg.NET" Version="3.4.0" /> -->
-	</ItemGroup>
+		<PackageReference Update="FSharp.Core" Version="4.7.2" /> -->
+
+  </ItemGroup>
+   <Import Project="..\..\.paket\Paket.Restore.targets" /> 
 </Project>

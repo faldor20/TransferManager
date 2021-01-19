@@ -12,6 +12,7 @@ open Microsoft.Extensions.Hosting;
 open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection;
 open Microsoft.AspNetCore.SignalR.Protocol;
+open Microsoft.Extensions.Logging
 module Server=
     let tryGetEnv key = 
         match Environment.GetEnvironmentVariable key with
@@ -20,12 +21,6 @@ module Server=
     let port =
         "SERVER_PORT"
         |> tryGetEnv |> Option.map uint16 |> Option.defaultValue 8085us
-  (*   let configureApp (app : IApplicationBuilder) =
-        let env = app.ApplicationServices.GetService<IWebHostEnvironment>()
-        app.UseStaticFiles()
-            .UseSignalR(fun routes -> routes.MapHub<GameHub>(PathString "/gameHub")) // SignalR
-            .UseGiraffe(a)
- *)
     let configureServices (services : IServiceCollection) =
       services.AddCors()    |> ignore
                       // SignalR
@@ -36,10 +31,7 @@ module Server=
         
         memory_cache
         use_gzip
-        
-        (* use_cors("*")(fun builder-> 
-            builder.AllowAnyHeader().AllowAnyOrigin().AllowAnyMethod()|>ignore 
-            ()) *)
+
         service_config (fun services->
             
             services.AddSignalR().AddMessagePackProtocol()|>ignore
@@ -54,9 +46,7 @@ module Server=
             )) )
 
             )
-       (*  webhost_config(fun host->
-            host.UseKestrel()
-        ) *)
+        logging(fun logger -> logger.SetMinimumLevel LogLevel.Debug |> ignore)
        
         app_config (fun app ->
             app.UseStaticFiles()

@@ -1,0 +1,59 @@
+﻿@using System.Collections.Generic
+@using blaz.Data
+@using System;
+@using Microsoft.AspNetCore.Html
+@using System.Threading
+@using System.Threading.Tasks
+@using static SharedFs.SharedTypes;
+@using System.Linq
+@using HostedBlazor.Data
+@inject DataGetter Getter
+@inject NavigationManager UriHelper  
+
+@code{
+    [Parameter]
+    public UIData UserData { get; set; }
+    [Parameter]
+    public int Group { get; set; }
+    [Parameter]
+    public string UserName { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+    }
+        protected override async Task OnParametersSetAsync()
+    {  
+    // This event will fire when the parameters change
+    // Put your code here.  
+    this.StateHasChanged();
+    }
+
+}
+
+@{  var uiData= Getter.CopyTasks[UserName];
+    Getter.userUpdates[UserName]= ()=>{Console.WriteLine($"StateChanged|User|{UserName}"); this.StateHasChanged();};
+    void thing(IEnumerable<UIJobInfo> jobs){
+        <div>
+        @{var lastID=-1;}
+        @foreach (var task in jobs)
+        {   
+            var data=UserData.TransferDataList[ task.JobID];
+            <TransferTaskRender LastID="@lastID" UserName="@UserName" Task="@data" > </TransferTaskRender>
+            lastID=data.jobID;
+        } 
+        </div>;
+    }}
+@if(Group==-1){
+    thing (UserData.Jobs);
+}
+else
+{
+    var jobs=UserData.Jobs.Where(x=> x.RequiredTokens.Contains(Group));
+    thing (jobs);
+}
+
+
+
+

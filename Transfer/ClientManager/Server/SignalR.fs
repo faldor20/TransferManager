@@ -6,6 +6,7 @@ open System.Threading;
 open System.Threading.Tasks;
 open Microsoft.AspNetCore.SignalR
 open Microsoft.Extensions.Hosting
+open TransferClient.JobManager;
 open ClientManager.Data;
 open FSharp.Json;
 open SharedFs.SharedTypes
@@ -17,9 +18,10 @@ module SignalR=
     
 
     type ITransferClientApi = 
-      abstract member CancelTransfer :string -> int -> System.Threading.Tasks.Task
-      abstract member Testing :string -> System.Threading.Tasks.Task
-      abstract member ResetDB :unit -> System.Threading.Tasks.Task
+      abstract member CancelTransfer : int -> Task
+      abstract member Testing :string -> Task
+      abstract member SwitchJobs:(JobID)->(JobID)->Task
+      abstract member ResetDB :unit -> Task
 
     and ClientManagerHub(manager:FrontEndManager)=
         inherit Hub<ITransferClientApi>()
@@ -31,36 +33,34 @@ module SignalR=
             printfn "Registering new client. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
             DataBase.registerClient userName this.Context.ConnectionId 
             
-        member this.OverwriteTransferData(userName:string) ( changes:Dictionary<string, Dictionary<int,TransferData>>) =
+        member this.OverwriteTransferData(userName:string) ( changes:UIData) =
             printfn "overwriting local info with client info. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
             lock(DataBase.dataBase) (fun x->
-            changes|>Seq.iter(fun group-> 
-                //instantiate the group if it doesn't exist
-                if not(DataBase.dataBase.ContainsKey group.Key) then
-                    DataBase.dataBase.[group.Key]<-new Dictionary<string,Dictionary<int,TransferData>>()
-                DataBase.dataBase.[group.Key].[userName]<-group.Value
-                )
+            DataBase.dataBase.[userName]<- changes
             )
 
-        member this.SyncTransferData (userName:string) ( changes:Dictionary<string, Dictionary<int,TransferData>>) =
-            //printfn "syncing transferData "
-
-            DataBaseSync.syncDataBaseChanges userName changes
+        member this.SyncTransferData (userName:string) ( changes:UIData) =
+            printfn "syncing transferData "
+            DataBaseSync.mergeChanges userName changes
             frontEndManager.ReceiveDataChange userName changes
-            printfn "Synced transferData from %s" userName 
+            printfn "Synced transferData from %s" userName  
     
     and IFrontendApi = 
-      abstract member ReceiveData :Dictionary<string, Dictionary<string, Dictionary<int, TransferData >>> -> System.Threading.Tasks.Task
-      abstract member ReceiveDataChange :string->Dictionary<string, Dictionary<int, TransferData>> -> System.Threading.Tasks.Task
-      abstract member Testing :string -> System.Threading.Tasks.Task
+      abstract member ReceiveData :Dictionary<string, UIData> -> Task
+      abstract member ReceiveDataChange :string->UIData -> Task
+      abstract member Testing :string -> Task
     //this apprently needs to be injected
     and ClientManager (hubContext :IHubContext<ClientManagerHub,ITransferClientApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<ClientManagerHub, ITransferClientApi> = hubContext
-        member this.CancelTransfer  groupName user id=
+        member this.CancelTransfer   user id=
             let clientID = DataBase.getClientID user
             printfn "Sending Cancellation request to user:%s with connecionid %s" user clientID
-            (this.HubContext.Clients.All.CancelTransfer groupName id).Wait()
+            (this.HubContext.Clients.All.CancelTransfer id).Wait()
+        member this.SwitchJobs  user job1 job2=
+            let clientID = DataBase.getClientID user
+            printfn "Switching Jobs %A , %A user:%s " job1 job2 user 
+            (this.HubContext.Clients.All.SwitchJobs job1 job2).Wait()
         member this.ResetDB ()=
             this.HubContext.Clients.All.ResetDB();
    
@@ -75,10 +75,13 @@ module SignalR=
             this.Clients.All.ReceiveData(data)
         member this.GetConfirmation()=
             this.Clients.All.Testing("hiya from the other side")
-        member this.CancelTransfer groupName user id=
-            printfn "recieved Cancellation request for item %i and user %s in group %s" id user groupName;
+        member this.CancelTransfer  user id=
+            printfn "recieved Cancellation request for item %i and user %s" id user ;
 
-            clientManager.CancelTransfer groupName user id
+            clientManager.CancelTransfer  user id
+        member this.SwitchJobs  (user:string) (job1:int) (job2:int)=
+
+            clientManager.SwitchJobs  user job1 job2
     and FrontEndManager (hubContext :IHubContext<DataHub,IFrontendApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<DataHub, IFrontendApi> = hubContext

@@ -9,29 +9,18 @@
   # Paths must be 1 / or 2 \\ a single \ is an escape character and will cause an error
   #Any if you do not wish to enable ftp do not include it in the config
   "ClientName": "TestClient",
-  "ManagerIP": "10.41.57.172",
+  "ManagerIP": "localhost",
+  "MaxJobs":{"Main":3,"Eli":2},
   "WatchDirs":
     [
-      {
+      {"GroupList":["Main","Eli"],
         "DirData":
           {
-            "GroupName": "Trans",
-            "SourceDir": "***REMOVED***TransferManager/Source",
-            "DestinationDir": "***REMOVED***TransferManager/Dest/",
+            "SourceDir": "./testSource/",
+            "DestinationDir": "H:/testDest/",
             "DeleteCompleted":false,
           },
-        "SourceFTPData":
-          {
-            "Host": "***REMOVED***",
-            "User": "user",
-            "Password": "pass",
-          },
-          "DestFTPData":
-          {
-            "Host": "***REMOVED***",
-            "User": "user",
-            "Password": "pass",
-          },
+
         # "TranscodeData":
           # {
             # "TranscodeExtensions": ["mp4", "mxf"],

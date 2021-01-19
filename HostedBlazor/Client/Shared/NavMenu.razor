@@ -1,5 +1,6 @@
 ﻿@using HostedBlazor.Data;
 @using blaz.Data;
+@using static SharedFs.SharedTypes;
 @inject DataGetter Getter
 @inject NavigationManager UriHelper  
 <div class="top-row pl-4 navbar navbar-dark">
@@ -8,35 +9,59 @@
         <span class="navbar-toggler-icon"></span>
     </button>
 </div>
+@{  void wrap( Dictionary<int ,List<int>>[] heirachy,string userString ,UIData uiData){
 
+        void ListOp (List<int> belowGroups,int currentGroup, int currentIndex){
+            string userUrl= "/JobList/"+userString+"/"+currentGroup;
+            if(heirachy.Length>currentIndex+1){
+                <li class="nav-item px-1">
+                <NavLink class="nav-link" href="@userUrl" @onclick="(()=>{selections[currentIndex]=currentGroup; selections[currentIndex+1]=-1;})">
+                     @(uiData.Mapping[currentGroup]+">")
+                </NavLink>
+                </li>
+                
+            @if( selections[currentIndex]==currentGroup){
+                <ul class="nav-list ">
+                    @foreach (var group in belowGroups)
+                    {
+                        ListOp (heirachy[currentIndex+1][group],group, currentIndex+1 );
+                    }
+                </ul>
+                }
+            }else{
+                <li class="nav-item px-1">
+                <NavLink class="nav-link" href="@userUrl">
+                   @uiData.Mapping[currentGroup]
+                </NavLink>
+                </li>
+            }
+        }
+        foreach (var group in heirachy[0])
+        {
+           ListOp (group.Value,group.Key, 0 );
+        }
+    }
+    
+}
 <div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
-    <ul class="nav flex-column">
-        <li class="nav-item px-3">
-            <NavLink class="nav-link" href="/All" @onclick='()=>selectedGroup="" '>>
+    <ul class="nav-list ">
+     @*    <li class="nav-item px-1">
+            <NavLink class="nav-link" href="/All" @onclick='()=>selectedUser="" '>
                 <span class="oi oi-list-rich" aria-hidden="true"></span> All
             </NavLink>
-        </li>
+        </li> *@
        @if(Getter.status==Status.Connected){ 
-        @foreach (var group in Getter.CopyTasks)
+        @foreach (var user in Getter.CopyTasks)
         {
-            string url= "/"+group.Key;
+            string url= "/JobList/"+user.Key+"/-1";
 
-            <li class="nav-item px-3">
-                <NavLink class="nav-link" href="@url" @onclick="()=>selectedGroup=group.Key">
-                    <span class="oi oi-list-rich" aria-hidden="true"></span> @group.Key
+            <li class="nav-item px-1">
+                <NavLink class="nav-link" href="@url" @onclick="()=>{selectedUser=user.Key;selections[0]=-1;}">
+                    <span class="oi oi-list-rich" aria-hidden="true"></span> @user.Key
                 </NavLink>
-                @if(group.Key==selectedGroup){
-                    <ul class="nav flex-column">
-                        @foreach (var user in group.Value)
-                        {
-                            string userUrl= "/"+group.Key+"/"+user.Key;
-                            <li class="nav-item px-3">
-                            <NavLink class="nav-link" href="@userUrl">
-                                <span class="oi oi-list-rich" aria-hidden="true"></span> @user.Key
-                            </NavLink>
-                            </li>
-                        }
-                    
+                @if(user.Key==selectedUser){
+                    <ul class="nav-list ">
+                        @{wrap(user.Value.Heirachy,user.Key,user.Value);}
                     </ul>
                 }
             </li>
@@ -62,13 +87,14 @@
 </div>
 
 @code {
-    private string selectedGroup="";
+    private string selectedUser = "";
+    private int[] selections = Enumerable.Range(-50,20).ToArray();
     private bool collapseNavMenu = true;
     private string NavMenuCssClass => collapseNavMenu ? "collapse" : null;
     protected override async Task OnInitializedAsync()
     {
         //We set the group from the url so that the subnav can be show even when a user hasn't clicked on a group
-        selectedGroup=UriHelper.Uri.Split('/')[3];
+        selectedUser = UriHelper.Uri.Split('/')[3];
         //TODO: this shoudl really only triger when the sie of the mian dictionary gets longer
         Getter.newData += StateHasChanged;
     }

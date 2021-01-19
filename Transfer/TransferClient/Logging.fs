@@ -2,7 +2,6 @@ namespace TransferClient
 open System
 open Serilog
 
-open Microsoft.Extensions.Configuration
 open Serilog.Sinks
 open Serilog.Configuration
 open Printf
@@ -13,6 +12,11 @@ module Logging=
             .MinimumLevel.Debug()
             .WriteTo.Console(theme=Sinks.SystemConsole.Themes.SystemConsoleTheme.Literate)
             .WriteTo.File("./logs/log-.log" ,Serilog.Events.LogEventLevel.Verbose)
+            .CreateLogger();
+    let signalrLogger =
+        Serilog.LoggerConfiguration()
+            .MinimumLevel.Debug()
+            .WriteTo.File("./logs/SignalrLog-.log" ,Serilog.Events.LogEventLevel.Verbose)
             .CreateLogger();
 
 

@@ -32,19 +32,20 @@ module Types =
           Host = host }
 
     type DirectoryData =
-        { GroupName: string
+        { 
           SourceDir: string
           DestinationDir: string
           DeleteCompleted: bool }
 
     let DirectoryData groupName source destination deleteCompleted =
-        { GroupName = groupName
+        {
           SourceDir = source
           DestinationDir = destination
           DeleteCompleted = deleteCompleted }
 
     type MovementData =
-        { DirData: DirectoryData
+        { GroupList: int list
+          DirData: DirectoryData
           SourceFTPData: FTPData option
           DestFTPData: FTPData option
           TranscodeData: TranscodeData option }

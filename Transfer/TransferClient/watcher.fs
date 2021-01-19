@@ -13,15 +13,19 @@ module Watcher =
 // Here we have the new version of the scheduling code that uses async sequences
 //====================
     let checkForNewFilesFTP (connection:FtpClient) (ignoreList: string []) (folder)=
-        let fileList=connection.GetListing(folder)
-        let fileNames=
-            fileList
-            |>Array.filter(fun item->item.Type=FtpFileSystemObjectType.File)
-            |>Array.map(fun x-> { Path= x.FullName;FTPFileInfo=Some x})
-            |>Array.filter (fun x-> not(ignoreList|>Array.contains x.Path) ) 
-            //TODO: this may have to be changed becuase ignorelist now takes ino account fileinfo like acessedtime
-        fileNames
-    
+        try
+            let fileList=connection.GetListing(folder)
+            let fileNames=
+                fileList
+                |>Array.filter(fun item->item.Type=FtpFileSystemObjectType.File)
+                |>Array.map(fun x-> { Path= x.FullName;FTPFileInfo=Some x})
+                |>Array.filter (fun x-> not(ignoreList|>Array.contains x.Path) ) 
+                //TODO: this may have to be changed becuase ignorelist now takes ino account fileinfo like acessedtime
+            fileNames
+        with
+            |e->Logging.errorf ("Exception occured while checking for new ftp files in folder %s \n Excpetion: %A") folder e
+                Array.empty
+        
     ///Returns the filePaths of files not part of the ignorelist
     let checkForNewFiles2 (ignoreList: string[]) (folder) =
        
@@ -30,6 +34,7 @@ module Watcher =
     
 
     let ActionNewFiles2 dbAcess (watchDir:WatchDir)   =
+       
         (asyncSeq{ 
             let mutable ignoreList= Array.empty  //We iterate through the list each pair contains watchdir and a list of the new files in that dir 
             use nullableFTPConnection= 
@@ -41,26 +46,28 @@ module Watcher =
                     con
                 |None -> 
                     null
-
+            Logging.infof "{Watcher} Watching : %A"watchDir.MovementData.DirData
             while true do
-                let newFilesFunc=
-                    match nullableFTPConnection with 
-                    |null-> checkForNewFiles2 
-                    |con->checkForNewFilesFTP con 
-                let newFiles=newFilesFunc ignoreList watchDir.MovementData.DirData.SourceDir   
-                for file in newFiles do
-                    let extension= (Path.GetExtension file.Path)
-                    let transcode= 
-                        match watchDir.MovementData.TranscodeData with
-                        |Some x-> x.TranscodeExtensions|>List.contains extension
-                        |None-> false
-                    
-                    let task = Scheduler.scheduleTransfer file watchDir.MovementData dbAcess transcode
-                    Logging.infof "{Found} and created scheduled task for file %s" (Path.GetFileName file.Path)
-                    yield task
-                ignoreList<- ignoreList|> Array.append (newFiles|> Array.map(fun x->x.Path))
+                try
+                    let newFilesFunc=
+                        match nullableFTPConnection with 
+                        |null-> checkForNewFiles2 
+                        |con->checkForNewFilesFTP con 
+                    let newFiles=newFilesFunc ignoreList watchDir.MovementData.DirData.SourceDir   
+                    for file in newFiles do
+                        let extension= (Path.GetExtension file.Path)
+                        let transcode= 
+                            match watchDir.MovementData.TranscodeData with
+                            |Some x-> x.TranscodeExtensions|>List.contains extension
+                            |None-> false
+                        
+                        let task = Scheduler.scheduleTransfer file watchDir.MovementData dbAcess transcode
+                        Logging.infof "{Watcher} created scheduling task for file %s" (Path.GetFileName file.Path)
+                        yield task
+                    ignoreList<- ignoreList|> Array.append (newFiles|> Array.map(fun x->x.Path))
+                with|e->Logging.errorf "Exception thrown while doing watched folder check for folder %s exception:%A" watchDir.MovementData.DirData.SourceDir e
                 do! Async.Sleep(500);
-        },watchDir.MovementData.DirData.GroupName)
+        },watchDir.MovementData.GroupList)
 
    
     let GetNewTransfers2 watchDirs dbAccess=

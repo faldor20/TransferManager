@@ -6,8 +6,15 @@ open System.Threading
 open System.IO
 open SharedFs.SharedTypes;
 open ClientManager.Data.DataBase
-module DataBaseSync=
-
+ module DataBaseSync=
+    let mergeChanges userName changes=
+        lock dataBase (fun ()->
+        for transData in changes.TransferDataList  do
+            dataBase.[userName].TransferDataList.[transData.Key]<-transData.Value
+        if changes.Jobs.Length> 0 then
+            dataBase.[userName].Jobs<-changes.Jobs
+        )
+(**
     let internal syncIndexLevel userName groupName (changes:Dictionary<int,TransferData>)=
         if not(dataBase.ContainsKey groupName) then 
            dataBase.Add(groupName,new Dictionary<string,Dictionary<int, TransferData >>()  ) 
@@ -28,4 +35,4 @@ module DataBaseSync=
         (groupNames,transferDatas)||>Seq.iter2(fun groupName changedData->syncIndexLevel userName groupName changedData )
    
     let syncDataBaseChanges userName (changes:Dictionary<string, Dictionary<int,TransferData>>)=
-        syncGrouplevel userName changes
+        syncGrouplevel userName changes *)

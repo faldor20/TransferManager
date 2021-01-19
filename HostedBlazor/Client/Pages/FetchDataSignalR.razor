@@ -1,6 +1,6 @@
-﻿@page "/{Group}"
-@page "/{Group}/{User}"
-@page "/"
+﻿@page "/JobList/{User}/{GroupString}"
+@page "/JobList/{User}/"
+@page "/JobList/"
 @using System.Collections.Generic
 @using blaz.Data
 @using System;
@@ -10,21 +10,43 @@
 @using System.Linq
 @using HostedBlazor.Data
 @inject DataGetter Getter
-@inject NavigationManager UriHelper  
+@inject NavigationManager UriHelper
 
 @code{
     
     [Parameter]
-    public string Group { get; set; }
+    public string GroupString { get; set; }
+
     [Parameter]
     public string User { get; set; }
+    
+    public int Group;
     protected override async Task OnInitializedAsync()
     {
-        Group = Group ?? "All";
-        User = User ?? " ";
-        Getter.newData += this.StateHasChanged;
-    } 
-}
+        Getter.newData +=new Action(()=>{
+        Console.WriteLine("StateChanged|Main");
+         this.StateHasChanged();});
+        if(GroupString==null||GroupString=="") Group=-1;
+        else if( int.TryParse(GroupString,out Group));
+        else if(Getter.CopyTasks[User].Mapping.ContainsValue(GroupString)){
+            //TODO: this wil not necissarily work if there are groups with the same names
+            Getter.CopyTasks[User].Mapping.First(x=>x.Value==GroupString);
+        }
+        User = User ?? "All";
+
+    }
+    
+    protected override async Task OnParametersSetAsync()
+    {  
+        if(GroupString==null||GroupString=="") Group=-1; 
+        else  int.TryParse(GroupString,out Group);
+        User = User ?? "All";
+        
+    // This event will fire when the parameters change
+    // Put your code here.  
+    this.StateHasChanged();
+    }
+    }
 
 <h1>Transfer Monitoring</h1>
 <p>Connected to transfer server at: @Getter.transferServerUrl</p>
@@ -44,43 +66,23 @@ else
 <table class="table">
     <div>
         <ol>
-            @if(Group==""||Group==null)
-            {
-                
-                UriHelper.NavigateTo("/All");
-            }
-            else if (Group == "All")
+
+            @if (User == "All"||!Getter.CopyTasks.ContainsKey(User))
             {  
-                var tasks=Getter.CopyTasks.SelectMany(group => group.Value.SelectMany(user => user.Value.Select(task=>(group:group.Key,user:user.Key,task:task.Key,scheduledTime:task.Value.ScheduledTime)))) .OrderByDescending(data => data.scheduledTime).ToList();
+                @* var tasks=Getter.CopyTasks.SelectMany(user => user.Value.Jobs.Select(task=>(user:user.Key,task:task.JobID,scheduledTime:user.Value.TransferDataList[task.JobID].ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
                 Console.WriteLine("loading all tasks. Count= "+tasks.Count);
                 foreach (var task in tasks)
                 {   
-                    <TransferTaskRender index="@task.task" groupName="@task.group"userName="@task.user" > </TransferTaskRender>
+                    <TransferTaskRender index="@task.task" userName="@task.user" > </TransferTaskRender>
                     
-                } 
+                }  *@
+                <div> please select a group from the left side</div>
             }
-            else if(Getter.CopyTasks.ContainsKey(Group))
-            {
-                if (Getter.CopyTasks[Group].ContainsKey(User??" "))
-                {   
-                    Console.WriteLine("loading user tasks");
-                    for (int i = Getter.CopyTasks[Group][User].Count - 1; i >= 0 ; i--)
-                    {
-                        <TransferTaskRender index="@i" groupName="@Group"userName="@User" ></TransferTaskRender>
-                    }
-                            
+            else {
+                var uiData= Getter.CopyTasks[User];
+                <UserRender UserData="@uiData" Group="@Group" UserName="@User" />
+                    
                 }
-                else
-                {   
-                    Console.WriteLine("loading group tasks");
-                    var tasks=Getter.CopyTasks[Group].SelectMany(user => user.Value.Select(task=>(group:Group,user:user.Key,task:task.Key,scheduledTime:task.Value.ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
-                    foreach (var task in tasks)
-                    {
-                        <TransferTaskRender index="@task.task" groupName="@task.group"userName="@task.user" ></TransferTaskRender>
-                    }
-                }
-            }
-        
         </ol>
     </div>
 </table>

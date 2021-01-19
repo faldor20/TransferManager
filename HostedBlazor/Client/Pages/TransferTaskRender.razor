@@ -1,4 +1,3 @@
-
 @using static SharedFs.SharedTypes;
 @using HostedBlazor.Data
 @using blaz.Data
@@ -7,93 +6,138 @@
 @inject DataGetter Getter
 @code{
     [Parameter]
-    public int index{get;set;}
+    public TransferData Task { get; set; }
     [Parameter]
-    public string GroupName{get;set;}
+    public string UserName { get; set; }
     [Parameter]
-    public string UserName{get;set;}
-    public SlidingArray etaArray = new SlidingArray(5);
+    public int LastID { get; set; } = -1;
+    private int id;
+    public SlidingArray etaArray = new SlidingArray(7);
 
     protected override async Task OnInitializedAsync()
-    {   if(!Getter.ComponentUpdateEvents.ContainsKey(GroupName)) Getter.ComponentUpdateEvents[GroupName]=new Dictionary<string, Dictionary<int,Action>>() ;
-        if(!Getter.ComponentUpdateEvents[GroupName].ContainsKey(UserName)) Getter.ComponentUpdateEvents[GroupName][UserName]=new Dictionary<int,Action>();
+    {
+
+
+        if (!Getter.ComponentUpdateEvents.ContainsKey(UserName)) Getter.ComponentUpdateEvents[UserName] = new Dictionary<int, Action>();
+        void changed()
+        {
+            this.StateHasChanged();
+            Console.WriteLine($"StateChanged|Task|{UserName}:{id}");
+        }
+        Console.WriteLine("setup event trigger to update job with user: " + UserName + " and jobid: " + Task.jobID);
+        Getter.ComponentUpdateEvents[UserName][Task.jobID] = changed;
+
+    }
+    protected override async Task OnParametersSetAsync()
+    {
+        // This event will fire when the parameters change
+        // Put your code here.  
+        this.StateHasChanged();
+    }
+}
+@{
+    if(Task.jobID!=id){
+        Console.WriteLine($"updating event beuase index{Task.jobID} doesn not match id{id}");
+        id=Task.jobID;
+        if(!Getter.ComponentUpdateEvents.ContainsKey(UserName)) Getter.ComponentUpdateEvents[UserName]=new Dictionary<int,Action>();
         void changed () {
             this.StateHasChanged();
-            Console.WriteLine("state changed for user: "+UserName+" Id:"+index);
+            //  Console.WriteLine("state changed for user: "+UserName+" Id:"+id);
         }
-        Getter.ComponentUpdateEvents[GroupName][UserName][index] = changed;
+        Console.WriteLine("setup event trigger to update job with user: "+UserName +" and jobid: "+id);
+        Getter.ComponentUpdateEvents[UserName][id] = changed;
+    } 
+}
+@{
+    (string dest, string fileName,string eta,string speed,string icon,string title,Color status) getVariables (TransferData data){
+    var type=Task.Status switch
+    {
+        TransferStatus.Unavailable=>Color.Info,
+        TransferStatus.Complete => Color.Success,
+        TransferStatus.Copying=>Color.Primary,
+        TransferStatus.Waiting=>Color.Warning,
+        TransferStatus.Cancelled=>Color.Dark,
+        TransferStatus.Failed=>Color.Danger,
+        
+    };
+    var title=Task.Status switch
+    {   TransferStatus.Unavailable=>"File not fully written",
+        TransferStatus.Complete => "Complete",
+        TransferStatus.Copying=>"Moving",
+        TransferStatus.Waiting=>"Waiting to Start",
+        TransferStatus.Cancelled=>"Canceled",
+        TransferStatus.Failed=>"Failed",
+    };
+    var icon=Task.TransferType switch{
+        
+        TransferTypes.FTPtoFTP=>"=>\n<=",
+        TransferTypes.FTPtoLocal=>"=>",
+        TransferTypes.LocaltoFTP=>"<=",
+        TransferTypes.LocaltoLocal=>"V",
 
+    };
+    string speed=Task.Status switch
+    {
+        TransferStatus.Complete =>"Average Speed = "+ (Task.FileSize/(Task.EndTime-Task.StartTime).TotalSeconds).ToString("0.0"),
+        _ =>Task.Speed.ToString("0.0"),
+    };
+    var etaSecs=(double)(Task.FileRemaining/Task.Speed);
+
+    string etaString;
+
+    if(etaSecs>3600){
+        etaString= "ETA "+ ">1 hour";
+    }
+
+    else if(etaSecs>0.01){
+    etaArray.AddEta(etaSecs);
+        var eta= TimeSpan.FromSeconds(etaArray.average);
+        etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
+    }
+
+    else if(Task.Status==TransferStatus.Complete){ etaString="Took: "+((Task.EndTime-Task.StartTime).ToString("hh\\:mm\\:ss"));}
+    else
+    {
+        etaString="ETA "+"Not Started";
+    }
+
+    var fileName = System.IO.Path.GetFileName(Task.Source);
+    string destination;
+    if(Task.Destination.Contains('@')) destination= Task.Destination.Split('@')[1];
+    else destination=Task.Destination;
+    return (destination,fileName, etaString, speed, icon, title,type);
     }
 }
 
-@* @for (int i = CopyTasks.Count - 1; i >= 0 ; i--)
-    { var task= CopyTasks[i];
-             *@
-             @{
-                 var task=Getter.CopyTasks[GroupName][UserName][index];
-                 var type=task.Status switch
-                 {
-                     TransferStatus.Complete => Color.Success,
-                     TransferStatus.Copying=>Color.Primary,
-                     TransferStatus.Waiting=>Color.Warning,
-                     TransferStatus.Cancelled=>Color.Dark,
-                     TransferStatus.Failed=>Color.Danger,
-                 };
-                 var title=task.Status switch
-                 {
-                     TransferStatus.Complete => "Complete",
-                     TransferStatus.Copying=>"Moving",
-                     TransferStatus.Waiting=>"Waiting to Start",
-                     TransferStatus.Cancelled=>"Canceled",
-                     TransferStatus.Failed=>"Failed",
-                 };
-                 var icon=task.TransferType switch{
-                     TransferTypes.FTPtoFTP=>"=>\n<=",
-                     TransferTypes.FTPtoLocal=>"=>",
-                     TransferTypes.LocaltoFTP=>"<=",
-                     TransferTypes.LocaltoLocal=>"V",
 
-                 };
-                 string speed=task.Status switch
-                 {
-                     TransferStatus.Complete =>"Average Speed = "+ (task.FileSize/(task.EndTime-task.StartTime).TotalSeconds).ToString("0.0"),
-                     _ =>task.Speed.ToString("0.0"),
-                 };
-                 var etaSecs=(double)(task.FileRemaining/task.Speed);
-                 string etaString;
-                 etaArray.AddEta(etaSecs);
-                 if(etaSecs>3600){
-                     etaString= "ETA "+ ">1 hour";
-                 }
-                 else if(etaSecs>1){
-                     var eta= TimeSpan.FromSeconds(etaArray.average);
-                     etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
-                 }
-                 else if(task.Status==TransferStatus.Complete) etaString="Took: "+((task.EndTime-task.StartTime).ToString("hh\\:mm\\:ss"));
-                 else
-                 {
-                     etaString="ETA "+"Not Started";
-                 }
-                 var fileName = System.IO.Path.GetFileName(task.Source);
-                 string destination;
-                 if(task.Destination.Contains('@')) destination= task.Destination.Split('@')[1];
-                 else destination=task.Destination;
-                <BSAlert Color="@type">
-                    <div style="display: flex;">
+@{
 
-                    <h2>
-                    @icon
-                    </h2>
-                    <h5>
-                        <span ><BSBadge Color="Color.Secondary">@title</BSBadge>  @fileName | @(Math.Round( task.FileSize,1))MB || </span><span style="font-size: 17px"> <BSBadge Color="Color.Secondary">From</BSBadge> { @task.Source.Remove(task.Source.Length - fileName.Length) } <BSBadge Color="Color.Secondary">--></BSBadge>  { @destination }</span>
-                    </h5>
-                    <div>@task.Percentage.ToString("0") % Complete | @speed MB/s  |  @etaString  @if(task.Status== TransferStatus.Copying||task.Status==TransferStatus.Waiting){<BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(GroupName,UserName, task.ID))">Cancel</BSButton>} | Started: @task.StartTime.ToString("dd/MMM  HH:mm:ss")
-                        <div class="progress"> 
-                            <div class="progress-bar" role="progressbar" style="width: @task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
-                        </div>
+    
+  
+
+    var data= getVariables (Task);
+
+    <BSAlert Color="@data.status">
+        <div style="display: flex;">
+            <h2 style="margin-right: 1rem;">
+            @data.icon 
+            </h2>
+            <div style="width: 100%;">
+                <h5>
+                    <span ><BSBadge Color="Color.Secondary">@data.title</BSBadge>  @data.fileName | @(Math.Round( Task.FileSize,1))MB || </span> <span style="font-size: 17px">{ @Task.Source.Remove(Task.Source.Length - data.fileName.Length) } <BSBadge Color="Color.Secondary">-></BSBadge>  { @data.dest }</span>
+                </h5>
+                <div>@Task.Percentage.ToString("0") % Complete | @data.speed MB/s  |  @data.eta  
+                        @if(Task.Status== TransferStatus.Copying||Task.Status==TransferStatus.Waiting||Task.Status==TransferStatus.Unavailable)
+                            {
+                             <BSButton style="float: right;"  Color="@Color.Danger" OnClick="@(async e=> await Getter.Cancel(UserName, Task.jobID))">Cancel</BSButton>
+                            @if( LastID!=-1&&Task.Status!= TransferStatus.Copying){ <BSButton style="float: right;"  Color="@Color.Warning" OnClick="@(async e=> await Getter.SwitchJobs(UserName, LastID,Task.jobID))">^</BSButton>
+                            }} | Started: @Task.StartTime.ToString("dd/MMM  HH:mm:ss")
+                    <div class="progress"> 
+                        <div class="progress-bar" role="progressbar" style="width: @Task.Percentage%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
-                    </div>
-                  
-                </BSAlert>
-            }
+                </div>
+            </div>
+        </div>
+    </BSAlert>
+}
 

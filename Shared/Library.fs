@@ -1,9 +1,10 @@
 ﻿namespace SharedFs
-
+open System.Collections.Generic
 open System
 
 module SharedTypes =
     type TransferStatus =
+        | Unavailable=0
         | Waiting = 1
         | Copying = 2
         | Complete = 3
@@ -15,7 +16,6 @@ module SharedTypes =
         | FTPtoLocal = 1
         | LocaltoFTP = 2
         | LocaltoLocal = 3
-
     [<CLIMutable>]
     type TransferData =
         { Percentage: float
@@ -31,5 +31,18 @@ module SharedTypes =
           TransferType: TransferTypes
           StartTime: DateTime
           EndTime: DateTime
-          ID: int
-          GroupName: string }
+          jobID:int
+          location:int array}
+//=========jobDB====
+    type SourceID = int
+    type JobID = int
+    type TransferDataList =Dictionary<JobID, TransferData>
+    type UIJobInfo={JobID:JobID;RequiredTokens:SourceID array}
+    [<CLIMutable>]
+    type UIData= {
+        Mapping:Dictionary<int,string>
+        TransferDataList:TransferDataList
+        mutable Jobs:UIJobInfo array
+        Heirachy:Dictionary<int,List<int>> array
+    }
+    let UIData mapping heirachy={UIData.Jobs=Array.empty;UIData.TransferDataList=TransferDataList();Mapping=mapping; Heirachy=heirachy; }

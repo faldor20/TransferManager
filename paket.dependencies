@@ -1,0 +1,34 @@
+source https://api.nuget.org/v3/index.json
+
+storage: none
+nuget BlazorStrap 
+nuget coverlet.collector 
+nuget Expecto
+nuget FluentFTP 
+nuget FSharp.Control.AsyncSeq 
+nuget FSharp.Control.Reactive 
+nuget FSharp.Core 
+nuget FSharp.Json 
+nuget Legivel 
+//We need to set the version to below 2 becuase otherwise aspnetcore brakes. When we move to version 5 we can go to version 2
+nuget MessagePack  
+nuget Microsoft.AspNetCore.Components.WebAssembly
+nuget Microsoft.AspNetCore.Components.WebAssembly.Build
+nuget Microsoft.AspNetCore.Components.WebAssembly.DevServer
+nuget Microsoft.AspNetCore.Components.WebAssembly.Server
+nuget Microsoft.AspNetCore.Html.Abstractions
+nuget Microsoft.AspNetCore.SignalR.Client 
+nuget Microsoft.AspNetCore.SignalR.Protocols.MessagePack 
+nuget Serilog.AspNetCore
+nuget Serilog.Extensions.Hosting
+nuget System.Net.Http.Json
+nuget Newtonsoft.Json
+
+nuget Microsoft.NET.Test.Sdk 
+nuget Saturn 
+nuget Serilog.Exceptions 
+nuget Serilog.Sinks.Console
+nuget Serilog.Sinks.File 
+
+nuget xunit 
+nuget xunit.runner.visualstudio 
