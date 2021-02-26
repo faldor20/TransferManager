@@ -58,10 +58,19 @@ module Scheduler =
             //TODO: make an event that is subscribed to this that cancells the job
             let ct = new CancellationTokenSource()
 
-            //these two functions can be passed into the AddJob function where they will be given the id and added to the DB
+            //These two functions are passed into the AddJob function where they will be given a jobID
+            //This is so the job can contain its own id.
             let makeTrans id=makeTransData moveData file.Path file id
-            
-            let makeJob id={Job=Mover.MoveFile file.Path moveData dbAccess id transcode ct; SourceID=sourceID; ID=id; Available=false; TakenTokens=List.Empty ;CancelToken=ct}
+            //See above
+            let makeJob jobID=
+                let moveJobData:MoveJobData=
+                    {SourcePath=file.Path
+                     Transcode=transcode
+                     CT=ct.Token
+                     GetTransferData=(fun ()->dbAccess.TransDataAccess.Get jobID)
+                     HandleTransferData=(fun newData->dbAccess.TransDataAccess.SetAndSync jobID newData)
+                     }
+                {Job=(Mover.MoveFile moveData moveJobData); SourceID=sourceID; ID=jobID; Available=false; TakenTokens=List.Empty ;CancelToken=ct}
 
             let jobID= dbAccess.AddJob (sourceID) makeJob makeTrans
             
@@ -84,7 +93,7 @@ module Scheduler =
                     |>fun s->if moveData.SourceFTPData.IsSome||moveData.DestFTPData.IsSome then s+" ftp" else s
             Logging.infof "{Scheduled} %s transfer from %s To-> %s at index:%A" transType logFilePath dest jobID
 
-            //This should only be run if reading from growing files is disabled otherwise ignroe it.
+            //This should only be run if reading from growing files is disabled otherwise ignore it.
             //Doesn't work on ftp files
             let fileAvailable=
                 match moveData.SourceFTPData with
