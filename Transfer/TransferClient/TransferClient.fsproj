@@ -45,7 +45,8 @@
     <Compile Include="Mover/VideoMover.fs" />
     <Compile Include="Mover/Mover.fs" />
     <Compile Include="TransferHandling.fs" />
-    <Compile Include="Scheduler.fs" />
+    <Compile Include="Scheduler\AvailabilityChecker.fs" />
+    <Compile Include="Scheduler\Scheduler.fs" />
     <Compile Include="watcher.fs" />
     <Compile Include="Manager.fs" />
     <Compile Include="testing.fsx" />
