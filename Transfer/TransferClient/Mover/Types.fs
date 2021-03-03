@@ -20,7 +20,10 @@ module Types =
         /// **eg:** long-gop for sending and intra for editing at both ends
     type ReceiverData=
         {
-        RecievingClientName:string;
+        ReceivingClientName:string;
+        ProtocolArgs:string;
+        Port:int;
+        Protocoll:string;
         ReceivingFFmpegArgs:string;
         }
         
@@ -66,12 +69,26 @@ module Types =
           SourceFTPData: FTPData option
           DestFTPData: FTPData option
           TranscodeData: TranscodeData option }
+    ///**Functions used to interact with the receiver of an ffmpeg stream.**
+    ///
+    ///These exist so that the "Mover" and "VideoMover" parts don't have to 
+    ///know the specifics of how the communication is done.
+    ///this leaves it open to use http, serial, grpc or whatever else
+    type ReceiverFuncs={
+        ///string1 is the receiverName string2 is the receiverArgs
+        StartTranscodeReciever:(string->string->Async<bool>)
+        ///string is the receiverName
+        GetReceiverIP:(string->Async<string>)
+    }         
+    /// **Start Transcode Reciever:** A function that is called to trigger the start of an ffmpeg instance on another machine that waits for incoming data
     type MoveJobData={
         SourcePath:string;
         Transcode:bool;
         CT:CancellationToken;
         GetTransferData:unit->TransferData
         HandleTransferData:TransferData->unit
+        ReceiverFuncs:ReceiverFuncs option
+      
     }
 
     type MoveJob=Async<TransferResult * int * CancellationToken>

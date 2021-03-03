@@ -18,23 +18,42 @@ open TransferClient.JobManager.Main
 open FTPMove
 module Mover =
   
-    
-    let doMove (progressHandler:ProgressHandler) moveData sourceFilePath destination fileName (ct:CancellationToken)=async{
+    ///Calls the appropriate mve function based on the type of progress hanlder and movedata given to it
+    ///
+    let private doMove (progressHandler:ProgressHandler) moveData (moveJobData:MoveJobData)=async{
+        let fileName=IO.Path.GetFileName(moveJobData.SourcePath)
+        let destFilePath= moveData.DirData.DestinationDir+fileName
+        let {SourcePath= sourceFilePath;CT=ct}=moveJobData
         let result= 
             //The particular transfer action to take has allready been decided by the progress callback
-            match (moveData.SourceFTPData,moveData.DestFTPData, progressHandler)  with
-                |  (Some source,Some dest,FtpProg cb)         ->
-                    FTPtoFTP source dest sourceFilePath (destination+fileName) cb ct
-                |Some source,None,FtpProg cb->
-                    downloadFTP  source sourceFilePath (destination+fileName) cb ct
-                |(None ,Some dest,FtpProg cb)->
-                    uploadFTP  dest sourceFilePath (destination+fileName) cb ct
-                |(None,None,FastFileProg cb)->
-                    FCopy sourceFilePath (destination+fileName) cb ct
-                |source,dest,cb->
-                    Logging.errorf "{Mover}Some combination of inputs made the mover not able to run. SourceFTP: %A DestFTP: %A callback : %A"source dest cb
+            match progressHandler  with
+                |FtpProg cb->
+                    match (moveData.SourceFTPData,moveData.DestFTPData) with
+                    |(Some source,Some dest)->
+                        FTPtoFTP source dest sourceFilePath destFilePath cb ct
+                    |(Some source,None)->
+                        downloadFTP  source sourceFilePath destFilePath cb ct
+                    |(None ,Some dest)->
+                        uploadFTP  dest sourceFilePath destFilePath cb ct
+                    |(source,dest)-> 
+                        Logging.errorf "{Mover} Ftp progress handler was given but there is no ftp source of desitination.. SourceFTP: %A DestFTP: %A callback : %A"source dest cb
+                        failwith "see above"
+                |FastFileProg cb->
+                    FCopy sourceFilePath destFilePath cb ct
+                |TranscodeProg (cb,ffmpegInfo) ->
+                    match ffmpegInfo.ReceiverData with
+                       |Some(_)->
+                            match moveJobData.ReceiverFuncs with
+                            |Some(recv)->
+                                VideoMover.sendToReceiver ffmpegInfo recv cb sourceFilePath destFilePath ct
+                            |None->
+                                Logging.warnf("{Mover} Receiver Funcs have not been set. Cannot communicate with ffmpeg reciver. This is a code issue not a configuration one.")
+                                failwith ("see above")
+                       |None->VideoMover.Transcode ffmpegInfo moveData.DestFTPData cb sourceFilePath destFilePath  ct
+                |cb->
+                    Logging.errorf "{Mover} Progress callback not recognised. callback : %A" cb
                     failwith "See above"
-                //|TranscodeProg (cb, ffmpegInfo) -> VideoMover.Transcode ffmpegInfo moveData.FTPData cb filePath destination ct.Token
+            
         return! result 
     }
 
@@ -62,7 +81,7 @@ module Mover =
         //We have to set the startTime here because we want the sartime to truly be when the task begins
         moveJobData.HandleTransferData {transData with StartTime=DateTime.Now}
         
-        let! result= doMove progressHandler moveData sourceFilePath destination fileName ct
+        let! result= doMove progressHandler moveData moveJobData
         //We need to dispose the sourceclient if there is one. If we getrid of this we would endlessly increase our number of active connections
        
 

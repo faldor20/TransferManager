@@ -11,7 +11,7 @@ module FileMove =
           BytesTransfered: int64
           SpeedMB: float }
     
-    let writeWithProgress inStream outStream progress bufferLength (ct: CancellationToken)  =
+    let private writeWithProgress inStream outStream progress bufferLength (ct: CancellationToken)  =
         using (new BinaryReader(inStream)) (fun bwRead ->
                 using (new BinaryWriter(outStream)) (fun bwWrite ->
                     //----------Setup and progress reporting code--------
@@ -79,21 +79,23 @@ module FileMove =
                     res
                 ))
 
-    let doTransfer inStream dest progress bufferLength (ct: CancellationToken) =
+    let private doTransfer inStream dest progress bufferLength (ct: CancellationToken) =
             
         using (new FileStream(dest, FileMode.Create, FileAccess.Write, FileShare.None, bufferLength)) (fun fswrite ->
             writeWithProgress inStream fswrite progress bufferLength ct
            )
 
-    let doFileTransfer source dest progress bufferLength (ct: CancellationToken)=
+    let private doFileTransfer source dest progress bufferLength (ct: CancellationToken)=
         using (new FileStream(source, FileMode.Open, FileAccess.Read, FileShare.None, bufferLength)) (fun fsread ->
         doTransfer fsread dest progress bufferLength (ct: CancellationToken)
         )
-    ///
-    ///
-    ///
-    /// progress takes copyprogress and speed
+  
+   
+    /// **Description**
+    /// A fast file system copy implimentation
     /// 
+    /// `progress`: callback for copy progress takes copyprogress and speed
+  
     let FCopy (source: string) destination progress (ct: CancellationToken) =
         async {
             let dest =

@@ -11,14 +11,20 @@ open FSharp.Control
 open IO.Types
 open System.Collections.Generic
 module ConfigReader=
-
+    ///### Configuration for a single source destination combination.
+    ///
+    ///How to go about sending and receving the file is determined by what optional paramaters you include.
+    ///
+    ///**EG:** Including **DestFTPData** and **TranscodeData** will transcode the files and send them via ftp.
     type ConfigMovementData =
         { GroupList: string list
           DirData: DirectoryData
           SourceFTPData: FTPData option
           DestFTPData: FTPData option
-          TranscodeData: TranscodeData option }
-      
+          TranscodeData: TranscodeData option 
+          }
+
+   
     type YamlData = 
         {
             ManagerIP:string;
@@ -26,6 +32,7 @@ module ConfigReader=
             MaxJobs:Dictionary<string,int>
             WatchDirs: ConfigMovementData list 
         }
+    ///Performs some basic tests to check if a directory exists. Works using ftp or otherwise.
     let directoryTest ftpData directory errorPrinter = 
         try 
             match ftpData with
@@ -69,12 +76,14 @@ module ConfigReader=
 
         // Here we check if the directry exists by getting dir and file info about the source and dest and
         //filtering by whether it triggers an exception or not
-        
         let watchDirsExist= yamlData.WatchDirs|>List.filter(fun dir->
 
             let printDestError error= Logging.errorf "{Config} Watch Destination: %s for source:%s %s" dir.DirData.DestinationDir dir.DirData.SourceDir error
             let destOkay= 
-                directoryTest dir.DestFTPData dir.DirData.DestinationDir printDestError
+                match  dir.TranscodeData|>Option.bind(fun x->x.ReceiverData) with
+                |None->directoryTest dir.DestFTPData dir.DirData.DestinationDir printDestError
+                |Some(x)-> true //TODO: I may want to add some kind of complex check that sends out a question to the client asking if it is available.
+
             let printSourceError error= Logging.errorf "{Config} Watch Source: %s for Destination:%s %s" dir.DirData.SourceDir dir.DirData.DestinationDir error
             let sourceOkay =
                 directoryTest dir.SourceFTPData dir.DirData.SourceDir printSourceError
@@ -104,8 +113,10 @@ module ConfigReader=
                         |Some transData->
                             // We do this just incase someone does or does not put "." before extensions
                             let normalisedExtensions= transData.TranscodeExtensions|>List.map(fun item-> "."+(item.TrimStart '.'))
-                            //This makes sre that an empty string is a none
-                            let ffmpegArgs= transData.FfmpegArgs|> Option.bind (fun x->if x=""then None else Some x)
+                            //This makes sure that an empty string is a none
+                            let noneIfWhitespace str=
+                                str|> Option.filter (String.IsNullOrWhiteSpace>>not)
+                            let ffmpegArgs= transData.FfmpegArgs|> Option.filter (String.IsNullOrWhiteSpace>>not)
                             Some {transData with TranscodeExtensions= normalisedExtensions; FfmpegArgs=ffmpegArgs}
                         |None-> None
                 let moveData:MovementData=

@@ -19,13 +19,18 @@ module DataBase=
     let setTransferData newData username  id=
         //if the index is 0 it might be the first thing added so count will allso be 0
         dataBase.[username].TransferDataList.[id]<-newData
-
-    let mutable userIDs= Dictionary<string,string>()
+    type ClientData={
+        ClientID:string
+        IP:string
+    }
+    let mutable userIDs= Dictionary<string,ClientData>()
     
-    let registerClient userName clientID =
-        userIDs.[userName]<-clientID
-    let getClientID userName =
-        userIDs.[userName]
+    let registerClient userName clientID iP =
+        userIDs.[userName]<-{ClientID=clientID;IP=iP}
+    let getConnectionID userName =
+        userIDs.[userName].ClientID
+    let getClientIP userName =
+        userIDs.[userName].IP
 
 
         

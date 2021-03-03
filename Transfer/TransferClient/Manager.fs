@@ -5,6 +5,7 @@ open System
 open FSharp.Control.Reactive
 
 open TransferClient.DataBase
+open TransferClient.Scheduling
 open FSharp.Control
 open System.Collections.Generic
 open TransferHandling
@@ -12,6 +13,8 @@ open IO.Types
 open System.Linq
 open SharedFs.SharedTypes
 open TransferClient.SignalR.ManagerCalls
+open System.IO;
+open Microsoft.AspNetCore
 
 module Manager =
     ///this ungodly monstrosity transforms the input into a list that has the distinct items from every layer of the groups
@@ -77,7 +80,10 @@ module Manager =
             //create a asyncstream that yields new schedule jobs when
             //a new file is detected in a watched source
             let schedulesInWatchDirs =
-                GetNewTransfers2 watchDirsData LocalDB.AcessFuncs
+                watchDirsData|>List.map(fun watchDir->
+                getNewFiles watchDir.MovementData.SourceFTPData watchDir.MovementData.DirData.SourceDir
+                ,watchDir
+                )
 
 
             let signalrCT = new Threading.CancellationTokenSource()
@@ -86,14 +92,38 @@ module Manager =
 
             let conectionTask =
                 SignalR.Commands.connect configData.manIP configData.ClientName baseUIData signalrCT.Token
+            let! connection = conectionTask
 
+            let getReceiverFuncs (signalRHub:SignalR.Client.HubConnection):ReceiverFuncs =
+                let getReceiverIP receiverName=
+                    SignalR.ManagerCalls.getReceiverIP signalRHub  receiverName
+                let startReceiverInstance receiverName args=
+                    SignalR.ManagerCalls.startReceiver signalRHub  receiverName args
+                {GetReceiverIP=getReceiverIP;StartTranscodeReciever=startReceiverInstance}
+            let receiverFuncs= getReceiverFuncs connection    
             let jobs =
                 schedulesInWatchDirs
                 |> List.toArray
-                |> Array.map (fun (schedules, grouList) ->
-                    Logging.infof "{Manager}Setting up observables for group: %A" grouList
-                    schedules|> AsyncSeq.toObservable
+                |> Array.map (fun (schedules, watchDir) ->
+                    Logging.infof "{Manager} Setting up observables for group: %A" watchDir.MovementData.GroupList
+                    schedules
+                    |>AsyncSeq.collect (fun (newFiles) ->
+                        asyncSeq{
+                            for file in newFiles do
+                                let extension= (Path.GetExtension file.Path)
+                                let transcode= 
+                                    match watchDir.MovementData.TranscodeData with
+                                    |Some x-> x.TranscodeExtensions|>List.contains extension
+                                    |None-> false
+                                
+                                let task = Scheduler.scheduleTransfer file watchDir.MovementData (Some receiverFuncs) LocalDB.AcessFuncs 
+                                Logging.infof "{Watcher} created scheduling task for file %s" (Path.GetFileName file.Path)
+                                yield task
+                        }
                     )
+                    |>AsyncSeq.toObservable
+                        )
+                    
                 |>Observable.mergeArray
 
 
@@ -102,8 +132,7 @@ module Manager =
             //Start the Syncing Service
             //TODO: only start this if signalr connects sucesfully
             //let res= jobs|>Observable.mergeArray|>Observable.subscribe(fun x->x|>Async.StartImmediate)
-            let! conection = conectionTask
-            JobManager.Syncer.startSyncer LocalDB.jobDB.SyncEvents  500.0 (fun uiDat ->  Async.RunSynchronously (syncTransferData conection configData.ClientName uiDat)) baseUIData
+            JobManager.Syncer.startSyncer LocalDB.jobDB.SyncEvents  500.0 (fun uiDat ->  Async.RunSynchronously (syncTransferData connection configData.ClientName uiDat)) baseUIData
 
             let runJobs = 
                // jobs|>Observable

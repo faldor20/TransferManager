@@ -4,7 +4,6 @@ open System.Collections.Generic
 
 open SharedFs.SharedTypes
 open System.Threading
-open TransferClient.SignalR
 open Types
 open TransferClient.JobManager
 open TransferClient.JobManager.Main
@@ -23,7 +22,7 @@ module LocalDB =
     let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob iDMapping heirachy=
         //the groups that is passed in should be each of the watchdirs "GroupList"
         TransferClient.Logging.infof "initialising DB"
-        let SourceIDLevel =
+        let sourceIDLevel =
             groups
             |> List.collect List.indexed
             |> List.groupBy (fun (x, y) -> x)

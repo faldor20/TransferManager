@@ -13,12 +13,16 @@ open FluentFTP
 open FFmpeg.NET
 open FSharp.Linq.NullableOperators
 module ProgressHandlers=
+    
     type ProgressHandler=
         | DoubleFtpProg of (FileMove.ProgressData->unit)*FTPData
         | FtpProg of Progress<FtpProgress>
         | FastFileProg of (FileMove.ProgressData->unit)
         | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*TranscodeData
+        /// A function that will be called whenever new transfer data is available.
+        /// It will most likely be used to write to console or into a database
     type NewDataHandler= TransferData->unit
+    
     let Gethandler moveData transcode currentTransData newDataHandler =    
         let stopWatch =  Stopwatch()
        

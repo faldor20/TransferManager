@@ -33,18 +33,20 @@
     <Compile Include="JobManager/JobManager.fs" />
     <Compile Include="JobManager\RequestHandler.fs" />
      <Compile Include="JobManager/Access.fs" />
-    <Compile Include="SignalR/SignalR.fs" />
-    <Compile Include="SignalR/ManagerCalls.fs" />
-    <Compile Include="DataBase/LocalDB.fs" />
-    <Compile Include="SignalR/ClientApi.fs" />
-    <Compile Include="SignalR/Commands.fs" />
+
     <Compile Include="ConfigReader.fs" />
     <Compile Include="FTParser.fs" />
+
+    <Compile Include="DataBase/LocalDB.fs" />
     <Compile Include="Mover\FTPMove.fs" />
     <Compile Include="Mover/Progresshandlers.fs" />
     <Compile Include="Mover/VideoMover.fs" />
     <Compile Include="Mover/Mover.fs" />
     <Compile Include="TransferHandling.fs" />
+    <Compile Include="SignalR/SignalR.fs" />
+    <Compile Include="SignalR/ManagerCalls.fs" />
+    <Compile Include="SignalR/ClientApi.fs" />
+    <Compile Include="SignalR/Commands.fs" />
     <Compile Include="Scheduler\AvailabilityChecker.fs" />
     <Compile Include="Scheduler\Scheduler.fs" />
     <Compile Include="watcher.fs" />
