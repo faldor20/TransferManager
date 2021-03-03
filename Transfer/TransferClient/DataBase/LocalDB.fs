@@ -19,7 +19,7 @@ module LocalDB =
     
     let  AcessFuncs = DBAccess jobDB
 
-    let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob iDMapping heirachy=
+    let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob =
         //the groups that is passed in should be each of the watchdirs "GroupList"
         TransferClient.Logging.infof "initialising DB"
         let sourceIDLevel =

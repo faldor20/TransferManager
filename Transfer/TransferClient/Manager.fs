@@ -34,7 +34,7 @@ module Manager =
         |> List.map (fun (_, y) -> (y |> List.map (fun (_, y) -> y) |> List.distinct))
 
     //For each group there is now a key in a dictionary whos value is the groups that are below that group in the heirachy
-     ///eg: [[a,b,k],[a,c,d],[a,b,g]] becomes [ {a:[b,c]} ,{b:[k,g] c:[d]}]
+    ///eg: [[a,b,k],[a,c,d],[a,b,g]] becomes [ {a:[b,c]} ,{b:[k,g] c:[d]}]
     let makeHeirachy (groups: int list list) =
         let longestGroup =
             groups|> List.fold (fun y x -> if y < x.Length then x.Length else y) 0
@@ -82,7 +82,7 @@ module Manager =
                 |> Seq.map (fun x -> KeyValuePair(x.Value, x.Key))
                 |> Dictionary
             let heirachy=makeHeirachy groups
-            LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) mapping heirachy
+            LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) 
 
             //This is the A UIData object with the unchanging parts filled out
             let baseUIData=(UIData mapping heirachy)
