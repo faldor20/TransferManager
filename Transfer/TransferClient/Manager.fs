@@ -15,55 +15,45 @@ open SharedFs.SharedTypes
 open TransferClient.SignalR.ManagerCalls
 open System.IO;
 open Microsoft.AspNetCore
-open TransferClient.HierarychGenerator
-module Manager =
-   
+open ConfigReader
 
-    let startUp =
-        async {
-            //Read config file to get information about transfer source dest pairs
-            let configData = ConfigReader.ReadFile "./WatchDirs.yaml"
-            let mutable watchDirsData = configData.WatchDirs
-            //Create all the needed groups
-            let groups =
+module Manager =
+    ///Sets up things like the Jobdatabase and UIdata using the configuration read form the config file
+    ///Returns the intialised UIData that contains the feilds taht will never change
+    let initialiseDataStructures (configData:ConfigData) watchDirsData=
+        //Extract all the needed groups
+        let groups =
                 watchDirsData
                 |> List.map (fun x -> x.MovementData.GroupList)
 
-            let mapping =
-                configData.SourceIDMapping
-                |> Seq.map (fun x -> KeyValuePair(x.Value, x.Key))
-                |> Dictionary
-            let heirachy=makeHeirachy groups
-            LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) 
+        let mapping =
+            configData.SourceIDMapping
+            |> Seq.map (fun x -> KeyValuePair(x.Value, x.Key))
+            |> Dictionary
 
-            //This is the A UIData object with the unchanging parts filled out
-            let baseUIData=(UIData mapping heirachy)
-            //create a asyncstream that yields new schedule jobs when
-            //a new file is detected in a watched source
-            let schedulesInWatchDirs =
-                watchDirsData|>List.map(fun watchDir->
-                getNewFiles watchDir.MovementData.SourceFTPData watchDir.MovementData.DirData.SourceDir
-                ,watchDir
-                )
+        LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) 
 
+        let heirachy=HierarychGenerator.makeHeirachy groups
+        //This is the A UIData object with the unchanging parts filled out
+        let baseUIData=(UIData mapping heirachy)
+        baseUIData
 
+    let setupSignalR configData baseUIData=
+        async{
             let signalrCT = new Threading.CancellationTokenSource()
             //For reasons i entirely do not understand starting this just as async deosnt run connection in release mode
             Logging.infof "{Manager} starting signalr connection process"
 
             let conectionTask =
                 SignalR.Commands.connect configData.manIP configData.ClientName baseUIData signalrCT.Token
-            let! connection = conectionTask
 
-            let getReceiverFuncs (signalRHub:SignalR.Client.HubConnection):ReceiverFuncs =
-                let getReceiverIP receiverName=
-                    SignalR.ManagerCalls.getReceiverIP signalRHub  receiverName
-                let startReceiverInstance receiverName args=
-                    SignalR.ManagerCalls.startReceiver signalRHub  receiverName args
-                {GetReceiverIP=getReceiverIP;StartTranscodeReciever=startReceiverInstance}
-            let receiverFuncs= getReceiverFuncs connection    
-            let jobs =
-                schedulesInWatchDirs
+            let! connection = conectionTask
+            return connection
+        }
+    //TODO: i think i don't actually need the observable conversion here. I can probably just run AsyncStart in an asyncseq.parallel
+    let scheduleAndCreateMoveJobs (newFilesForEachWatchdir:list<AsyncSeq<FoundFile array> * WatchDir>) receiverFuncs=
+        let jobs =
+                newFilesForEachWatchdir
                 |> List.toArray
                 |> Array.map (fun (schedules, watchDir) ->
                     Logging.infof "{Manager} Setting up observables for group: %A" watchDir.MovementData.GroupList
@@ -86,9 +76,37 @@ module Manager =
                         )
                     
                 |>Observable.mergeArray
+        jobs
+    let startUp =
+        async {
+            //Read config file to get information about transfer source dest pairs
+            let configData = ConfigReader.ReadFile "./WatchDirs.yaml"
+            let mutable watchDirsData = configData.WatchDirs
+          
+            //Initialises the database and gives us a UIdata with unchanging fields filled.
+            let baseUIData=initialiseDataStructures configData watchDirsData
 
+            //create a asyncstream that yields newly found files
+            let newFilesForEachWatchdir =
+                watchDirsData|>List.map(fun watchDir->
+                getNewFiles watchDir.MovementData.SourceFTPData watchDir.MovementData.DirData.SourceDir
+                ,watchDir
+                )
 
+            
+            let! connection = setupSignalR configData baseUIData           
 
+            let getReceiverFuncs (signalRHub:SignalR.Client.HubConnection):ReceiverFuncs =
+                let getReceiverIP receiverName=
+                    SignalR.ManagerCalls.getReceiverIP signalRHub  receiverName
+                let startReceiverInstance receiverName args=
+                    SignalR.ManagerCalls.startReceiver signalRHub  receiverName args
+                {GetReceiverIP=getReceiverIP;StartTranscodeReciever=startReceiverInstance}
+
+            let receiverFuncs= getReceiverFuncs connection    
+            //A list of scheduling tasks. These just need to be run at some point. 
+            //All other parts of the job system happen due to events like new jobs being added and jobs completing.
+            let scheduleJobs= scheduleAndCreateMoveJobs newFilesForEachWatchdir receiverFuncs
 
             //Start the Syncing Service
             //TODO: only start this if signalr connects sucesfully
@@ -97,7 +115,7 @@ module Manager =
 
             let runJobs = 
                // jobs|>Observable
-                jobs|> Observable.map(fun x->x|>Async.Start)
+                scheduleJobs|> Observable.map(fun x->x|>Async.Start)
             runJobs|>Observable.wait
 
             return! async {
