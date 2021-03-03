@@ -10,12 +10,11 @@
   <ItemGroup>
     <ProjectReference Include="../../Shared/SharedData.fsproj" />
     <!--<ProjectReference Include="../ClientManager/ClientManager.fsproj" />-->
-  <Reference Include="FFmpeg.Net">
+    <Reference Include="FFmpeg.Net">
       <HintPath>./FFmpeg.NET.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
-  
     <Compile Include="Logging.fs" />
     <Compile Include="DataBase/Types.fs" />
     <Compile Include="Mover/Types.fs" />
@@ -24,19 +23,15 @@
     <Compile Include="JobManager\Types.fs" />
     <Compile Include="JobManager\JobList.fs" />
     <Compile Include="JobManager\Syncer.fs" />
-
     <Compile Include="JobManager\TokenList.fs" />
     <Compile Include="JobManager\SourceList.fs" />
     <Compile Include="JobManager\JobOrder.fs" />
     <Compile Include="JobManager\TransferDataList.fs" />
-    
     <Compile Include="JobManager/JobManager.fs" />
     <Compile Include="JobManager\RequestHandler.fs" />
-     <Compile Include="JobManager/Access.fs" />
-
+    <Compile Include="JobManager/Access.fs" />
     <Compile Include="ConfigReader.fs" />
     <Compile Include="FTParser.fs" />
-
     <Compile Include="DataBase/LocalDB.fs" />
     <Compile Include="Mover\FTPMove.fs" />
     <Compile Include="Mover/Progresshandlers.fs" />
@@ -50,6 +45,7 @@
     <Compile Include="Scheduler\AvailabilityChecker.fs" />
     <Compile Include="Scheduler\Scheduler.fs" />
     <Compile Include="watcher.fs" />
+    <Compile Include="HierarchyGenerator.fs" />
     <Compile Include="Manager.fs" />
     <Compile Include="testing.fsx" />
     <Compile Include="testing.fs" />
@@ -61,7 +57,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
- <!--    	<PackageReference Include="FFMpegCore" Version="2.2.6" />
+    <!--    	<PackageReference Include="FFMpegCore" Version="2.2.6" />
 		<PackageReference Include="FluentFTP" Version="32.4.3" />
 		<PackageReference Include="FSharp.Control.AsyncSeq" Version="3.0.1" />
 		<PackageReference Include="FSharp.Control.Reactive" Version="4.4.2" />
@@ -78,7 +74,6 @@
 		<PackageReference Include="Serilog.Sinks.Console" Version="3.1.1" />
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
 		<PackageReference Update="FSharp.Core" Version="4.7.2" /> -->
-
   </ItemGroup>
-   <Import Project="..\..\.paket\Paket.Restore.targets" /> 
+  <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>
