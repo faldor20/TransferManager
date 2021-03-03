@@ -18,13 +18,22 @@ open Microsoft.AspNetCore
 
 module Manager =
     ///this ungodly monstrosity transforms the input into a list that has the distinct items from every layer of the groups
-    ///eg: [[a,b,k],[a,c,d],[a,b,g]] becomes[[a],[b,c],[d,g,k]]
+    ///The heirachy is as follows:
+    ///In the input each list is a single leg of the heirachy
+    ///in the output heach list is a single level
+    ///       [ a                     [ a  ] list1      
+    ///       /  \                    /  \     
+    ///      b    c                [ b    c ] list2    
+    ///    /  \    \               /  \    \   
+    ///   k    g    d ] list1   [ k    g    d ] list3  
+    ///eg: [ [a,b,k],[a,c,d],[a,b,g] ] becomes [ [a],[b,c],[d,g,k] ]
     let transformGroups groups =
         groups
         |> List.collect List.indexed
-        |> List.groupBy (fun (x, y) -> x)
+        |> List.groupBy (fun (index, y) -> index)
         |> List.map (fun (_, y) -> (y |> List.map (fun (_, y) -> y) |> List.distinct))
-    //for each group there is now a key in a dictionary whos value is the groups that are below that group in the heirachy
+
+    //For each group there is now a key in a dictionary whos value is the groups that are below that group in the heirachy
      ///eg: [[a,b,k],[a,c,d],[a,b,g]] becomes [ {a:[b,c]} ,{b:[k,g] c:[d]}]
     let makeHeirachy (groups: int list list) =
         let longestGroup =
