@@ -1,5 +1,4 @@
 ﻿namespace TransferClient.JobManager
-open System.Collections.Generic
 open SharedFs.SharedTypes
 module TransferDataList =
     let set (transferDataList:TransferDataList) jobID data=

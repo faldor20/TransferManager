@@ -1,11 +1,7 @@
 namespace TransferClient.JobManager
 
-open System
 open System.Collections.Generic
 open SharedFs.SharedTypes
-open TransferClient.IO.Types
-open SharedFs.SharedTypes
-open TransferClient
 module Main =
 
 

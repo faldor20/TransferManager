@@ -3,11 +3,8 @@ open System
 open TransferClient.DataBase
 open Microsoft.AspNetCore.SignalR.Client;
 open TransferClient
-open SharedFs.SharedTypes
 open TransferClient.IO;
 open Types;
-open System.Net
-open FSharp.Control.Tasks.V2;
 module ClientApi=
     let CancelTransfer=Action<int>(fun  id->
         Logging.debugf "Cancellation request recieved for id %i"  id

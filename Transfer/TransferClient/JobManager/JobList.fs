@@ -1,7 +1,6 @@
 ﻿namespace TransferClient.JobManager
 open System.Collections.Generic
 open SharedFs.SharedTypes
-open Locking
 type JobList = Dictionary<JobID, JobItem>
 
 module JobList =

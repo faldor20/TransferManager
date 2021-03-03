@@ -1,20 +1,11 @@
 namespace TransferClient.IO
-open System.Runtime
 open System
 open System.IO
-open System.Threading
-open System.Diagnostics
-open System.Threading.Tasks
-open FSharp.Control.Tasks
 open SharedFs.SharedTypes;
-open FluentFTP
 open ProgressHandlers
-open TransferClient.DataBase.Types
 open FileMove
 open Types
 open TransferClient
-open TransferClient.JobManager.Access;
-open TransferClient.JobManager.Main
 open FTPMove
 module Mover =
   

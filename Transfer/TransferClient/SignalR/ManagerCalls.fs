@@ -1,11 +1,7 @@
 namespace TransferClient.SignalR
 
-open System.Collections.Generic
-open System
 open Microsoft.AspNetCore.SignalR.Client
-open TransferClient.SignalR.Connection
 open SharedFs.SharedTypes
-open TransferClient.JobManager
 open System.Net
 open TransferClient
 module ManagerCalls=

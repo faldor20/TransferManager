@@ -1,14 +1,8 @@
 namespace TransferClient.IO
 open System
-open System.Diagnostics;
-
-open System.Threading
 open System.IO
-
-open System.Threading.Tasks
 open System.IO.Pipelines
 open FSharp.Control.Tasks
-open System.Buffers
 module StreamPiping=
     let private fillPipe (source:Stream) (writer:PipeWriter)=
         task{

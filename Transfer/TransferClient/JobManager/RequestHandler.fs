@@ -1,14 +1,9 @@
 module TransferClient.JobManager.RequestHandler
 
 
-open System.Collections.Generic
-open TransferClient.JobManager.Main
-open SharedFs.SharedTypes
 open FSharp.Control.Reactive
 open System
 open System.Threading.Channels
-open System.Threading
-open TransferClient.Logging;
 //open System.Reactive.Linq
 ///Contains a request to do an operation on the job database
 type Requests = Event<( (unit -> Object)*ChannelWriter<Object> )>

@@ -2,8 +2,6 @@ namespace TransferClient.JobManager
 
 open TransferClient
 open System.Collections.Generic
-open FSharp.Control.Tasks
-open Microsoft.AspNetCore.SignalR.Client
 open SharedFs.SharedTypes
 open FSharp.Control.Reactive
 open System

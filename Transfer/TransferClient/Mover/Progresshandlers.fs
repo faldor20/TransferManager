@@ -1,17 +1,10 @@
 namespace TransferClient.IO
-open System.Runtime
 open System
-open System.IO
-open System.Threading
 open System.Diagnostics
 open TransferClient.IO.Types
-open System.Threading.Tasks
-open FSharp.Control.Tasks
 open SharedFs.SharedTypes;
-open TransferClient.DataBase.LocalDB
 open FluentFTP
 open FFmpeg.NET
-open FSharp.Linq.NullableOperators
 module ProgressHandlers=
     
     type ProgressHandler=

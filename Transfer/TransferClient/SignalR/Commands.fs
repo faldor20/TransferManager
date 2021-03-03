@@ -1,20 +1,14 @@
 namespace TransferClient.SignalR
 
-open System.Collections.Generic
-open System
 open TransferClient.DataBase
 open Microsoft.AspNetCore.SignalR.Client
 open TransferClient.SignalR.Connection
 open SharedFs.SharedTypes
 open System.Threading.Tasks
 open TransferClient
-open Microsoft.AspNetCore.SignalR.Protocol
 open Microsoft.Extensions.DependencyInjection;
 open Microsoft.Extensions.Logging
-open Serilog.Extensions.Hosting
 open Serilog
-open Serilog.Extensions.Logging
-open Serilog.Sinks.SystemConsole
 module Commands =
     
     let postconnection (connection:HubConnection) userName  baseUIData =

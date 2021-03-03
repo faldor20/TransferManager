@@ -1,12 +1,9 @@
 namespace TransferClient
 
 open System.IO
-open System.Collections.Generic
-open System.Threading.Tasks
 open IO.Types
 open FluentFTP
 open FSharp.Control
-open System
 module Watcher =
 
 //======================
