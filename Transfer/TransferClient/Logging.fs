@@ -1,10 +1,7 @@
 namespace TransferClient
-open System
 open Serilog
-
-open Serilog.Sinks
-open Serilog.Configuration
 open Printf
+open System
 
 module Logging=
     let logger =

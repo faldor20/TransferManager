@@ -1,11 +1,7 @@
 namespace TransferClient
 open System.IO
-open System.Threading.Tasks
-open FSharp.Data
-open FSharp.Json
 open System
 
-open SharedFs.SharedTypes
 open Legivel.Serialization
 open FSharp.Control
 open IO.Types
