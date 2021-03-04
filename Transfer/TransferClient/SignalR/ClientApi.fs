@@ -30,9 +30,11 @@ module ClientApi=
        }
     )  *)
     let StartReceivingTranscode=Action<string>(fun args->
-        match VideoMover.startReceiving args|>Async.RunSynchronously with
-        |TransferResult.Success-> Logging.infof"{SignalR} Receiving data from ffmpeg stream was sucessful";
-        |_->Logging.warnf "{SignalR} Receiving data from FFmpeg failed."
+        try
+            match VideoMover.startReceiving args|>Async.RunSynchronously with
+            |TransferResult.Success-> Logging.infof"{SignalR} Receiving data from ffmpeg stream was sucessful";
+            |_->Logging.warnf "{SignalR} Receiving data from FFmpeg failed."
+        with|e-> Logging.errorf "{SignalR} Exception whils receivng ffmpeg stream: Reason: %A"e
     )
 
     let InitManagerCalls (connection:HubConnection)= 
