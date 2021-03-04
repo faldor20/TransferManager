@@ -8,12 +8,13 @@ module Logging=
         Serilog.LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console(theme=Sinks.SystemConsole.Themes.SystemConsoleTheme.Literate)
-            .WriteTo.File("./logs/log-.log" ,Serilog.Events.LogEventLevel.Verbose)
+            .WriteTo.File("./logs/log-.log" ,Serilog.Events.LogEventLevel.Verbose,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
+            .WriteTo.File("./logs/simpleLog-.log",Serilog.Events.LogEventLevel.Information,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
             .CreateLogger();
     let signalrLogger =
         Serilog.LoggerConfiguration()
             .MinimumLevel.Debug()
-            .WriteTo.File("./logs/SignalrLog-.log" ,Serilog.Events.LogEventLevel.Verbose)
+            .WriteTo.File("./logs/SignalrLog-.log" ,Serilog.Events.LogEventLevel.Verbose,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
             .CreateLogger();
 
 
