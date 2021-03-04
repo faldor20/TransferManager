@@ -59,6 +59,7 @@ module VideoMover=
                 Logging.errorf "{FFmpeg} Could not find 'ffmpeg' at path: %s" ffmpegPath
                 failwith "see above^^"
             else
+                Logging.debugf "{VideoMover} FFmpeg executable exists. Making engine."
                 Engine(ffmpegPath)
         
     
@@ -74,6 +75,7 @@ module VideoMover=
             with|_->  Logging.errorf "{FFmpeg} transcode transfer failed with no error message "
         mpeg.Error.Add errorHandler
         mpeg.Data.Add (fun arg->(ffmpegLog<-ffmpegLog+ arg.Data+"\n" ))
+        Logging.debugf "{VideoMover} FFmpeg error logging setup."
         transferError
 
     let private setupTranscode (filePath:string) progressHandler =

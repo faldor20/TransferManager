@@ -34,6 +34,7 @@ module Manager =
         LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) 
         // we set the ffmpegPath in the video mover.
         //TODO: this is really horrifyingly inelegant. However it does work
+        Logging.infof "Setting ffmpeg Path to: %A" configData.FFmpegPath
         IO.VideoMover.ffmpegPath<- configData.FFmpegPath
         let heirachy=HierarychGenerator.makeHeirachy groups
         //This is the A UIData object with the unchanging parts filled out
