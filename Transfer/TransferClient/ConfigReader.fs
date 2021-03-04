@@ -12,7 +12,7 @@ module ConfigReader=
     ///How to go about sending and receving the file is determined by what optional paramaters you include.
     ///
     ///**EG:** Including **DestFTPData** and **TranscodeData** will transcode the files and send them via ftp.
-    type ConfigMovementData =
+    type private ConfigMovementData =
         { GroupList: string list
           DirData: DirectoryData
           SourceFTPData: FTPData option
@@ -21,13 +21,22 @@ module ConfigReader=
           }
 
    
-    type YamlData = 
+    type private YamlData = 
         {
             ManagerIP:string;
             ClientName:string; 
-            MaxJobs:Dictionary<string,int>
-            WatchDirs: ConfigMovementData list 
+            FFmpegPath:string option;
+            MaxJobs:Dictionary<string,int>;
+            WatchDirs: ConfigMovementData list ;
         }
+    type ConfigData={
+        manIP: string 
+        ClientName:string
+        FFmpegPath:string option
+        FreeTokens:Dictionary<int,int>
+        SourceIDMapping:Dictionary<string,int>
+        WatchDirs:WatchDir list
+    }
     ///Performs some basic tests to check if a directory exists. Works using ftp or otherwise.
     let directoryTest ftpData directory errorPrinter = 
         try 
@@ -127,4 +136,4 @@ module ConfigReader=
             )
         
         watchDirsData|>List.iter(fun watchDir->Logging.infof "Watching: %s" watchDir.MovementData.DirData.SourceDir )
-        {|manIP= yamlData.ManagerIP; ClientName=yamlData.ClientName;FreeTokens=freeTokens;SourceIDMapping= mapping;WatchDirs= watchDirsData|}
+        {FFmpegPath=yamlData.FFmpegPath; manIP= yamlData.ManagerIP; ClientName=yamlData.ClientName;FreeTokens=freeTokens;SourceIDMapping= mapping;WatchDirs= watchDirsData}

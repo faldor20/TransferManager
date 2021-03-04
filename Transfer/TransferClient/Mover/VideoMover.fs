@@ -8,6 +8,7 @@ open FluentFTP
 open System.Diagnostics
 open System.Threading
 module VideoMover=
+    let mutable ffmpegPath:string option=None
     /// This will take an ffmpeg stdout streama nd pipe it down an ftpwriting stream... not totally sure about this one working tbh
     let private ftpFFmpeg ftpData outpath (ffmpegProc:Process) =
         task{
@@ -39,6 +40,7 @@ module VideoMover=
     //we must include "-movflags faststart" in ftp becuase it makes the mp4 sreamable
     //-movflags frag_keyframe+empty_moov -g 52
     let defaultFtpArgs=" -c:v h264 -crf 18 -pix_fmt + -movflags frag_keyframe+empty_moov -g 52 -preset veryfast -flags +ildct+ilme -f mp4 "
+
     let private checkIfFileExists()=
         //TODO:Need to make this far more linux friendly. Ill ada  config optin in the yaml or something.
         match IO.File.Exists "./ffmpeg.exe" with
@@ -48,29 +50,43 @@ module VideoMover=
         |true->
             None
 
+    let createMpegEngine()=
+        match ffmpegPath with
+        |None->
+                failwithf "{VideoMover} No ffmpegPath set please set it in the config file"
+        |Some(ffmpegPath)->
+            if not(IO.File.Exists ffmpegPath) then 
+                Logging.errorf "{FFmpeg} Could not find 'ffmpeg' at path: %s" ffmpegPath
+                failwith "see above^^"
+            else
+                Engine(ffmpegPath)
+        
+    
+    let startMpegErrorLogging (mpeg:Engine)=
+        let mutable ffmpegLog =""
+        
+        //This is all error handling
+        let mutable transferError=ref false
+        let errorHandler (errorArgs:Events.ConversionErrorEventArgs)=
+            transferError:=true
+            try
+                Logging.errorf "{FFmpeg} Transcode transfer failed with error %A \n FFmpegLog= %s"  errorArgs.Exception ffmpegLog 
+            with|_->  Logging.errorf "{FFmpeg} transcode transfer failed with no error message "
+        mpeg.Error.Add errorHandler
+        mpeg.Data.Add (fun arg->(ffmpegLog<-ffmpegLog+ arg.Data+"\n" ))
+        transferError
+
     let private setupTranscode (filePath:string) progressHandler =
-        async{
-            let mutable ffmpegLog =""
-            let fileName= IO.Path.GetFileName( filePath)  
-            let mpeg = Engine("./ffmpeg.exe")
-            //This is all error handling
-            let mutable transferError=ref false
-            let errorHandler (errorArgs:Events.ConversionErrorEventArgs)=
-                transferError:=true
-                try
-                    Logging.errorf "{FFmpeg} transcode transfer for source: %s failed with error %A \n FFmpegLog= %s" fileName errorArgs.Exception ffmpegLog 
-                with|_->  Logging.errorf "{FFmpeg} transcode transfer for source: %s failed with no error message "fileName
-            mpeg.Error.Add errorHandler
-            mpeg.Data.Add (fun arg->(ffmpegLog<-ffmpegLog+ arg.Data+"\n" ))
-            
-            
-            // We have to get the source files duration becuase the totalDuration given as part of the progressargs object doesnt work
-            let mediaFile=MediaFile(filePath)
-            let! metaData= Async.AwaitTask( mpeg.GetMetaDataAsync(mediaFile))
-            
-            mpeg.Progress.Add (progressHandler metaData.Duration )
-            return (transferError,mpeg)
-        }
+        let mpeg=createMpegEngine()
+        let transferError=startMpegErrorLogging mpeg
+        // We have to get the source files duration becuase the totalDuration given as part of the progressargs object doesnt work
+        let mediaFile=MediaFile(filePath)
+        let metaData= Async.AwaitTask( mpeg.GetMetaDataAsync(mediaFile))|>Async.RunSynchronously
+        
+        mpeg.Progress.Add (progressHandler metaData.Duration )
+        (transferError,mpeg)
+        
+
     type TranscodeType=
         |FTP of FTPData
         |File
@@ -124,11 +140,11 @@ module VideoMover=
                         |Error(x)->failwithf "{VideoMover} Could not get ip of reciver, job terminated. Reason:%s" x *)
                         
                     let outArgs= sprintf "-y %s://%s:%i?%s" recv.Protocoll ip recv.Port recv.ProtocolArgs
-                    let! (transcodeError,mpeg)= setupTranscode filePath progressHandler;
+                    let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
                     let args=prepArgs ffmpegInfo (CustomOutput outArgs) destFilePath filePath;
                     //vv--start the ffmpeg instance listening--vv 
                     let res=runTranscode transcodeError args mpeg ct
-                    let reciverStarted=
+                    let receiverStarted=
                         match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recv.ReceivingFFmpegArgs)|>Async.RunSynchronously with
                         |true->()
                         |false->
@@ -144,22 +160,13 @@ module VideoMover=
                     
                     
             }
+    ///This is a simplified transcode unction designed to be called to start a reciver 
     let startReceiving args=
         async{
-            let mutable ffmpegLog =""
-          
-            let mpeg = Engine("./ffmpeg.exe")
-            //This is all error handling
-            let mutable transferError=ref false
-            let errorHandler (errorArgs:Events.ConversionErrorEventArgs)=
-                transferError:=true
-                try
-                    Logging.errorf "{FFmpeg} transcode Receiving failed with error %A \n FFmpegLog= %s"errorArgs.Exception ffmpegLog 
-                with|_->  Logging.errorf "{FFmpeg} Transcode Receiving failed with no error message "
-            mpeg.Error.Add errorHandler
-            mpeg.Data.Add (fun arg->(ffmpegLog<-ffmpegLog+ arg.Data+"\n" ))
-            
-            
+            //TODO: i could make this into an event handler that is started on program intialisation. that would allow me to read the ffmpeg path from the config file
+            Logging.infof "{VideoMover}Receiving ffmpeg stream with args %s "args
+            let mpeg=createMpegEngine()
+            let transferError=startMpegErrorLogging  mpeg
             let ct=new CancellationTokenSource()
             let! res= runTranscode transferError args mpeg ct.Token
             return res
