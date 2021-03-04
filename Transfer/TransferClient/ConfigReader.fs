@@ -12,7 +12,7 @@ module ConfigReader=
     ///How to go about sending and receving the file is determined by what optional paramaters you include.
     ///
     ///**EG:** Including **DestFTPData** and **TranscodeData** will transcode the files and send them via ftp.
-    type private ConfigMovementData =
+    type  ConfigMovementData =
         { GroupList: string list
           DirData: DirectoryData
           SourceFTPData: FTPData option
@@ -20,8 +20,8 @@ module ConfigReader=
           TranscodeData: TranscodeData option 
           }
 
-   
-    type private YamlData = 
+   //This must remain public or running the program will fail with reflection errors
+    type YamlData = 
         {
             ManagerIP:string;
             ClientName:string; 
