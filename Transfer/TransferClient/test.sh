@@ -1,0 +1,1 @@
+copy ./rawPal.mxf ./testSource/

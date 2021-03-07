@@ -1,5 +1,5 @@
--c:v h264 -crf 18 -pix_fmt + -preset veryfast -flags +ildct+ilme -f h264 -y
-/ftpTest.mp4
+-c:v h264 -crf 18 -pix_fmt + -preset veryfast -flags +ildct+ilme -f mxf -y
+/ftpTest.mxf
 0
 -movflags frag_keyframe+empty_moov -g 52
 core
