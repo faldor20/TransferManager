@@ -47,10 +47,10 @@ module Testing=
                 printfn " speed %f "speed
                 printfn "remaining %f "remaining
             ()
-        let moveJob=IO.VideoMover.Transcode ffmpegInfo None progress source dest ct.Token
+        //let moveJob=IO.VideoMover.Transcode ffmpegInfo None progress source dest ct.Token
         let time= Diagnostics.Stopwatch()
         time.Start()
-        Async.RunSynchronously moveJob
+        //Async.RunSynchronously moveJob
         time.Stop()
         printfn "time: %s" (time.Elapsed.ToString())
     
