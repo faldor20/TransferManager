@@ -22,7 +22,7 @@ module Main=
     [<EntryPoint>]
     let main argv =
         logTest()
-        Logging.infof("Latest change: refactor of much of the code and switched from locks to single threaded db access")
+        Logging.infof("Latest change: Added a single lock around dbaccess function invocation.")
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler
         
      //   printfn"Begining"

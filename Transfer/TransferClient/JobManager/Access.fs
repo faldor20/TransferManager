@@ -115,8 +115,8 @@ let jobOrderChanged jobDB = syncChangeJobOrder jobDB
 
 ///<summary>Called to add a job to the jobdb</summary>
 ///<param name="makeJob"> A function that takes an id and returns a job that will be run to create the job. This allows for a job to contain its own id. if the id is wunwanted just return a job as usual.</param>
-let addJob jobDB sourceID makeJob transData =
-
+let private addJob jobDB sourceID makeJob transData =
+    Logging.debugf "{Access} Adding job to source wih id: %i  "sourceID
     let { FreeTokens = freeTokens; Sources = sources; JobList = jobList } = jobDB
     let source = sources.[sourceID]
     let id = JobList.addJob jobList makeJob
@@ -172,7 +172,7 @@ let MakeJobFinished jobDB sourceID jobID =
 ///Makes the upjob higher up the order of jobs than the downjob
 ///This is done by either reordering source in the joborder or reording jobs within a source
 ///If the jobs are both from the same source it is reordered in the source, else the sources are reordered in the JobOrder.
-let switch jobDB (downJob: JobID) upJob =
+let private switch jobDB (downJob: JobID) upJob =
     let { Sources = sources; JobOrder = jobOrder } = jobDB
     let job1Source = jobDB.JobList.[downJob].SourceID
     let job2Source = jobDB.JobList.[upJob].SourceID
@@ -266,6 +266,7 @@ type TransDataAccess(transDataList: TransferDataList, req, syncer) =
 type DBAccess(jobDB: JobDataBase) =
     let req = Requests()
     let reqHandler = requestHandler (req)
+    
     let d (f: 'a -> 'c) = doSyncReq req f
     let a x = x :> Object
     member this.JobListAccess = JobListAccess(jobDB.JobList, req)

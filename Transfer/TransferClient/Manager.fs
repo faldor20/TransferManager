@@ -71,7 +71,7 @@ module Manager =
                                     |None-> false
                                 
                                 let task = Scheduler.scheduleTransfer file watchDir.MovementData (Some receiverFuncs) LocalDB.AcessFuncs 
-                                Logging.infof "{Watcher} created scheduling task for file %s" (Path.GetFileName file.Path)
+                                Logging.infof "{Manager} created scheduling task for file %s" (Path.GetFileName file.Path)
                                 yield task
                         }
                     )

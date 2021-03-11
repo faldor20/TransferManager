@@ -44,12 +44,13 @@ module SourceList =
         if tokenSource.Remaining>0 then
             iter tokenSource.SourceOrder
     
-    ///this will attempt to get the given job the tokens it needs in order. it will run recursivley untill a token cannot be had or it has all of them
+    ///this will attempt to get the given job the tokens it needs, in order. it will run recursivley untill a token cannot be had or it has all that it needs
     let rec getNextToken (freeTokens:TokenList)  (source:Source) (job:JobItem) =
+        Logging.debugf "{SourceList} Getting Next token for job %i. Job has tokens: %A. Needs: %A"job.ID job.TakenTokens source.RequiredTokens
         if job.TakenTokens.Length =source.RequiredTokens.Length then
             ()
         else
-        //this is done very very often and so it could be made faster by precomputing the requiredToken.
+        //TODO:this is done very very often and so it could be made faster by precomputing the requiredToken.
             let neededToken=
                 source.RequiredTokens
                 |>List.except job.TakenTokens
