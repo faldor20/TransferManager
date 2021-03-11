@@ -1,0 +1,11 @@
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - init: dotnet restore
+    command: dotnet run
+
+vscode:
+  extensions:
+    - ionide.ionide-fsharp@5.4.0:U0LRF3OaB4z1GkS+pWCA+w==
+    - muhammad-sammy.csharp@1.23.9:BMArOoGwWqKRrH6s4E2/AQ==
