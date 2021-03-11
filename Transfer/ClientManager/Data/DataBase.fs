@@ -4,7 +4,6 @@ open System.Collections.Specialized
 open System;
 open System.Threading
 open System.IO
-open TransferClient.JobManager
 open SharedFs.SharedTypes;
 module DataBase=
 
