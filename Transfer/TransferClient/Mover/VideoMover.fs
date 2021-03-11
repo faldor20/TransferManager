@@ -94,15 +94,15 @@ module VideoMover=
         |File
         |CustomOutput of string
         //TODO: Need to figure out how to get the reciever ip into this func
-    let prepArgs ffmpegInfo (transcodeType:TranscodeType) destFilePath (filePath:string)=
+    let prepArgs ffmpegArgs outputExtension (transcodeType:TranscodeType) destFilePath (filePath:string)=
         let usedFFmpegArgs=
-            match ffmpegInfo.FfmpegArgs with
+            match ffmpegArgs with
             |Some x->x
             |None->
                 Logging.errorf "ffmpeg args empty, cannot run transcode"
                 failwith "No ffmpeg args. cannot continue"
         let outPath=  
-            match ffmpegInfo.OutputFileExtension with 
+            match outputExtension with 
             |Some x->IO.Path.ChangeExtension(destFilePath,x) 
             |None->IO.Path.ChangeExtension(destFilePath,"mp4")    
                
@@ -143,11 +143,12 @@ module VideoMover=
                         
                     let outArgs= sprintf "-y %s://%s:%i?%s" recv.Protocoll ip recv.Port recv.ProtocolArgs
                     let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
-                    let args=prepArgs ffmpegInfo (CustomOutput outArgs) destFilePath filePath;
+                    let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;
                     //vv--start the ffmpeg instance listening--vv 
                     let res=runTranscode transcodeError args mpeg ct
+                    let recvArgs= prepArgs (Some recv.ReceivingFFmpegArgs) ffmpegInfo.OutputFileExtension (File ) destFilePath filePath
                     let receiverStarted=
-                        match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recv.ReceivingFFmpegArgs)|>Async.RunSynchronously with
+                        match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recvArgs)|>Async.RunSynchronously with
                         |true->()
                         |false->
                             //we want to wait for the tcp connection timeout
