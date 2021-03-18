@@ -22,7 +22,7 @@ module Main=
     [<EntryPoint>]
     let main argv =
         logTest()
-        Logging.infof("Latest change: Added a single lock around dbaccess function invocation.")
+        Logging.infof("Latest change: Fixed a bug with the videomover puttnig the sourcepath as a source in the args sent to the reciever.")
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler
         
      //   printfn"Begining"

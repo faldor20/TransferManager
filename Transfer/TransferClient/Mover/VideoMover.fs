@@ -146,7 +146,10 @@ module VideoMover=
                     let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;
                     //vv--start the ffmpeg instance listening--vv 
                     let res=runTranscode transcodeError args mpeg ct
-                    let recvArgs= prepArgs (Some recv.ReceivingFFmpegArgs) ffmpegInfo.OutputFileExtension (File ) destFilePath filePath
+                    let outPath=
+                        IO.Path.ChangeExtension( destFilePath,"mxf")
+                    let recvArgs=
+                        recv.ReceivingFFmpegArgs+" \""+outPath+"\""
                     let receiverStarted=
                         match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recvArgs)|>Async.RunSynchronously with
                         |true->()
