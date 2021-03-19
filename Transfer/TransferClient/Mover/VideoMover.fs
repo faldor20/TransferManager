@@ -41,11 +41,11 @@ module VideoMover=
     //-movflags frag_keyframe+empty_moov -g 52
     let defaultFtpArgs=" -c:v h264 -crf 18 -pix_fmt + -movflags frag_keyframe+empty_moov -g 52 -preset veryfast -flags +ildct+ilme -f mp4 "
 
-    let private checkIfFileExists()=
+    let private checkIfFileExists(ffmpegPath)=
         //TODO:Need to make this far more linux friendly. Ill ada  config optin in the yaml or something.
-        match IO.File.Exists "./ffmpeg.exe" with
+        match IO.File.Exists "ffmpegPath" with
         |false-> 
-            Logging.errorf "{FFmpeg} Could not find 'ffmpeg.exe' in root dir"
+            Logging.errorf "{FFmpeg} Could not find ffmpeg at : '%s' " ffmpegPath
             Some TransferResult.Failed
         |true->
             None
@@ -129,36 +129,36 @@ module VideoMover=
     let sendToReceiver (ffmpegInfo:TranscodeData) (receiverFuncs:ReceiverFuncs) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken) =
         async{ 
         
-                try
-                    //---check if the receiver is available and get an ip---
-                    let recv=ffmpegInfo.ReceiverData.Value
+            try
+                //---check if the receiver is available and get an ip---
+                let recv=ffmpegInfo.ReceiverData.Value
              
-                        
+                 
                 let ip="0.0.0.0"
-                    let outArgs= sprintf "-y %s://%s:%i?%s" recv.Protocoll ip recv.Port recv.ProtocolArgs
-                    let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
-                    let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;
-                    //vv--start the ffmpeg instance listening--vv 
-                    let res=runTranscode transcodeError args mpeg ct
-                    let outPath=
-                        IO.Path.ChangeExtension( destFilePath,"mxf")
-                    let recvArgs=
-                        recv.ReceivingFFmpegArgs+" \""+outPath+"\""
-                    let receiverStarted=
-                        match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recvArgs)|>Async.RunSynchronously with
-                        |true->()
-                        |false->
-                            //we want to wait for the tcp connection timeout
-                            mpeg.Complete|>Async.AwaitEvent|>Async.RunSynchronously|>ignore
-                            failwithf "{VideoMover} Could not get ip of reciver, job terminated. Reason:" 
-                    //--send a messsage that starts the client connecting---
-                    //--wait for completion---
-                    return! res
-                with|err->
-                    Logging.errorf "Transcode job failed, reason:%A" err
-                    return TransferResult.Failed
-                    
-                    
+                let outArgs= sprintf "-y %s://%s:%i?%s" recv.Protocoll ip recv.Port recv.ProtocolArgs
+                let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
+                let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;
+                //vv--start the ffmpeg instance listening--vv 
+                let res=runTranscode transcodeError args mpeg ct
+                let outPath=
+                    IO.Path.ChangeExtension( destFilePath,"mxf")
+                let recvArgs=
+                    recv.ReceivingFFmpegArgs+" \""+outPath+"\""
+                let receiverStarted=
+                    match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recvArgs)|>Async.RunSynchronously with
+                    |true->()
+                    |false->
+                        //we want to wait for the tcp connection timeout
+                        mpeg.Complete|>Async.AwaitEvent|>Async.RunSynchronously|>ignore
+                        failwithf "{VideoMover} Could not get ip of reciver, job terminated. Reason:" 
+                //--send a messsage that starts the client connecting---
+                //--wait for completion---
+                return! res
+            with|err->
+                Logging.errorf "Transcode job failed, reason:%A" err
+                return TransferResult.Failed
+                
+                
             }
     ///This is a simplified transcode unction designed to be called to start a reciver 
     let startReceiving args=
@@ -175,7 +175,8 @@ module VideoMover=
     let Transcode ffmpegInfo (ftpInfo:FTPData option) progressHandler (filePath:string)  (destDir:string) (ct:CancellationToken)=
 
         async{
-        if not(IO.File.Exists "./ffmpeg.exe") then 
+        Logging.errorf "{VideoMover} Tried calling Transcode. thae basic transcode is not yet remimplimented"
+        if not(IO.File.Exists "./ffmpegPath") then 
             Logging.errorf "{FFmpeg} Could not find 'ffmpeg.exe' in root dir"
             return TransferResult.Failed
         else
