@@ -25,10 +25,10 @@ module SignalR=
         member this.GetTransferData groupName id=
            (groupName,id)||> DataBase.getTransferData
         
-        member this.RegisterSelf (userName:string) (IP:string) =
-            printfn "Registering new client. Username: %s connectionID=%s userID=%s UserIP=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier IP
+        member this.RegisterSelf (userName:string)  =
+            printfn "Registering new client. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
             
-            DataBase.registerClient userName this.Context.ConnectionId IP
+            DataBase.registerClient userName this.Context.ConnectionId
             
         member this.OverwriteTransferData(userName:string) ( changes:UIData) =
             printfn "overwriting local info with client info. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
@@ -42,17 +42,15 @@ module SignalR=
             frontEndManager.ReceiveDataChange userName changes
             printfn "Synced transferData from %s" userName  
 
-        member this.GetReceiverIP  (receiverName:string) =
-            try
-                let ip=DataBase.getClientIP receiverName
-                printfn "Got Request for ip of user=%s returning ip=%s" receiverName ip
-                ip
-            with|_->sprintf"Client '%s' has not yet connected and given its ip" receiverName
 
         member this.StartReceiver  (receiverName:string) args=
-            let connectionid = DataBase.getConnectionID receiverName
-            (this.Clients.Client(connectionid).StartReceivingTranscode args).Wait();
-            true //TODO: get some kind of failure or sucess from reciver?
+            match DataBase.getConnectionID receiverName with 
+            |Ok(connectionId)->
+                (this.Clients.Client(connectionId).StartReceivingTranscode args).Wait();
+                true //TODO: get some kind of failure or sucess from reciver?
+            |Error()->
+                printfn "EROR: Could not find reciver in list of clients. Not sending args or triggering ffmpeg start on reciever "
+                false
             
     and IFrontendApi = 
       abstract member ReceiveData :Dictionary<string, UIData> -> Task
@@ -62,12 +60,13 @@ module SignalR=
     and ClientManager (hubContext :IHubContext<ClientManagerHub,ITransferClientApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<ClientManagerHub, ITransferClientApi> = hubContext
-        member this.CancelTransfer user id=
-            let clientID = DataBase.getConnectionID user
-            printfn "Sending Cancellation request to user:%s with connecionid %s" user clientID
+        member this.CancelTransfer user id= 
+            match DataBase.getConnectionID user with
+            |Ok(clientID)->printfn "Sending Cancellation request to user:%s with connecionid %s" user clientID
+            |_->()
             (this.HubContext.Clients.All.CancelTransfer id).Wait()
         member this.SwitchJobs  user job1 job2=
-            let clientID = DataBase.getConnectionID user
+
             printfn "Switching Jobs %A , %A user:%s " job1 job2 user 
             (this.HubContext.Clients.All.SwitchJobs job1 job2).Wait()
         member this.ResetDB ()=

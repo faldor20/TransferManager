@@ -20,16 +20,20 @@ module DataBase=
         dataBase.[username].TransferDataList.[id]<-newData
     type ClientData={
         ClientID:string
-        IP:string
+
     }
     let mutable userIDs= Dictionary<string,ClientData>()
     
-    let registerClient userName clientID iP =
-        userIDs.[userName]<-{ClientID=clientID;IP=iP}
+    let registerClient userName clientID =
+        userIDs.[userName]<-{ClientID=clientID}
     let getConnectionID userName =
-        userIDs.[userName].ClientID
-    let getClientIP userName =
-        userIDs.[userName].IP
+        try 
+            Ok(userIDs.[userName].ClientID)
+        with| ex-> 
+            printfn "Error: could not find the client %s" userName
+            Error(())
+
+   
 
 
         

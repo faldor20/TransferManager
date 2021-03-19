@@ -128,19 +128,13 @@ module VideoMover=
     ///Starts a send to a recieving ffmpeg instance.
     let sendToReceiver (ffmpegInfo:TranscodeData) (receiverFuncs:ReceiverFuncs) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken) =
         async{ 
-            match checkIfFileExists() with
-            |Some(err)->return err
-            |None->
+        
                 try
                     //---check if the receiver is available and get an ip---
                     let recv=ffmpegInfo.ReceiverData.Value
-                    let ip=receiverFuncs.GetReceiverIP recv.ReceivingClientName|>Async.RunSynchronously
-                       (*  match receiverFuncs.GetReceiverIP recv.ReceivingClientName|>Async.RunSynchronously with
-                        |Ok(x)-> 
-                            Logging.infof "{VdieoMoveer} Got ip %s for receiver" x
-                            x
-                        |Error(x)->failwithf "{VideoMover} Could not get ip of reciver, job terminated. Reason:%s" x *)
+             
                         
+                let ip="0.0.0.0"
                     let outArgs= sprintf "-y %s://%s:%i?%s" recv.Protocoll ip recv.Port recv.ProtocolArgs
                     let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
                     let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;

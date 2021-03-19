@@ -100,11 +100,10 @@ module Manager =
             let! connection = setupSignalR configData baseUIData           
 
             let getReceiverFuncs (signalRHub:SignalR.Client.HubConnection):ReceiverFuncs =
-                let getReceiverIP receiverName=
-                    SignalR.ManagerCalls.getReceiverIP signalRHub  receiverName
+              
                 let startReceiverInstance receiverName args=
                     SignalR.ManagerCalls.startReceiver signalRHub  receiverName args
-                {GetReceiverIP=getReceiverIP;StartTranscodeReciever=startReceiverInstance}
+                {StartTranscodeReciever=startReceiverInstance}
 
             let receiverFuncs= getReceiverFuncs connection    
             //A list of scheduling tasks. These just need to be run at some point. 

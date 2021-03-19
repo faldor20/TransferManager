@@ -77,8 +77,7 @@ module Types =
     type ReceiverFuncs={
         ///string1 is the receiverName string2 is the receiverArgs
         StartTranscodeReciever:(string->string->Async<bool>)
-        ///string is the receiverName
-        GetReceiverIP:(string->Async<string>)
+
     }         
     /// **Start Transcode Reciever:** A function that is called to trigger the start of an ffmpeg instance on another machine that waits for incoming data
     type MoveJobData={
