@@ -1,0 +1,22 @@
+
+*/bin
+*/obj
+bin/
+obj/
+.fake
+.ionide
+*/bin/*
+/blaz/
+blazClient/
+"published apps"/
+published apps
+testSource*
+Publish
+./logs
+ContainedPublish
+*.history
+
+./testDest/
+
+./watchSource/
+./vdcp1Dest
