@@ -58,7 +58,7 @@ module LocalDB =
 
 
     let reset () =
-        TransferClient.Logging.infof "{DataBase} Resetting DataBase"
+        TransferClient.Logging.infof "[DataBase] Resetting DataBase"
         //We have to do this ugly monstrosity because if i make the jobDB mutable when it is reassigned Acessfuncs will point to a previous version of it
         jobDB.RunningJobs.Clear()
         jobDB.JobOrder.Clear()

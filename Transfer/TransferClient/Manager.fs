@@ -34,7 +34,7 @@ module Manager =
         LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) 
         // we set the ffmpegPath in the video mover.
         //TODO: this is really horrifyingly inelegant. However it does work
-        Logging.infof "Setting ffmpeg Path to: %A" configData.FFmpegPath
+        Logging.info "Setting ffmpeg Path to: {@path}" configData.FFmpegPath
         IO.VideoMover.ffmpegPath<- configData.FFmpegPath
         let heirachy=HierarychGenerator.makeHeirachy groups
         //This is the A UIData object with the unchanging parts filled out
@@ -45,7 +45,7 @@ module Manager =
         async{
             let signalrCT = new Threading.CancellationTokenSource()
             //For reasons i entirely do not understand starting this just as async deosnt run connection in release mode
-            Logging.infof "{Manager} starting signalr connection process"
+            Logging.infof "'Manager' starting signalr connection process"
 
             let conectionTask =
                 SignalR.Commands.connect configData.manIP configData.ClientName baseUIData signalrCT.Token
@@ -59,7 +59,7 @@ module Manager =
                 newFilesForEachWatchdir
                 |> List.toArray
                 |> Array.map (fun (schedules, watchDir) ->
-                    Logging.infof "{Manager} Setting up observables for group: %A" watchDir.MovementData.GroupList
+                    Logging.info "'Manager' Setting up observables for group: {@}" watchDir.MovementData.GroupList
                     schedules
                     |>AsyncSeq.collect (fun (newFiles) ->
                         asyncSeq{
@@ -71,7 +71,7 @@ module Manager =
                                     |None-> false
                                 
                                 let task = Scheduler.scheduleTransfer file watchDir.MovementData (Some receiverFuncs) LocalDB.AcessFuncs 
-                                Logging.infof "{Manager} created scheduling task for file %s" (Path.GetFileName file.Path)
+                                Logging.info "'Manager' created scheduling task for file {@}" (Path.GetFileName file.Path)
                                 yield task
                         }
                     )
@@ -114,12 +114,18 @@ module Manager =
             //TODO: only start this if signalr connects sucesfully
             //let res= jobs|>Observable.mergeArray|>Observable.subscribe(fun x->x|>Async.StartImmediate)
             JobManager.Syncer.startSyncer LocalDB.jobDB.SyncEvents  500.0 (fun uiDat ->  Async.RunSynchronously (syncTransferData connection configData.ClientName uiDat)) baseUIData
-
+            try
             let runJobs = 
                // jobs|>Observable
                 scheduleJobs|> Observable.map(fun x->x|>Async.Start)
             runJobs|>Observable.wait
-
+            with|e->
+                Logging.error
+                    "'Manager' Not Watching any directories. This means no files will be moved. \n
+                     Most likely this is due to a config error, check the rest of the log for config error reports. \n
+                     This could be intentional if you mean for this client to only receive ffmpeg streams. \n
+                     Eception: {@exception}"
+                     e
             return! async {
                         while true do
                             do! Async.Sleep 100000

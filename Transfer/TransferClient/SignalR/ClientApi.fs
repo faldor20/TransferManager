@@ -7,17 +7,17 @@ open TransferClient.IO;
 open Types;
 module ClientApi=
     let CancelTransfer=Action<int>(fun  id->
-        Logging.debugf "Cancellation request recieved for id %i"  id
+        Logging.debug "'SignalR' Cancellation request recieved for id {@id}"  id
         LocalDB.AcessFuncs.CancelJob id
     )
 
     let ResetDB=Action(fun ()->
-        Logging.debugf "reset request recieved"
+        Logging.debugf "'SignalR' reset request recieved"
         LocalDB.reset()
         ()
     ) 
     let SwitchJobs=Action<int,int>(fun job1 job2->
-        Logging.infof "Switching jobs %A and %A "job1 job2
+        Logging.info2 "'SignalR' Switching jobs {@job1} and {@job2} "job1 job2
         LocalDB.AcessFuncs.SwitchJobs job1 job2
         ()
     )
@@ -32,14 +32,14 @@ module ClientApi=
     let StartReceivingTranscode=Action<string>(fun args->
         try
             match VideoMover.startReceiving args|>Async.RunSynchronously with
-            |TransferResult.Success-> Logging.infof"{SignalR} Receiving data from ffmpeg stream was sucessful";
-            |_->Logging.warnf "{SignalR} Receiving data from FFmpeg failed."
-        with|e-> Logging.errorf "{SignalR} Exception whils receivng ffmpeg stream: Reason: %A"e
+            |TransferResult.Success-> Logging.infof "[SignalR] Receiving data from ffmpeg stream was sucessful"
+            |_->Logging.warnf "'SignalR' Receiving data from FFmpeg failed."
+        with|e-> Logging.error "'SignalR' Exception whils receivng ffmpeg stream: Reason: {@excp}" e
     )
 
     let InitManagerCalls (connection:HubConnection)= 
         
-        Logging.infof ("{ClientAPI} Initialising Client Signalr Triggers (connection.On...etc)")
+        Logging.infof "'ClientAPI' Initialising Client Signalr Triggers (connection.On...etc)"
 
         let types= [|string.GetType();  int.GetType()|]
 

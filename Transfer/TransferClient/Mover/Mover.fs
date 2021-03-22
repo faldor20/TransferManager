@@ -27,7 +27,7 @@ module Mover =
                     |(None ,Some dest)->
                         uploadFTP  dest sourceFilePath destFilePath cb ct
                     |(source,dest)-> 
-                        Logging.errorf "{Mover} Ftp progress handler was given but there is no ftp source of desitination.. SourceFTP: %A DestFTP: %A callback : %A"source dest cb
+                        Logging.error3 "'Mover' Ftp progress handler was given but there is no ftp source of desitination.. SourceFTP: {@source} DestFTP: {@dest} callback : {@cb}"source dest cb
                         failwith "see above"
                 |FastFileProg cb->
                     FCopy sourceFilePath destFilePath cb ct
@@ -38,11 +38,11 @@ module Mover =
                             |Some(recv)->
                                 VideoMover.sendToReceiver ffmpegInfo recv cb sourceFilePath destFilePath ct
                             |None->
-                                Logging.warnf("{Mover} Receiver Funcs have not been set. Cannot communicate with ffmpeg reciver. This is a code issue not a configuration one.")
+                                Logging.warnf("'Mover' Receiver Funcs have not been set. Cannot communicate with ffmpeg reciver. This is a code issue not a configuration one.")
                                 failwith ("see above")
                        |None->VideoMover.Transcode ffmpegInfo moveData.DestFTPData cb sourceFilePath destFilePath  ct
                 |cb->
-                    Logging.errorf "{Mover} Progress callback not recognised. callback : %A" cb
+                    Logging.error "'Mover' Progress callback not recognised. callback : {@cb}" cb
                     failwith "See above"
             
         return! result 
@@ -67,7 +67,7 @@ module Mover =
             |FtpProg _-> "FTP Transfer"
             |FastFileProg _->"File transfer"
             |TranscodeProg _-> "FFmpeg transcode"
-        Logging.infof " {Starting} %s from %s to %s" transType sourceFilePath destination
+        Logging.info3 " 'Starting' {@type} from {@src} to {@dest}" transType sourceFilePath destination
        
         //We have to set the startTime here because we want the sartime to truly be when the task begins
         moveJobData.HandleTransferData {transData with StartTime=DateTime.Now}
@@ -76,6 +76,6 @@ module Mover =
         //We need to dispose the sourceclient if there is one. If we getrid of this we would endlessly increase our number of active connections
        
 
-        Logging.infof " {Finished} copy from %s to %s"sourceFilePath destination
+        Logging.info2 " 'Finished' copy from {@src} to {@dest}"sourceFilePath destination
         return (result,moveData.DirData.DeleteCompleted)
     }

@@ -48,10 +48,10 @@ module JobOrder =
           
             let i=sources.[source].Jobs.FindIndex (Predicate( fun x->x.ID=id))
             match  i with
-            |(-1)->Logging.errorf "Tried to remove job %i from source %A that should have been there but wasn't" id source
+            |(-1)->Logging.error2 "Tried to remove job {id} from source {src} that should have been there but wasn't" id source
             |a->
                 sources.[source].Jobs.RemoveAt a
-                Logging.debugf "Removed job %i from source %A at position %i "id source i
+                Logging.debug3 "Removed job {id} from source {src} at position {pos} "id source i
             
             (source,id)
             )

@@ -19,20 +19,20 @@ module VideoMover=
                 //This must be ascii mode becuase that is what ffmpeg outputs
                 Some( ftpClient.OpenWrite(outpath,FtpDataType.ASCII,false))
                 with|ex->
-                    Logging.errorf "{Fffmpeg} Exception in ftp opening for ffmpeg %A"ex
+                    Logging.error "'Fffmpeg' Exception in ftp opening for ffmpeg {@excep}"ex
                     None
             if ftpWriter.IsNone then ()
             else
                 try
                 //this must not use a binary writer because ffmpeg outputs ascii data
                     do! StreamPiping.simplewriter ffmpegProc.StandardOutput.BaseStream ftpWriter.Value
-                with|ex-> Logging.errorf "{Ffmpeg} Exception in stream copying from ffmpeg to ftp %A" ex
+                with|ex-> Logging.error "'Ffmpeg' Exception in stream copying from ffmpeg to ftp {@excep}" ex
                 
                 ftpWriter.Value.Close() 
                 let reply=ftpClient.GetReply() 
                 if not reply.Success then 
-                    Logging.errorf "{FFmpeg} ftp failed in some way. code %s \n ErrorMessage: %s " reply.Code reply.ErrorMessage
-                Logging.infof "{FFmpeg} FTP reply= %A" reply.Message
+                    Logging.error2 "'FFmpeg' ftp failed in some way. code {@code} \n ErrorMessage:{@err} " reply.Code reply.ErrorMessage
+                Logging.info "'FFmpeg' FTP reply={@reply}" reply.Message
 
         }
 
@@ -45,7 +45,7 @@ module VideoMover=
         //TODO:Need to make this far more linux friendly. Ill ada  config optin in the yaml or something.
         match IO.File.Exists "ffmpegPath" with
         |false-> 
-            Logging.errorf "{FFmpeg} Could not find ffmpeg at : '%s' " ffmpegPath
+            Logging.error "'FFmpeg' Could not find ffmpeg at : '{@path}' " ffmpegPath
             Some TransferResult.Failed
         |true->
             None
@@ -53,13 +53,13 @@ module VideoMover=
     let createMpegEngine()=
         match ffmpegPath with
         |None->
-                failwithf "{VideoMover} No ffmpegPath set please set it in the config file"
+                failwithf "'VideoMover' No ffmpegPath set please set it in the config file"
         |Some(ffmpegPath)->
             if not(IO.File.Exists ffmpegPath) then 
-                Logging.errorf "{FFmpeg} Could not find 'ffmpeg' at path: %s" ffmpegPath
+                Logging.error "'FFmpeg' Could not find 'ffmpeg' at path: {@path}" ffmpegPath
                 failwith "see above^^"
             else
-                Logging.debugf "{VideoMover} FFmpeg executable exists. Making engine."
+                Logging.debugf "'VideoMover' FFmpeg executable exists. Making engine."
                 Engine(ffmpegPath)
         
     
@@ -71,11 +71,11 @@ module VideoMover=
         let errorHandler (errorArgs:Events.ConversionErrorEventArgs)=
             transferError:=true
             try
-                Logging.errorf "{FFmpeg} Transcode transfer failed with error %A \n FFmpegLog= %s"  errorArgs.Exception ffmpegLog 
-            with|_->  Logging.errorf "{FFmpeg} transcode transfer failed with no error message "
+                Logging.error2 "'FFmpeg' Transcode transfer failed with error {@err} \n FFmpegLog= {@log}"  errorArgs.Exception ffmpegLog 
+            with|_->  Logging.errorf "'FFmpeg' transcode transfer failed with no error message "
         mpeg.Error.Add errorHandler
         mpeg.Data.Add (fun arg->(ffmpegLog<-ffmpegLog+ arg.Data+"\n" ))
-        Logging.debugf "{VideoMover} FFmpeg error logging setup."
+        Logging.debugf "'VideoMover' FFmpeg error logging setup."
         transferError
 
     let private setupTranscode (filePath:string) progressHandler =
@@ -117,7 +117,7 @@ module VideoMover=
 
     let runTranscode (transferError:ref<bool>) args (mpeg:Engine) ct=
         async{
-            Logging.infof "{FFmpeg} Calling with args: %s" args
+            Logging.info "'FFmpeg' Calling with args: {@args}" args
             let task=mpeg.ExecuteAsync( args,ct)
             let! fin= Async.AwaitTask task
                        
@@ -150,7 +150,7 @@ module VideoMover=
                     |false->
                         //we want to wait for the tcp connection timeout
                         mpeg.Complete|>Async.AwaitEvent|>Async.RunSynchronously|>ignore
-                        failwithf "{VideoMover} Could not get ip of reciver, job terminated. Reason:" 
+                        failwithf "'VideoMover' Could not get ip of reciver, job terminated. Reason:" 
                 //--send a messsage that starts the client connecting---
                 //--wait for completion---
                 return! res
@@ -164,7 +164,7 @@ module VideoMover=
     let startReceiving args=
         async{
             //TODO: i could make this into an event handler that is started on program intialisation. that would allow me to read the ffmpeg path from the config file
-            Logging.infof "{VideoMover}Receiving ffmpeg stream with args %s "args
+            Logging.infof "'VideoMover' Receiving ffmpeg stream with args %s "args
             let mpeg=createMpegEngine()
             let transferError=startMpegErrorLogging  mpeg
             let ct=new CancellationTokenSource()
@@ -175,9 +175,9 @@ module VideoMover=
     let Transcode ffmpegInfo (ftpInfo:FTPData option) progressHandler (filePath:string)  (destDir:string) (ct:CancellationToken)=
 
         async{
-        Logging.errorf "{VideoMover} Tried calling Transcode. thae basic transcode is not yet remimplimented"
+        Logging.errorf "'VideoMover' Tried calling Transcode. thae basic transcode is not yet remimplimented"
         if not(IO.File.Exists "./ffmpegPath") then 
-            Logging.errorf "{FFmpeg} Could not find 'ffmpeg.exe' in root dir"
+            Logging.errorf "'FFmpeg' Could not find 'ffmpeg.exe' in root dir"
             return TransferResult.Failed
         else
             let mutable FfmpegLog =""
@@ -188,8 +188,8 @@ module VideoMover=
             let errorHandler (errorArgs:Events.ConversionErrorEventArgs)=
                 transferError<-true
                 try
-                    Logging.errorf "{FFmpeg} transcode transfer for source: %s failed with error %A \n FFmpegLog= %s" fileName errorArgs.Exception FfmpegLog 
-                with|_->  Logging.errorf "{FFmpeg} transcode transfer for source: %s failed with no error message "fileName
+                    Logging.error3 "'FFmpeg' transcode transfer for source: {@src} failed with error {@err} \n FFmpegLog= {@log}" fileName errorArgs.Exception FfmpegLog 
+                with|_->  Logging.error "'FFmpeg' transcode transfer for source: {@src} failed with no error message "fileName
             mpeg.Error.Add errorHandler
             mpeg.Data.Add (fun arg->(FfmpegLog<-FfmpegLog+ arg.Data+"\n" ))
             
@@ -244,7 +244,7 @@ module VideoMover=
                 
             let args= sprintf "-i \"%s\" %s %s" filePath usedFFmpegArgs outArg
 
-            Logging.infof "{FFmpeg} Calling with args: %s" args
+            Logging.infof "[FFmpeg] Calling with args: %s" args
             let task=mpeg.ExecuteAsync( args,ct)
             let! fin= Async.AwaitTask task
                        

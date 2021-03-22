@@ -36,7 +36,7 @@ let isAvailable (source:string) (ct:CancellationToken) =
                 loop<-false
             with 
                 | :? FileNotFoundException | :? DirectoryNotFoundException  ->
-                    printfn "%s deleted while waiting to be available" fileName
+                    Logging.warn "'Availability check' {@file} deleted while waiting to be available" fileName
                     availability<-Availability.Deleted
                     loop<-false
                 | :? IOException ->
@@ -44,7 +44,7 @@ let isAvailable (source:string) (ct:CancellationToken) =
                     do! Async.Sleep(1000)
 
                 | ex  ->
-                    printfn "file failed with %A" ex.Message
+                    Logging.warn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
                     loop<- false
                     availability<-Availability.Deleted
         return availability
@@ -78,7 +78,7 @@ let isAvailableFTP (ct:CancellationToken) (client:FtpClient)(source:string)  =
                             modifiedDate<-newModDate
                             
                     with|ex->
-                        Logging.errorf "{Scheduler} Error thrown during availability check %A" ex
+                        Logging.error "'Scheduler' Error thrown during availability check {@exp}" ex
                         loop<-false
                         availability<-Availability.Deleted
 
