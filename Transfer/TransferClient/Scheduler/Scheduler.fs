@@ -112,7 +112,7 @@ let scheduleTransfer (file:FoundFile) moveData (receiverFuncs:ReceiverFuncs opti
                     let client=IO.FTPMove.ftpClient ftpData
                     client.Connect()
                     Async.RunSynchronously<| (file.Path|>isAvailableFTP  ct.Token client)
-                |None-> Async.RunSynchronously( isAvailable file.Path ct.Token)
+                |None-> Async.RunSynchronously( isAvailable file.Path ct.Token moveData.sleepTime)
     
         let trans= dbAccess.TransDataAccess.Get jobID
         if fileAvailable= Availability.Available then

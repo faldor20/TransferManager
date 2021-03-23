@@ -22,7 +22,7 @@ module Main=
     [<EntryPoint>]
     let main argv =
         logTest()
-        Logging.infof("Latest change: Fixed a bug with the videomover puttnig the sourcepath as a source in the args sent to the reciever.")
+        Logging.infof("Latest change: Switch to file size based availability checks")
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler
         
      //   printfn"Begining"

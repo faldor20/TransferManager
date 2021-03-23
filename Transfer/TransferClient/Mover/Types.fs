@@ -68,7 +68,9 @@ module Types =
           DirData: DirectoryData
           SourceFTPData: FTPData option
           DestFTPData: FTPData option
-          TranscodeData: TranscodeData option }
+          TranscodeData: TranscodeData option
+          //TODO: This might want to be moved into a record of some sort
+          SleepTime:int option }
     ///**Functions used to interact with the receiver of an ffmpeg stream.**
     ///
     ///These exist so that the "Mover" and "VideoMover" parts don't have to 

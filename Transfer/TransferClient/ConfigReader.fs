@@ -18,6 +18,7 @@ module ConfigReader=
           SourceFTPData: FTPData option
           DestFTPData: FTPData option
           TranscodeData: TranscodeData option 
+          SleepTime:int option
           }
 
    //This must remain public or running the program will fail with reflection errors
@@ -130,6 +131,7 @@ module ConfigReader=
                         SourceFTPData=watchDir.SourceFTPData
                         DestFTPData=watchDir.DestFTPData
                         TranscodeData= transData
+                        SleepTime=watchDir.SleepTime
                    }
                 
                 {MovementData=moveData;TransferedList = List.empty;ScheduledTasks= List.Empty }

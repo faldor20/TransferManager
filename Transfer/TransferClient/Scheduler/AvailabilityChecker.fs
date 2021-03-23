@@ -16,10 +16,10 @@ type Availability=
     |Available=0
     |Deleted=1
     |Cancelled=2
-    //This will return once the file is not beig acessed by other programs.
-    //it returns false if the file is discovered to be deleted before that point.
-
-let isAvailable (source:string) (ct:CancellationToken) =
+///Checks if a file is aailable by opening it for exclusive use and waiting for an exception
+//This will return once the file is not being acessed by other programs.
+//it returns false if the file is discovered to be deleted before that point.
+let checkAvailabilityFileStream (source:string) (ct:CancellationToken) =
     async {
         let fileName= Path.GetFileName (string source)
         let mutable currentFile = new FileInfo(source)
@@ -49,6 +49,44 @@ let isAvailable (source:string) (ct:CancellationToken) =
                     availability<-Availability.Deleted
         return availability
     }
+///Checks if s file is available by checking if it's size is bigger than last time.
+let checkAvailabilityFileSize (source:string) (ct:CancellationToken) (sleepTime:int)=
+    async {
+            let fileName= Path.GetFileName (string source)
+            let mutable currentFile = new FileInfo(source)
+            let mutable loop = true
+            let mutable availability=Availability.Available
+            let mutable lastSize= currentFile.Length
+            while loop do
+                do! Async.Sleep(sleepTime)
+                if ct.IsCancellationRequested then
+                    availability<- Availability.Cancelled
+                    loop<- false
+                try
+                    let newSize=(new FileInfo(source)).Length
+                    if newSize=lastSize then
+                        availability<-Availability.Available
+                        loop<-false
+                    lastSize<-newSize
+                with 
+                    | :? FileNotFoundException | :? DirectoryNotFoundException  ->
+                        Logging.warn "'Availability check' {@file} deleted while waiting to be available" fileName
+                        availability<-Availability.Deleted
+                        loop<-false
+                    | :? IOException ->()
+
+                    | ex  ->
+                        Logging.warn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
+                        loop<- false
+                        availability<-Availability.Deleted
+            return availability
+        }
+
+//This will return once the file is not being acessed by other programs.
+//it returns false if the file is discovered to be deleted before that point.
+let isAvailable (source:string) (ct:CancellationToken) (sleepTime:int option) =
+    let sleepTime= sleepTime|>Option.defaultValue 1000
+    checkAvailabilityFileSize source ct sleepTime
 
 let isAvailableFTP (ct:CancellationToken) (client:FtpClient)(source:string)  =
         async {
