@@ -83,22 +83,22 @@
     };
     var etaSecs=(double)(Task.FileRemaining/Task.Speed);
 
-    string etaString;
-
-    if(etaSecs>3600){
-        etaString= "ETA "+ ">1 hour";
-    }
-
-    else if(etaSecs>0.01){
-    etaArray.AddEta(etaSecs);
-        var eta= TimeSpan.FromSeconds(etaArray.average);
-        etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
-    }
-
-    else if(Task.Status==TransferStatus.Complete){ etaString="Took: "+((Task.EndTime-Task.StartTime).ToString("hh\\:mm\\:ss"));}
-    else
+    string etaString="";
+   
+    if(Task.Status==TransferStatus.Complete){ etaString="Took: "+((Task.EndTime-Task.StartTime).ToString("hh\\:mm\\:ss"));}
+    else if(Task.Status==TransferStatus.Waiting||Task.Status==TransferStatus.Unavailable)
     {
         etaString="ETA "+"Not Started";
+    }
+    else{
+        if(etaSecs>3600){
+            etaString= "ETA "+ ">1 hour";
+        }
+        else if(etaSecs>0.01){
+        etaArray.AddEta(etaSecs);
+            var eta= TimeSpan.FromSeconds(etaArray.average);
+            etaString="ETA "+ eta.Minutes+":"+eta.Seconds;
+        }
     }
 
     var fileName = System.IO.Path.GetFileName(Task.Source);
