@@ -112,11 +112,11 @@ let scheduleTransfer (file:FoundFile) moveData (receiverFuncs:ReceiverFuncs opti
                     let client=IO.FTPMove.ftpClient ftpData
                     client.Connect()
                     Async.RunSynchronously<| (file.Path|>isAvailableFTP  ct.Token client)
-                |None-> Async.RunSynchronously( isAvailable file.Path ct.Token moveData.sleepTime)
+                |None-> Async.RunSynchronously( isAvailable file.Path ct.Token moveData.SleepTime)
     
         let trans= dbAccess.TransDataAccess.Get jobID
         if fileAvailable= Availability.Available then
-            Logging.info "'Available' file at: {@file} is available" logFilePath 
+            Logging.info "'Scheduler' file at: {@file} is available" logFilePath 
             trans|>setStatus TransferStatus.Waiting |>getFileData file |>updateTransData
             dbAccess.MakeJobAvailable jobID
             

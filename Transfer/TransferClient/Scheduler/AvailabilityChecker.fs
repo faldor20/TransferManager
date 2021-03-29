@@ -64,9 +64,11 @@ let checkAvailabilityFileSize (source:string) (ct:CancellationToken) (sleepTime:
                     loop<- false
                 try
                     let newSize=(new FileInfo(source)).Length
+                    Logging.debug3 "'Availability checker' {@file} olsize={@old} newSize={@new}" fileName newSize lastSize
                     if newSize=lastSize then
                         availability<-Availability.Available
                         loop<-false
+                        Logging.debugf "'Availability Checker' File is available. Returning"
                     lastSize<-newSize
                 with 
                     | :? FileNotFoundException | :? DirectoryNotFoundException  ->
@@ -82,8 +84,8 @@ let checkAvailabilityFileSize (source:string) (ct:CancellationToken) (sleepTime:
             return availability
         }
 
-//This will return once the file is not being acessed by other programs.
-//it returns false if the file is discovered to be deleted before that point.
+///This will return once the file is not being accessed by other programs.
+///it returns false if the file is discovered to be deleted before that point.
 let isAvailable (source:string) (ct:CancellationToken) (sleepTime:int option) =
     let sleepTime= sleepTime|>Option.defaultValue 1000
     checkAvailabilityFileSize source ct sleepTime
