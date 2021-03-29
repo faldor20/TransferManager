@@ -19,28 +19,36 @@ module Mover =
             //The particular transfer action to take has allready been decided by the progress callback
             match progressHandler  with
                 |FtpProg cb->
-                    match (moveData.SourceFTPData,moveData.DestFTPData) with
-                    |(Some source,Some dest)->
-                        FTPtoFTP source dest sourceFilePath destFilePath cb ct
-                    |(Some source,None)->
-                        downloadFTP  source sourceFilePath destFilePath cb ct
-                    |(None ,Some dest)->
-                        uploadFTP  dest sourceFilePath destFilePath cb ct
-                    |(source,dest)-> 
-                        Logging.error3 "'Mover' Ftp progress handler was given but there is no ftp source of desitination.. SourceFTP: {@source} DestFTP: {@dest} callback : {@cb}"source dest cb
-                        failwith "see above"
+                    let ftpFunc=
+                        match (moveData.SourceFTPData,moveData.DestFTPData) with
+                        |(Some source,Some dest)->
+                            FTPtoFTP source dest 
+                        |(Some source,None)->
+                            downloadFTP  source
+                        |(None ,Some dest)->
+                            uploadFTP  dest
+                        |(source,dest)-> 
+                            Logging.error3 "'Mover' Ftp progress handler was given but there is no ftp source of desitination.. SourceFTP: {@source} DestFTP: {@dest} callback : {@cb}"source dest cb
+                            failwith "see above"
+                    ftpFunc sourceFilePath destFilePath cb ct
                 |FastFileProg cb->
                     FCopy sourceFilePath destFilePath cb ct
                 |TranscodeProg (cb,ffmpegInfo) ->
-                    match ffmpegInfo.ReceiverData with
-                       |Some(_)->
-                            match moveJobData.ReceiverFuncs with
-                            |Some(recv)->
-                                VideoMover.sendToReceiver ffmpegInfo recv cb sourceFilePath destFilePath ct
-                            |None->
-                                Logging.warnf("'Mover' Receiver Funcs have not been set. Cannot communicate with ffmpeg reciver. This is a code issue not a configuration one.")
-                                failwith ("see above")
-                       |None->VideoMover.Transcode ffmpegInfo moveData.DestFTPData cb sourceFilePath destFilePath  ct
+                    let transFunc=
+                        match ffmpegInfo.ReceiverData with
+                           |Some(_)->
+                                match moveJobData.ReceiverFuncs with
+                                |Some(recv)->
+                                    VideoMover.sendToReceiver recv 
+                                |None->
+                                    Logging.warnf("'Mover' Receiver Funcs have not been set. Cannot communicate with ffmpeg reciver. This is a code issue not a configuration issue.")
+                                    failwith ("see above")
+                           |None->
+                                match moveData.DestFTPData with
+                                |Some (data)->VideoMover.transcodetoFTP data 
+                                |None -> VideoMover.transcodeFile
+                    transFunc  ffmpegInfo cb sourceFilePath destFilePath ct
+
                 |cb->
                     Logging.error "'Mover' Progress callback not recognised. callback : {@cb}" cb
                     failwith "See above"
