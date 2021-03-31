@@ -7,7 +7,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System.Linq;
 
-namespace HostedBlazor.Server
+namespace WebUI.Server
 {
     public class Startup
     {

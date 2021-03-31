@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace HostedBlazor.Data
+namespace WebUI.Data
 {
     public class SlidingArray
     {

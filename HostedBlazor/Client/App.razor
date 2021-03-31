@@ -1,9 +1,9 @@
 <Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" DefaultLayout="@typeof(HostedBlazor.Client.Shared.MainLayout)" />
+        <RouteView RouteData="@routeData" DefaultLayout="@typeof(WebUI.Client.Shared.MainLayout)" />
     </Found>
     <NotFound>
-        <LayoutView Layout="@typeof(HostedBlazor.Client.Shared.MainLayout)">
+        <LayoutView Layout="@typeof(WebUI.Client.Shared.MainLayout)">
             <p>Sorry, there's nothing at this address.</p>
         </LayoutView>
     </NotFound>

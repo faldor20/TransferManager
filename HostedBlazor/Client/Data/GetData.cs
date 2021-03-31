@@ -1,4 +1,4 @@
-namespace HostedBlazor.Data
+namespace WebUI.Data
 {
     using System.Collections.Generic;
     using System.Threading.Tasks;

@@ -8,8 +8,8 @@
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Client\HostedBlazor.Client.csproj" />
-    <ProjectReference Include="..\Shared\HostedBlazor.Shared.csproj" />
+    <ProjectReference Include="..\Client\WebUI.Client.csproj" />
+    <ProjectReference Include="..\Shared\WebUI.Shared.csproj" />
   </ItemGroup>
   <Import Project="..\..\.paket\Paket.Restore.targets" />
 </Project>

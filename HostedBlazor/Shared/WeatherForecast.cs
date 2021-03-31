@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace HostedBlazor.Shared
+namespace WebUI.Shared
 {
     public class WeatherForecast
     {

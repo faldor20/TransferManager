@@ -7,12 +7,12 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using HostedBlazor.Server.Controllers;
+using WebUI.Server.Controllers;
 public class Config
 {
     public string transferServerUrl{get;set;}
 }
-namespace HostedBlazor.Server
+namespace WebUI.Server
 {
     public class Program
     {
