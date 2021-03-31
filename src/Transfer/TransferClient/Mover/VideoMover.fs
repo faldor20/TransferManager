@@ -133,6 +133,7 @@ module VideoMover=
                  
                 let ip="0.0.0.0"
                 let outArgs= sprintf "-y %s://%s:%i?%s" recv.Protocoll ip recv.Port recv.ProtocolArgs
+
                 let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
                 let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;
                 //vv--start the ffmpeg instance listening--vv 
@@ -141,7 +142,7 @@ module VideoMover=
                     IO.Path.ChangeExtension( destFilePath,"mxf")
                 let recvArgs=
                     recv.ReceivingFFmpegArgs+" \""+outPath+"\""
-                Logging.debug "'VideoMover' Telling reciver to start listening with args {@args} " recvArgs
+                Logging.debug "'VideoMover' Telling reciver to connect to us with args {@args} " recvArgs
                 let receiverStarted=
                     match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recvArgs)|>Async.RunSynchronously with
                     |true->()

@@ -38,6 +38,8 @@ module SharedTypes =
     type JobID = int
     type TransferDataList =Dictionary<JobID, TransferData>
     type UIJobInfo={JobID:JobID;RequiredTokens:SourceID array}
+    ///Data to be sent to the UI by the clientManager
+    /// 
     [<CLIMutable>]
     type UIData= {
         Mapping:Dictionary<int,string>
