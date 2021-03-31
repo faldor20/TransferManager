@@ -75,5 +75,5 @@
 		<PackageReference Include="TaskBuilder.fs" Version="2.2.0-alpha" />
 		<PackageReference Update="FSharp.Core" Version="4.7.2" /> -->
   </ItemGroup>
-  <Import Project="..\..\.paket\Paket.Restore.targets" />
+  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
 </Project>
