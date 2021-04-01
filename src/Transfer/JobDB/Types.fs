@@ -1,6 +1,6 @@
-﻿namespace TransferClient.JobManager
+﻿namespace JobManager
 open SharedFs.SharedTypes
-open TransferClient.IO.Types
+open Mover.Types
 open System.Threading
 
 

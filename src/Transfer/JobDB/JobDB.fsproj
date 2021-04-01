@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="paket.references" />
+    <Compile Include="Types.fs" />
+    <Compile Include="JobList.fs" />
+    <Compile Include="Syncer.fs" />
+    <Compile Include="TokenList.fs" />
+    <Compile Include="SourceList.fs" />
+    <Compile Include="JobOrder.fs" />
+    <Compile Include="TransferDataList.fs" />
+    <Compile Include="JobManager.fs" />
+    <Compile Include="RequestHandler.fs" />
+    <Compile Include="Access.fs" />
+  </ItemGroup>
+
+  <ItemGroup />
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\SharedData.fsproj" />
+    <ProjectReference Include="..\LoggingFsharp\LoggingFsharp.fsproj" />
+    <ProjectReference Include="..\Mover\Mover.fsproj" />
+  </ItemGroup>
+
+	<Import Project="..\..\..\.paket\Paket.Restore.targets" />
+	
+</Project>

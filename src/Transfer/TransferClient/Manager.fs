@@ -9,12 +9,13 @@ open TransferClient.Scheduling
 open FSharp.Control
 open System.Collections.Generic
 open TransferHandling
-open IO.Types
+open Mover.Types
 open System.Linq
 open SharedFs.SharedTypes
 open TransferClient.SignalR.ManagerCalls
 open System.IO;
 open Microsoft.AspNetCore
+open LoggingFsharp
 open ConfigReader
 
 module Manager =
@@ -34,8 +35,8 @@ module Manager =
         LocalDB.initDB groups configData.FreeTokens (processTask LocalDB.AcessFuncs) 
         // we set the ffmpegPath in the video mover.
         //TODO: this is really horrifyingly inelegant. However it does work
-        Logging.info "Setting ffmpeg Path to: {@path}" configData.FFmpegPath
-        IO.VideoMover.ffmpegPath<- configData.FFmpegPath
+        Lginfo "Setting ffmpeg Path to: {@path}" configData.FFmpegPath
+        Mover.VideoMover.ffmpegPath<- configData.FFmpegPath
         let heirachy=HierarychGenerator.makeHeirachy groups
         //This is the A UIData object with the unchanging parts filled out
         let baseUIData=(UIData mapping heirachy)
@@ -45,7 +46,7 @@ module Manager =
         async{
             let signalrCT = new Threading.CancellationTokenSource()
             //For reasons i entirely do not understand starting this just as async deosnt run connection in release mode
-            Logging.infof "'Manager' starting signalr connection process"
+            Lginfof "'Manager' starting signalr connection process"
 
             let conectionTask =
                 SignalR.Commands.connect configData.manIP configData.ClientName baseUIData signalrCT.Token
@@ -59,7 +60,7 @@ module Manager =
                 newFilesForEachWatchdir
                 |> List.toArray
                 |> Array.map (fun (schedules, watchDir) ->
-                    Logging.info "'Manager' Setting up observables for group: {@}" watchDir.MovementData.GroupList
+                    Lginfo "'Manager' Setting up observables for group: {@}" watchDir.MovementData.GroupList
                     schedules
                     |>AsyncSeq.collect (fun (newFiles) ->
                         asyncSeq{
@@ -71,7 +72,7 @@ module Manager =
                                     |None-> false
                                 
                                 let task = Scheduler.scheduleTransfer file watchDir.MovementData (Some receiverFuncs) LocalDB.AcessFuncs 
-                                Logging.info "'Manager' created scheduling task for file {@}" (Path.GetFileName file.Path)
+                                Lginfo "'Manager' created scheduling task for file {@}" (Path.GetFileName file.Path)
                                 yield task
                         }
                     )
@@ -120,7 +121,7 @@ module Manager =
                 scheduleJobs|> Observable.map(fun x->x|>Async.Start)
             runJobs|>Observable.wait
             with|e->
-                Logging.error
+                Lgerror
                     "'Manager' Not Watching any directories. This means no files will be moved. \n
                      Most likely this is due to a config error, check the rest of the log for config error reports. \n
                      This could be intentional if you mean for this client to only receive ffmpeg streams. \n

@@ -5,12 +5,12 @@ open System.Collections.Generic
 open SharedFs.SharedTypes
 open System.Threading
 open Types
-open TransferClient.JobManager
-open TransferClient.JobManager.Main
-open TransferClient.JobManager.Access
+open JobManager
+open JobManager.Main
+open JobManager.Access
 open Microsoft.AspNetCore.SignalR.Client
 open SharedFs.SharedTypes
-
+open LoggingFsharp
 module LocalDB =
    // let mutable ChangeDB :JobDataBase= JobDataBase (fun _ _->async{()}) (Dictionary())
     let  jobDB:JobDataBase =  JobDataBase(fun _ _->async{()}) (Dictionary())(Array.empty)
@@ -21,7 +21,7 @@ module LocalDB =
 
     let initDB (groups: int list list) (freeTokens:Dictionary<int,int>) runJob =
         //the groups that is passed in should be each of the watchdirs "GroupList"
-        TransferClient.Logging.infof "initialising DB"
+        Lginfof "initialising DB"
         let sourceIDLevel =
             groups
             |> List.collect List.indexed
@@ -58,7 +58,7 @@ module LocalDB =
 
 
     let reset () =
-        TransferClient.Logging.infof "[DataBase] Resetting DataBase"
+        Lginfof "[DataBase] Resetting DataBase"
         //We have to do this ugly monstrosity because if i make the jobDB mutable when it is reassigned Acessfuncs will point to a previous version of it
         jobDB.RunningJobs.Clear()
         jobDB.JobOrder.Clear()

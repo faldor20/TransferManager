@@ -1,9 +1,10 @@
 namespace TransferClient
 
 open System.IO
-open IO.Types
+open Mover.Types
 open FluentFTP
 open FSharp.Control
+open LoggingFsharp
 module Watcher =
 
 //======================
@@ -20,7 +21,7 @@ module Watcher =
                 //TODO: this may have to be changed becuase ignorelist now takes ino account fileinfo like acessedtime
             fileNames
         with
-            |e->Logging.errorf ("Exception occured while checking for new ftp files in folder %s \n Excpetion: %A") folder e
+            |e->Lgerrorf ("Exception occured while checking for new ftp files in folder %s \n Excpetion: %A") folder e
                 Array.empty
         
     ///Returns the filePaths of files not part of the ignorelist
@@ -37,12 +38,12 @@ module Watcher =
             use nullableFTPConnection= 
                 match ftpData with 
                 |Some x->
-                    Logging.infof "{Watcher} Connecting to ftp:%A"x
+                    Lginfof "{Watcher} Connecting to ftp:%A"x
                     let con= new FtpClient(x.Host,x.User,x.Password)
                     con.Connect()
                     con
                 |None -> null
-            Logging.infof "{Watcher} Watching : %A"sourceDir
+            Lginfof "{Watcher} Watching : %A"sourceDir
             while true do
                 try
                     let newFilesFunc=
@@ -51,10 +52,10 @@ module Watcher =
                         |con->checkForNewFilesFTP con 
                     let newFiles=newFilesFunc ignoreList sourceDir  
                     if newFiles.Length>0 then
-                        Logging.debugf"{Watcher} Found new files yielding now "
+                        Lgdebugf"{Watcher} Found new files yielding now "
                         yield newFiles
                         ignoreList<- ignoreList|> Array.append (newFiles|> Array.map(fun x->x.Path))
-                with|e->Logging.errorf "Exception thrown while doing watched folder check for folder %s exception:%A" sourceDir e
+                with|e->Lgerrorf "Exception thrown while doing watched folder check for folder %s exception:%A" sourceDir e
                 do! Async.Sleep(500);
         })
 

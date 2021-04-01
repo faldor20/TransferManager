@@ -1,10 +1,10 @@
-namespace TransferClient.JobManager
+namespace JobManager
 
-open TransferClient
 open System.Collections.Generic
 open SharedFs.SharedTypes
 open FSharp.Control.Reactive
 open System
+open LoggingFsharp
 //open System.Reactive.Linq
 module Syncer=
     type SyncEvents={
@@ -36,7 +36,7 @@ module Syncer=
                         |>List.map(fun (trans,jobID)-> 
                             KeyValuePair(jobID,trans))
                         |>Dictionary
-                    Logging.debugf "Sending database update to ClientManager"
+                    Lgdebugf "Sending database update to ClientManager"
                     let latestData={uiData with TransferDataList= transDataList}
                     syncFunc  latestData
                 )
@@ -45,7 +45,7 @@ module Syncer=
             |>Observable.bufferSpan (TimeSpan.FromMilliseconds syncInterval)
             |>Observable.subscribe(fun x ->
                 if x.Count>0 then 
-                    Logging.debugf "Sending database update to ClientManager"
+                    Lgdebugf "Sending database update to ClientManager"
                     let jobList,trans=x.[0]
                     syncFunc ({uiData with UIData.Jobs=jobList; TransferDataList=trans})
                 )

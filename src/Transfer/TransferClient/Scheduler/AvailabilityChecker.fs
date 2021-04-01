@@ -5,13 +5,14 @@ open TransferClient
 open System.IO
 open System.Threading
 open System
-open TransferClient.IO.Types
+open Mover.Types
 open SharedFs.SharedTypes
 open TransferClient.DataBase.Types
-open TransferClient.IO
+
 open FluentFTP
-open TransferClient.JobManager
-open TransferClient.JobManager.Main
+open JobManager
+open JobManager.Main
+open LoggingFsharp
 type Availability=
     |Available=0
     |Deleted=1
@@ -21,6 +22,7 @@ type Availability=
 //it returns false if the file is discovered to be deleted before that point.
 let checkAvailabilityFileStream (source:string) (ct:CancellationToken) =
     async {
+        
         let fileName= Path.GetFileName (string source)
         let mutable currentFile = new FileInfo(source)
         let mutable loop = true
@@ -36,7 +38,7 @@ let checkAvailabilityFileStream (source:string) (ct:CancellationToken) =
                 loop<-false
             with 
                 | :? FileNotFoundException | :? DirectoryNotFoundException  ->
-                    Logging.warn "'Availability check' {@file} deleted while waiting to be available" fileName
+                    Lgwarn "'Availability check' {@file} deleted while waiting to be available" fileName
                     availability<-Availability.Deleted
                     loop<-false
                 | :? IOException ->
@@ -44,7 +46,7 @@ let checkAvailabilityFileStream (source:string) (ct:CancellationToken) =
                     do! Async.Sleep(1000)
 
                 | ex  ->
-                    Logging.warn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
+                    Lgwarn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
                     loop<- false
                     availability<-Availability.Deleted
         return availability
@@ -64,21 +66,21 @@ let checkAvailabilityFileSize (source:string) (ct:CancellationToken) (sleepTime:
                     loop<- false
                 try
                     let newSize=(new FileInfo(source)).Length
-                    Logging.debug3 "'Availability checker' {@file} olsize={@old} newSize={@new}" fileName newSize lastSize
+                    Lgdebug3 "'Availability checker' {@file} olsize={@old} newSize={@new}" fileName newSize lastSize
                     if newSize=lastSize then
                         availability<-Availability.Available
                         loop<-false
-                        Logging.debugf "'Availability Checker' File is available. Returning"
+                        Lgdebugf "'Availability Checker' File is available. Returning"
                     lastSize<-newSize
                 with 
                     | :? FileNotFoundException | :? DirectoryNotFoundException  ->
-                        Logging.warn "'Availability check' {@file} deleted while waiting to be available" fileName
+                        Lgwarn "'Availability check' {@file} deleted while waiting to be available" fileName
                         availability<-Availability.Deleted
                         loop<-false
                     | :? IOException ->()
 
                     | ex  ->
-                        Logging.warn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
+                        Lgwarn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
                         loop<- false
                         availability<-Availability.Deleted
             return availability
@@ -118,7 +120,7 @@ let isAvailableFTP (ct:CancellationToken) (client:FtpClient)(source:string)  =
                             modifiedDate<-newModDate
                             
                     with|ex->
-                        Logging.error "'Scheduler' Error thrown during availability check {@exp}" ex
+                        Lgerror "'Scheduler' Error thrown during availability check {@exp}" ex
                         loop<-false
                         availability<-Availability.Deleted
 

@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project Sdk="Microsoft.NET.Sdk" Version="5">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <GenerateLibraryOutput>True</GenerateLibraryOutput>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="../../Shared/SharedData.fsproj" />
+    <ProjectReference Include="..\LoggingFsharp\LoggingFsharp.fsproj" />
+    <!--<ProjectReference Include="../ClientManager/ClientManager.fsproj" />-->
+    <Reference Include="FFmpeg.Net">
+      <HintPath>./FFmpeg.NET.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="FFmpeg.NET.dll" />
+    <None Include="paket.references" />
+    <Compile Include="Types.fs" />
+    <Compile Include="StreamPiping.fs" />
+    <Compile Include="Fmove.fs" />
+    <Compile Include="FTPMove.fs" />
+    <Compile Include="Progresshandlers.fs" />
+    <Compile Include="VideoMover.fs" />
+    <Compile Include="Mover.fs" />
+  </ItemGroup>
+  <Import Project="..\..\..\.paket\Paket.Restore.targets" />
+</Project>

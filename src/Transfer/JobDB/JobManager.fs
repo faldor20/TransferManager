@@ -1,4 +1,4 @@
-namespace TransferClient.JobManager
+namespace JobManager
 
 open System.Collections.Generic
 open SharedFs.SharedTypes

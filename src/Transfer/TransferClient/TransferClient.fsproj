@@ -9,34 +9,22 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../Shared/SharedData.fsproj" />
+    <ProjectReference Include="..\JobDB\JobDB.fsproj" />
+    <ProjectReference Include="..\LoggingFsharp\LoggingFsharp.fsproj" />
+    <ProjectReference Include="..\Mover\Mover.fsproj" />
+    <ProjectReference Include="..\Watcher\Watcher.fsproj" />
     <!--<ProjectReference Include="../ClientManager/ClientManager.fsproj" />-->
-    <Reference Include="FFmpeg.Net">
+ <!--    <Reference Include="FFmpeg.Net">
       <HintPath>./FFmpeg.NET.dll</HintPath>
-    </Reference>
+    </Reference> -->
   </ItemGroup>
   <ItemGroup>
+    <None Include="paket.references" />
     <Compile Include="Logging.fs" />
     <Compile Include="DataBase/Types.fs" />
-    <Compile Include="Mover/Types.fs" />
-    <Compile Include="Mover/StreamPiping.fs" />
-    <Compile Include="Mover/Fmove.fs" />
-    <Compile Include="JobManager\Types.fs" />
-    <Compile Include="JobManager\JobList.fs" />
-    <Compile Include="JobManager\Syncer.fs" />
-    <Compile Include="JobManager\TokenList.fs" />
-    <Compile Include="JobManager\SourceList.fs" />
-    <Compile Include="JobManager\JobOrder.fs" />
-    <Compile Include="JobManager\TransferDataList.fs" />
-    <Compile Include="JobManager/JobManager.fs" />
-    <Compile Include="JobManager\RequestHandler.fs" />
-    <Compile Include="JobManager/Access.fs" />
     <Compile Include="ConfigReader.fs" />
     <Compile Include="FTParser.fs" />
     <Compile Include="DataBase/LocalDB.fs" />
-    <Compile Include="Mover\FTPMove.fs" />
-    <Compile Include="Mover/Progresshandlers.fs" />
-    <Compile Include="Mover/VideoMover.fs" />
-    <Compile Include="Mover/Mover.fs" />
     <Compile Include="TransferHandling.fs" />
     <Compile Include="SignalR/SignalR.fs" />
     <Compile Include="SignalR/ManagerCalls.fs" />
@@ -44,7 +32,6 @@
     <Compile Include="SignalR/Commands.fs" />
     <Compile Include="Scheduler\AvailabilityChecker.fs" />
     <Compile Include="Scheduler\Scheduler.fs" />
-    <Compile Include="watcher.fs" />
     <Compile Include="HierarchyGenerator.fs" />
     <Compile Include="Manager.fs" />
     <Compile Include="testing.fsx" />

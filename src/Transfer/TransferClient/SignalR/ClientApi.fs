@@ -3,21 +3,22 @@ open System
 open TransferClient.DataBase
 open Microsoft.AspNetCore.SignalR.Client;
 open TransferClient
-open TransferClient.IO;
+open Mover;
 open Types;
+open LoggingFsharp
 module ClientApi=
     let CancelTransfer=Action<int>(fun  id->
-        Logging.debug "'SignalR' Cancellation request recieved for id {@id}"  id
+        Lgdebug "'SignalR' Cancellation request recieved for id {@id}"  id
         LocalDB.AcessFuncs.CancelJob id
     )
 
     let ResetDB=Action(fun ()->
-        Logging.debugf "'SignalR' reset request recieved"
+        Lgdebugf "'SignalR' reset request recieved"
         LocalDB.reset()
         ()
     ) 
     let SwitchJobs=Action<int,int>(fun job1 job2->
-        Logging.info2 "'SignalR' Switching jobs {@job1} and {@job2} "job1 job2
+        Lginfo2 "'SignalR' Switching jobs {@job1} and {@job2} "job1 job2
         LocalDB.AcessFuncs.SwitchJobs job1 job2
         ()
     )
@@ -32,14 +33,14 @@ module ClientApi=
     let StartReceivingTranscode=Action<string>(fun args->
         try
             match VideoMover.startReceiving args|>Async.RunSynchronously with
-            |TransferResult.Success-> Logging.infof "[SignalR] Receiving data from ffmpeg stream was sucessful"
-            |_->Logging.warnf "'SignalR' Receiving data from FFmpeg failed."
-        with|e-> Logging.error "'SignalR' Exception whils receivng ffmpeg stream: Reason: {@excp}" e
+            |TransferResult.Success-> Lginfof "[SignalR] Receiving data from ffmpeg stream was sucessful"
+            |_->Lgwarnf "'SignalR' Receiving data from FFmpeg failed."
+        with|e-> Lgerror "'SignalR' Exception whils receivng ffmpeg stream: Reason: {@excp}" e
     )
 
     let InitManagerCalls (connection:HubConnection)= 
         
-        Logging.infof "'ClientAPI' Initialising Client Signalr Triggers (connection.On...etc)"
+        Lginfof "'ClientAPI' Initialising Client Signalr Triggers (connection.On...etc)"
 
         let types= [|string.GetType();  int.GetType()|]
 

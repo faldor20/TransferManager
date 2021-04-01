@@ -1,10 +1,9 @@
-﻿namespace TransferClient.JobManager
+﻿namespace JobManager
 open System.Collections.Generic
 open SharedFs.SharedTypes
 open System.Linq
-open TransferClient
 open System
-
+open LoggingFsharp
 
 ///contains one schedule id for each job in each jobsource.
 /// source a=[job1,job2] b=[job1] jobOrder=[(a);(b);(a)]
@@ -43,15 +42,15 @@ module JobOrder =
         jobsToRun|>List.map(fun (source,id)->
             match jobOrder.Remove(source) with
             |true->()
-            |false->Logging.errorf "Tried to remove a job that should have been there but wasn't"
+            |false->Lgerrorf "Tried to remove a job that should have been there but wasn't"
             //this removes the job from the source list
           
             let i=sources.[source].Jobs.FindIndex (Predicate( fun x->x.ID=id))
             match  i with
-            |(-1)->Logging.error2 "Tried to remove job {id} from source {src} that should have been there but wasn't" id source
+            |(-1)->Lgerror2 "Tried to remove job {id} from source {src} that should have been there but wasn't" id source
             |a->
                 sources.[source].Jobs.RemoveAt a
-                Logging.debug3 "Removed job {id} from source {src} at position {pos} "id source i
+                Lgdebug3 "Removed job {id} from source {src} at position {pos} "id source i
             
             (source,id)
             )

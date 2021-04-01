@@ -1,12 +1,12 @@
-module TransferClient.JobManager.Access
+module JobManager.Access
 
-open TransferClient.JobManager.Main
+open JobManager.Main
 open System
 open System.Collections.Generic
 open SharedFs.SharedTypes
-open TransferClient
 open System.Linq
 open RequestHandler
+open LoggingFsharp
 
 //======Basic overview of Jobdatabase access=====
 //There will be two main loops managing the jobs. One loop gives new tokens the other runs new jobs.
@@ -18,7 +18,7 @@ open RequestHandler
 
 
 let private runJob jobDB jobsToRun =
-    Logging.debug "Running jobs {@jobs}" jobsToRun
+    Lgdebug "Running jobs {@jobs}" jobsToRun
     jobsToRun
     |> List.iter (fun (x, i) ->
         jobDB.RunningJobs.Add(i)
@@ -27,12 +27,12 @@ let private runJob jobDB jobsToRun =
 let removeWaitingJob jobDB (source: Source) sourceID (id: JobID) =
     match jobDB.JobOrder.Remove(sourceID) with
     | true -> ()
-    | false -> Logging.error2 "Tried to remove job {@id} from source {@srcID} that should have been there but wasn't" id sourceID
+    | false -> Lgerror2 "Tried to remove job {@id} from source {@srcID} that should have been there but wasn't" id sourceID
     //this removes the job from the source list
     let i =
         source.Jobs.FindIndex(Predicate(fun x -> x.ID = id))
     match i with
-    | (-1) -> Logging.error2 "Tried to remove job {@jobid} from source {@srcid} that should have been there but wasn't" id sourceID
+    | (-1) -> Lgerror2 "Tried to remove job {@jobid} from source {@srcid} that should have been there but wasn't" id sourceID
     | a -> source.Jobs.RemoveAt a
 
 
@@ -42,7 +42,7 @@ let removeWaitingJob jobDB (source: Source) sourceID (id: JobID) =
 ///Can run a job out of order... but if only called when a job becomes available order should be preserved
 let tryrunJob (jobDB: JobDataBase) id =
 
-    Logging.debug "Trying to run job {@id}" id
+    Lgdebug "Trying to run job {@id}" id
     let job = JobList.getJob jobDB.JobList id
     if job.TakenTokens.Length > 1 then
         let sourceID = List.last job.TakenTokens
@@ -51,7 +51,7 @@ let tryrunJob (jobDB: JobDataBase) id =
             match jobDB.JobOrder.Remove(sourceID) with
             | true -> ()
             | false ->
-                Logging.error2
+                Lgerror2
                     "Tried to remove job {@id} from source {@srcID} that should have been there but wasn't"
                     id
                     sourceID
@@ -60,13 +60,13 @@ let tryrunJob (jobDB: JobDataBase) id =
                 source.Jobs.FindIndex(Predicate(fun x -> x.ID = id))
             match i with
             | (-1) ->
-                Logging.error2
+                Lgerror2
                     "Tried to remove job {@jobID} from source {@srcID} that should have been there but wasn't"
                     id
                     sourceID
             | a -> source.Jobs.RemoveAt a
 
-            Logging.debug2 "Running Specifically job {@jobID} from source {@srcID} " id sourceID
+            Lgdebug2 "Running Specifically job {@jobID} from source {@srcID} " id sourceID
             runJob jobDB [ (sourceID, id) ]
 
 
@@ -116,7 +116,7 @@ let jobOrderChanged jobDB = syncChangeJobOrder jobDB
 ///<summary>Called to add a job to the jobdb</summary>
 ///<param name="makeJob"> A function that takes an id and returns a job that will be run to create the job. This allows for a job to contain its own id. if the id is wunwanted just return a job as usual.</param>
 let private addJob jobDB sourceID makeJob transData =
-    Logging.debug "[Access] Adding job to source wih id: {@srcID}  "sourceID
+    Lgdebug "[Access] Adding job to source wih id: {@srcID}  "sourceID
     let { FreeTokens = freeTokens; Sources = sources; JobList = jobList } = jobDB
     let source = sources.[sourceID]
     let id = JobList.addJob jobList makeJob
@@ -134,7 +134,7 @@ let private addJob jobDB sourceID makeJob transData =
 
     jobOrderChanged jobDB
     //return
-    Logging.debugf "Added job jobID %i" id
+    Lgdebugf "Added job jobID %i" id
     id
 
 ///Removes the job from the runningList and moves it to finished. 
@@ -155,7 +155,7 @@ let MakeJobFinished jobDB sourceID jobID =
         try
             removeWaitingJob jobDB (sources.[sourceID]) sourceID jobID
             finish ()
-        with a -> Logging.error2 "Job {@ID} failed to be removed. Reason: {@reason}" job a
+        with a -> Lgerror2 "Job {@ID} failed to be removed. Reason: {@reason}" job a
     job.TakenTokens
     |> List.iter (fun id -> TokenList.returnToken freeTokens id)
 
@@ -167,7 +167,7 @@ let MakeJobFinished jobDB sourceID jobID =
 
     tryRunJobs jobDB
     jobOrderChanged jobDB
-    Logging.debug "Removed job {@id" jobID
+    Lgdebug "Removed job {@id" jobID
 
 ///Makes the upjob higher up the order of jobs than the downjob
 ///This is done by either reordering source in the joborder or reording jobs within a source
@@ -199,12 +199,12 @@ let private switch jobDB (downJob: JobID) upJob =
             else if (pos1 - 1) = pos2 then
                 list.Jobs.Reverse(pos2, 2)
             else
-                Logging.error2
+                Lgerror2
                     "Jobs requested to be switched are not adjacent. At positions {@pos1} and {@pos2} This should not be."
                     pos1
                     pos2
         else
-            Logging.warn2
+            Lgwarn2
                 "Jobs requested to be switched are in the same source but not adjacent. At positions {@pos1} and {@pos2} This should not be. Jobs have not been switched"
                 pos1
                 pos2

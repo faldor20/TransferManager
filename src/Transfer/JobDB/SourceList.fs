@@ -1,8 +1,7 @@
-﻿namespace TransferClient.JobManager
+﻿namespace JobManager
 open System.Collections.Generic
 open SharedFs.SharedTypes
-open TransferClient
-
+open LoggingFsharp
 
 type SourceList= Dictionary<SourceID,Source>
 
@@ -31,7 +30,7 @@ module SourceList =
                             //we then run it again just incase there are some tokens left
                             true
                         |None->
-                            Logging.errorf "Something has gone wrong an attempt was made to issue a token but it failed"
+                            Lgerrorf "Something has gone wrong an attempt was made to issue a token but it failed"
                             true
                     else jobLoop source ID (i+1)
         ///loops until the jobloop returns true, then runs the main function again. this is incase multiple tokens were added at once
@@ -46,7 +45,7 @@ module SourceList =
     
     ///this will attempt to get the given job the tokens it needs, in order. it will run recursivley untill a token cannot be had or it has all that it needs
     let rec getNextToken (freeTokens:TokenList)  (source:Source) (job:JobItem) =
-        Logging.debugf "{SourceList} Getting Next token for job %i. Job has tokens: %A. Needs: %A"job.ID job.TakenTokens source.RequiredTokens
+        Lgdebugf "{SourceList} Getting Next token for job %i. Job has tokens: %A. Needs: %A"job.ID job.TakenTokens source.RequiredTokens
         if job.TakenTokens.Length =source.RequiredTokens.Length then
             ()
         else

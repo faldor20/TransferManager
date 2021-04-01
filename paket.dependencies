@@ -26,6 +26,7 @@ nuget Newtonsoft.Json
 
 nuget Microsoft.NET.Test.Sdk 
 nuget Saturn 
+nuget Serilog
 nuget Serilog.Exceptions 
 nuget Serilog.Sinks.Console
 nuget Serilog.Sinks.File 

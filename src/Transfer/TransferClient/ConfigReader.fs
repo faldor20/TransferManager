@@ -4,8 +4,10 @@ open System
 
 open Legivel.Serialization
 open FSharp.Control
-open IO.Types
+open Mover.Types
 open System.Collections.Generic
+open FSharp
+open LoggingFsharp
 module ConfigReader=
     ///### Configuration for a single source destination combination.
     ///
@@ -44,7 +46,7 @@ module ConfigReader=
             match ftpData with
             | Some data->   
                 use client=new FluentFTP.FtpClient(data.Host,data.User,data.Password)
-                Logging.info "'Config' Testing connection to ftp: {config}" data
+                Lginfo "'Config' Testing connection to ftp: {config}" data
                 client.Connect()
                 let exists=client.DirectoryExists(directory)
                 if not exists then errorPrinter "could not be found on server" 
@@ -64,38 +66,38 @@ module ConfigReader=
 
     //the simple watchDir is just a represntation of the exact object in the config file. It is used in deserialisation.
     let ReadFile (configFilePath:string)=
-        Logging.info "'Config' Reading config file at: {config}" configFilePath
+        Lginfo "'Config' Reading config file at: {config}" configFilePath
 
         let configText = try File.ReadAllText(configFilePath)
                          with 
-                            | :? IOException->  Logging.errorf "'Config' Could not find WatchDirs.yaml, that file must exist"
+                            | :? IOException->  Lgerrorf "'Config' Could not find WatchDirs.yaml, that file must exist"
                                                 "Failed To open 'WatchDirs.yaml' file must exist for program to run "
         let yamlData = 
             match (Deserialize<YamlData> configText).[0] with
                |Success data -> 
-                    Logging.warn "'Config' Deserilaization Warnings: {@warning}" data.Warn
-                    Logging.info "'Config' Data=: {@data}" data.Data
+                    Lgwarn "'Config' Deserilaization Warnings: {@warning}" data.Warn
+                    Lginfo "'Config' Data=: {@data}" data.Data
                     data.Data
                |Error error ->
-                    Logging.error3 "'Config'Config file ({@conf}) malformed, there is an error at {err} becasue: {reason}" configText error.StopLocation.AsString error.Error
+                    Lgerror3 "'Config'Config file ({@conf}) malformed, there is an error at {err} becasue: {reason}" configText error.StopLocation.AsString error.Error
                     raise (FormatException())
 
         // Here we check if the directry exists by getting dir and file info about the source and dest and
         //filtering by whether it triggers an exception or not
         let watchDirsExist= yamlData.WatchDirs|>List.filter(fun dir->
 
-            let printDestError error= Logging.error3 "'Config' Watch Destination: {@destDir} for source:{@source} {@error}" dir.DirData.DestinationDir dir.DirData.SourceDir error
+            let printDestError error= Lgerror3 "'Config' Watch Destination: {@destDir} for source:{@source} {@error}" dir.DirData.DestinationDir dir.DirData.SourceDir error
             let destOkay= 
                 match  dir.TranscodeData|>Option.bind(fun x->x.ReceiverData) with
                 |None->directoryTest dir.DestFTPData dir.DirData.DestinationDir printDestError
                 |Some(x)-> true //TODO: I may want to add some kind of complex check that sends out a question to the client asking if it is available.
 
-            let printSourceError error= Logging.error3 "'Config' Watch Source:  {@source} for source:{@dest} {@error}" dir.DirData.SourceDir dir.DirData.DestinationDir error
+            let printSourceError error= Lgerror3 "'Config' Watch Source:  {@source} for source:{@dest} {@error}" dir.DirData.SourceDir dir.DirData.DestinationDir error
             let sourceOkay =
                 directoryTest dir.SourceFTPData dir.DirData.SourceDir printSourceError
             (sourceOkay && destOkay)
         )
-        if watchDirsExist.Length=0 then Logging.errorf "'Config' No WatchDirs with valid source and dest could be found in yaml file. The program is usless without one"
+        if watchDirsExist.Length=0 then Lgerrorf "'Config' No WatchDirs with valid source and dest could be found in yaml file. The program is usless without one"
         let groups=
             watchDirsExist
                 |>List.map(fun x-> x.GroupList)
@@ -106,7 +108,7 @@ module ConfigReader=
                     |> List.distinct
                     |> List.mapi (fun i x -> KeyValuePair(x, i))
                     |>Dictionary<string,int> 
-        Logging.info "'Config'Mapping: {@mapping}"mapping
+        Lginfo "'Config'Mapping: {@mapping}"mapping
         let freeTokens=yamlData.MaxJobs |>Seq.choose(fun x ->  if(mapping.ContainsKey x.Key) then Some<|KeyValuePair(mapping.[x.Key],x.Value)else None ) |>Dictionary<int,int>
         let mappedGroups=
             groups
@@ -137,5 +139,5 @@ module ConfigReader=
                 {MovementData=moveData;TransferedList = List.empty;ScheduledTasks= List.Empty }
             )
         
-        watchDirsData|>List.iter(fun watchDir->Logging.info "'Config' Sources that will be watched: {@watchdirs}" watchDir.MovementData.DirData.SourceDir )
+        watchDirsData|>List.iter(fun watchDir->Lginfo "'Config' Sources that will be watched: {@watchdirs}" watchDir.MovementData.DirData.SourceDir )
         {FFmpegPath=yamlData.FFmpegPath; manIP= yamlData.ManagerIP; ClientName=yamlData.ClientName;FreeTokens=freeTokens;SourceIDMapping= mapping;WatchDirs= watchDirsData}

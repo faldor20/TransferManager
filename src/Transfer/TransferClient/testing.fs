@@ -8,9 +8,9 @@ open System.IO.Pipelines
 open FSharp.Control.Tasks
 open System.Buffers
 open FluentFTP
-open FFmpeg.NET
 module Testing=
-
+    let a=1
+(*
     let Fmovertest()=
         async{
             let source2="./testSource2/Files2.zip" 
@@ -407,5 +407,5 @@ module Testing=
        (*  let inPath= "./testSource/BUNPREMIER.mxf"
         let fileName=IO.Path.GetFileName inPath
         let outPath="quantel:***REMOVED***@***REMOVED***/***REMOVED***Transfers/SSC to BUN/"+fileName
-        Transcode inPath true outPath  *)
+        Transcode inPath true outPath  *)*)
      

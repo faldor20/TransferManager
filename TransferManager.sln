@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31129.286
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "TransferClient", "src\Transfer\TransferClient\TransferClient.fsproj", "{B9C2EF50-C08C-49E7-A95B-501FC9D2C822}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B9C2EF50-C08C-49E7-A95B-501FC9D2C822}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9C2EF50-C08C-49E7-A95B-501FC9D2C822}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9C2EF50-C08C-49E7-A95B-501FC9D2C822}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9C2EF50-C08C-49E7-A95B-501FC9D2C822}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {24DDB59B-F56C-4765-82CB-965684E261D5}
+	EndGlobalSection
+EndGlobal

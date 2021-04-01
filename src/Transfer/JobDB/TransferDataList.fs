@@ -1,5 +1,6 @@
-﻿namespace TransferClient.JobManager
+﻿namespace JobManager
 open SharedFs.SharedTypes
+open LoggingFsharp
 module TransferDataList =
     let set (transferDataList:TransferDataList) jobID data=
         (* TransferClient.Logging.infof " %A %A %A"transferDataList jobID data *)
