@@ -6,12 +6,14 @@ open Types
 open SharedFs.SharedTypes;
 open FluentFTP
 open FFmpeg.NET
-    
+///The **TimeSpan** is the duration of the source clip
+///The **ConversionProgressEventArgs** is what it sounds like :)
+type TranscodeProgress= (TimeSpan->Events.ConversionProgressEventArgs ->unit)
 type ProgressHandler=
     | DoubleFtpProg of (FileMove.ProgressData->unit)*FTPData
     | FtpProg of Progress<FtpProgress>
     | FastFileProg of (FileMove.ProgressData->unit)
-    | TranscodeProg of (TimeSpan->Events.ConversionProgressEventArgs ->unit)*TranscodeData
+    | TranscodeProg of TranscodeProgress*TranscodeData
     /// A function that will be called whenever new transfer data is available.
     /// It will most likely be used to write to console or into a database
 type NewDataHandler= TransferData->unit

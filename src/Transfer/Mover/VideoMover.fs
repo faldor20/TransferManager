@@ -8,6 +8,7 @@ open FSharp.Control.Tasks.V2
 open FluentFTP
 open System.Diagnostics
 open System.Threading
+open ProgressHandlers
 module Logging=LoggingFsharp
 
 let mutable ffmpegPath:string option=None
@@ -73,7 +74,7 @@ let private startMpegErrorLogging (mpeg:Engine)=
     Logging.Lgdebugf "'VideoMover' FFmpeg error logging setup."
     transferError
 
-let private setupTranscode (filePath:string) progressHandler =
+let private setupTranscode (filePath:string) (progressHandler:TranscodeProgress) =
     let mpeg=createMpegEngine()
     let transferError=startMpegErrorLogging mpeg
     // We have to get the source files duration becuase the totalDuration given as part of the progressargs object doesnt work
@@ -120,6 +121,13 @@ let runTranscode (transferError:ref<bool>) args (mpeg:Engine) ct=
         else if ct.IsCancellationRequested then return TransferResult.Cancelled
         else return TransferResult.Success
     }
+
+//----------------------------------------
+//=================Main Funcs==============
+//-----------------------------------------
+
+
+
 ///Starts a send to a recieving ffmpeg instance.
 let sendToReceiver  (receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken) =
     async{ 
@@ -141,6 +149,7 @@ let sendToReceiver  (receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) pro
             let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;
             //vv--start the ffmpeg instance listening--vv 
             let res=runTranscode transcodeError args mpeg ct
+            
             let outPath=
                 IO.Path.ChangeExtension( destFilePath,"mxf")
             let recvArgs=
@@ -175,7 +184,10 @@ let startReceiving args=
     }
 
     
-let private basicTranscode outType ffmpegInfo progressHandler (filePath:string)   (destDir:string) (ct:CancellationToken) =
+type sourceFilePath=  string
+type destFilePath=string
+
+let private basicTranscode outType ffmpegInfo (progressHandler:TranscodeProgress) (filePath:sourceFilePath)   (destDir:destFilePath) (ct:CancellationToken) =
     async{ 
         
         try
@@ -189,10 +201,12 @@ let private basicTranscode outType ffmpegInfo progressHandler (filePath:string) 
                 
     }
 /// Transcodes a file onto an ftp server
-let transcodetoFTP destftpInfo=    
-    basicTranscode (FTP destftpInfo)
+let transcodetoFTP destftpInfo =    
+    basicTranscode (FTP destftpInfo) 
 ///Transcodes the given file and outputs to a filePath
-let transcodeFile=
-    basicTranscode File
-         
+let transcodeFile =
+    basicTranscode File 
+//Transcodes a file using the given args.
+let transcodeToCustom args=
+    basicTranscode (CustomOutput args) 
         

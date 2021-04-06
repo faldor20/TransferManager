@@ -30,12 +30,14 @@ type ReceiverData=
     ///Configuration for Transcoding using ffmpeg.
     ///**ReceiverData:** Optional and should be left out if there is not a reciving ffmpeg instance
 type TranscodeData =
-    {   TranscodeExtensions: string list
+    {   
         FfmpegArgs: string option
         OutputFileExtension: string option
-        ReceiverData:ReceiverData option }
+        ReceiverData:ReceiverData option 
+        TranscodeExtensions: string list
+    }
 
-let TranscodeData transcodeExtensions ffmpegArgs outputFileExtension receiverData =
+let TranscodeData  ffmpegArgs outputFileExtension receiverData transcodeExtensions =
     {   TranscodeExtensions = transcodeExtensions
         FfmpegArgs = ffmpegArgs
         OutputFileExtension = outputFileExtension
