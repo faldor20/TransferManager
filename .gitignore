@@ -43,3 +43,5 @@ src/Transfer/TransferClient/vdcp1Dest
 *.suo
 *.user
 .vs/
+.idea
+.vs
