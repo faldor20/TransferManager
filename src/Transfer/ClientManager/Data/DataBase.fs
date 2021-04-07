@@ -20,7 +20,6 @@ module DataBase=
         dataBase.[username].TransferDataList.[id]<-newData
     type ClientData={
         ClientID:string
-
     }
     let mutable userIDs= Dictionary<string,ClientData>()
     
@@ -32,7 +31,12 @@ module DataBase=
         with| ex-> 
             printfn "Error: could not find the client %s" userName
             Error(())
-
+    ///This is very inneficient and should not be used often
+    let tryGetUserName id =
+        userIDs
+        |>Seq.tryFind(fun pair->pair.Value.ClientID=id) 
+        |>Option.bind(fun x->Some x.Value.ClientID)
+            
    
 
 

@@ -6,6 +6,7 @@ open ClientManager.Data;
 open SharedFs.SharedTypes
 open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http.Features;
+open FSharp.Control.Tasks.V2
 module SignalR=
    (*  type IClientApi = 
       abstract member DataResponse : Dictionary<Guid,TransferData> -> Threading.Tasks.Task *)
@@ -22,6 +23,19 @@ module SignalR=
     and ClientManagerHub(manager:FrontEndManager)=
         inherit Hub<ITransferClientApi>()
         let frontEndManager=manager
+        override this.OnDisconnectedAsync  (excep)=
+            let t1 =
+                task{
+                    lock DataBase.dataBase (fun ()->
+                        match DataBase.tryGetUserName this.Context.ConnectionId with
+                        |Some(x)->
+                            DataBase.dataBase.[x].ClientConnected<-false
+                        |None-> printfn "client that has no username disconnected"
+                    )
+                }:>Task
+            let t=base.OnDisconnectedAsync(excep);
+            Task.WhenAll [t1;t]
+        
         member this.GetTransferData groupName id=
            (groupName,id)||> DataBase.getTransferData
         

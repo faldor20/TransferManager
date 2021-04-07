@@ -1,9 +1,10 @@
 @using static SharedFs.SharedTypes;
-@using WebUI
+@using WebUI.Data
 @using blaz.Data
 @using System
 @using BlazorComponentUtilities
 @inject DataGetter Getter
+
 @code{
     [Parameter]
     public TransferData Task { get; set; }
@@ -58,7 +59,7 @@
         TransferStatus.Waiting=>Color.Warning,
         TransferStatus.Cancelled=>Color.Dark,
         TransferStatus.Failed=>Color.Danger,
-        
+        _=>Color.None,
     };
     var title=Task.Status switch
     {   TransferStatus.Unavailable=>"File not fully written",
@@ -67,6 +68,7 @@
         TransferStatus.Waiting=>"Waiting to Start",
         TransferStatus.Cancelled=>"Canceled",
         TransferStatus.Failed=>"Failed",
+        _=>"Unknown status. This should not be",
     };
     var icon=Task.TransferType switch{
         
@@ -74,6 +76,7 @@
         TransferTypes.FTPtoLocal=>"=>",
         TransferTypes.LocaltoFTP=>"<=",
         TransferTypes.LocaltoLocal=>"V",
+        _=>"unimplimented transfer type"
 
     };
     string speed=Task.Status switch
