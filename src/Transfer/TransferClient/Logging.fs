@@ -6,7 +6,7 @@ open System
 
 module Logging=
     let startTime=DateTime.Now
-    let logpath=sprintf "./logs/log%i;%i;%i-.log" startTime.Hour startTime.Minute startTime.Second
+    let logpath=sprintf "./logs/log:%i;%i|%ih;%im;%is-.log" startTime.Month startTime.Day startTime.Hour startTime.Minute startTime.Second
     printfn "%s"logpath 
     let logger =
         Serilog.LoggerConfiguration()
@@ -20,7 +20,7 @@ module Logging=
             .MinimumLevel.Debug()
             .WriteTo.File("./logs/SignalrLog-.log" ,Serilog.Events.LogEventLevel.Verbose,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
             .CreateLogger();
-
+    Log.Logger<-logger
 
     let initLogging()=
         logger|>ignore
