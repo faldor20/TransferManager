@@ -12,3 +12,5 @@ Serilog.Sinks.File
 Serilog.Sinks.Console
 Serilog.Extensions.Hosting
 TaskBuilder.fs
+Thoth.Json.Net
+Fsharp.Data.JsonSchema

@@ -8,6 +8,7 @@ nuget FluentFTP
 nuget FSharp.Control.AsyncSeq 
 nuget FSharp.Control.Reactive 
 nuget FSharp.Core 
+nuget FSharp.Data.JsonSchema 1.0.0
 nuget FSharp.Json 
 nuget Legivel 
 //We need to set the version to below 2 becuase otherwise aspnetcore brakes. When we move to version 5 we can go to version 2
@@ -30,6 +31,7 @@ nuget Serilog
 nuget Serilog.Exceptions 
 nuget Serilog.Sinks.Console
 nuget Serilog.Sinks.File 
+nuget Thoth.Json.Net 5.0.0
 
 nuget xunit 
 nuget xunit.runner.visualstudio 

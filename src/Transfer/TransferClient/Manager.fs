@@ -84,7 +84,7 @@ module Manager =
     let startUp =
         async {
             //Read config file to get information about transfer source dest pairs
-            let configData = ConfigReader.ReadFile "./WatchDirs.yaml"
+            let configData = ConfigReader.ReadFile "./WatchDirs.json"
             let mutable watchDirsData = configData.WatchDirs
 
             //Initialises the database and gives us a UIdata with unchanging fields filled.

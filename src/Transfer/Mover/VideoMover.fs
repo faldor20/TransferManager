@@ -9,8 +9,13 @@ open FluentFTP
 open System.Diagnostics
 open System.Threading
 open ProgressHandlers
+open System.Net
+open System.Net.Sockets
+open Mover.StreamPiping
+open System.IO.Pipes
 module Logging=LoggingFsharp
-
+//TODO: This is actually cancer... you need to set this somewhere manually, there si no constructor, you just mutate it.
+//It's so ugly but it works.
 let mutable ffmpegPath:string option=None
 /// This will take an ffmpeg stdout streama nd pipe it down an ftpwriting stream... not totally sure about this one working tbh
 let private ftpFFmpeg ftpData outpath (ffmpegProc:Process) =
@@ -126,12 +131,66 @@ let runTranscode (transferError:ref<bool>) args (mpeg:Engine) ct=
 //=================Main Funcs==============
 //-----------------------------------------
 
+let listen port  =
+    async{
+        let listener=Sockets.TcpListener.Create(port)
+        listener.Start()
+        listener.Server.SendBufferSize<-9000111
+        Lgdebug "'VideoMover' Waiting for incoming tcp connection on port:{port}" port
+        //TODO: i need to find out if i can actually dispose of this here. it may need to be kept untill the stream is disposed of
+        //if so i should reutn the client and let me get the stream from that out of this scope
+        use client=listener.AcceptTcpClient();
+        Lgdebug "'VicdeoMover'Got tcp connection on port:{port}"port
+        let clientStream=client.GetStream()
+        return clientStream
+    }
 
+let setupPipe (pipeName:string)  =
+    async{
+        let pipeServer=new NamedPipeServerStream(pipeName)
 
-///Starts a send to a recieving ffmpeg instance.
-let sendToReceiver  (receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken) =
-    async{ 
+        Lgdebug "'VideoMover' Waiting for pipe:{name} connection" pipeName
+        pipeServer.WaitForConnection()
+        Lgdebug "'VideoMover' Got connection to pipe:{name}" pipeName
+        return pipeServer
+    }
+
+let customTCPSend customTCPData startReceiver createTranscodeTask =
+    async{
+        //create a unique name for our pipe
+        let id=Guid.NewGuid().ToString("N")
+        let pipeName="ffmpg"+id
         
+        let outArgs= "\\\\.\\pipe\\"+pipeName
+        let transcodeTask= createTranscodeTask outArgs
+        Lgdebugf "'VideoMover' Creating tcp server and Named pipe"
+        let! waitStream=listen customTCPData.Port|>Async.StartChild
+        let! waitPipe= setupPipe pipeName|>Async.StartChild
+        //message client to tell it to connect to the newly created socket
+        startReceiver()
+        //actaully start the ffmpeg instance
+        let! res= transcodeTask|>Async.StartChild
+        //Wait for the client to connect to the tcp socket and for the local ffmpeg to connect to the pipe
+        Logging.Lgdebugf "'VideoMover' Waiting form tcp connection from cleint and pipe connection from local ffmpeg "
+        use! tcpStream=waitStream
+        use! ffmpegStream=waitPipe
+        Logging.Lgdebugf "'VideoMover' Sending data from pipe to tcp stream"
+        //move the data from one stream to another
+        (StreamPiping.pipeStream ffmpegStream tcpStream).Wait()
+        let! out=res
+        return out
+    }
+let ffmpegProtocolSend (data:ffmpegProtocol) startReceiver createTranscodeTask=
+    async{
+        let outArgs= sprintf "-y %s://0.0.0.0:%i?%s" data.Protocoll data.Port data.ProtocolArgs
+        let transcodeTask=createTranscodeTask outArgs
+        let! res= transcodeTask|>Async.StartChild
+        startReceiver()
+        return! res
+         
+    }
+let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken)=
+    async{
         try
             //---check if the receiver is available and get an ip---
             let recv=
@@ -140,37 +199,39 @@ let sendToReceiver  (receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) pro
                 |None->
                     Logging.Lgerrorf "'VideoMover' tried to run send to recceiver function but ffmpeg data's receiverdata was set to 'NOne'"
                     raise (new ArgumentException("see above^^"))
-             
-                 
-            let ip="0.0.0.0"
-            let outArgs= sprintf "-y %s://%s:%i?%s" recv.Protocoll ip recv.Port recv.ProtocolArgs
-
-            let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
-            let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;
-            //vv--start the ffmpeg instance listening--vv 
-            let res=runTranscode transcodeError args mpeg ct
+            
+            let runSend=
+                match recv.SendMethod with
+                |CustomTCP data->customTCPSend data
+                |InbuiltCustom data->ffmpegProtocolSend data
             
             let outPath=
                 IO.Path.ChangeExtension( destFilePath,"mxf")
             let recvArgs=
                 recv.ReceivingFFmpegArgs+" \""+outPath+"\""
-            Logging.Lgdebug "'VideoMover' Telling reciver to connect to us with args {@args} " recvArgs
-            let receiverStarted=
+
+            let startReceiver()=
                 match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recvArgs)|>Async.RunSynchronously with
                 |true->()
                 |false->
-                    //we want to wait for the tcp connection timeout
-                    mpeg.Complete|>Async.AwaitEvent|>Async.RunSynchronously|>ignore
                     failwithf "'VideoMover' Could not get ip of reciver, job terminated. Reason:" 
-            //--send a messsage that starts the client connecting---
-            //--wait for completion---
-            return! res
+                    
+            let transcodeTask outArgs=
+                let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
+                let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) destFilePath filePath;
+                //It is importnt to remeber the async job is not actually started here just created ready to be started elsewhere
+                runTranscode transcodeError args mpeg ct
+            
+            let! res= runSend startReceiver transcodeTask
+            return res
+    
         with|err->
             Logging.Lgerrorf "Transcode job failed, reason:%A" err
+
             return TransferResult.Failed
                 
-                
-        }
+    }
+
 ///This is a simplified transcode function designed to be called to start a reciver 
 let startReceiving args=
     async{

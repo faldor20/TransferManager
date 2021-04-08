@@ -2,12 +2,14 @@ namespace TransferClient
 open System.IO
 open System
 
-open Legivel.Serialization
+//open Legivel.Serialization
+open Thoth.Json.Net
 open FSharp.Control
 open Mover.Types
 open System.Collections.Generic
 open FSharp
 open LoggingFsharp
+open FSharp.Data.JsonSchema
 module ConfigReader=
     ///### Configuration for a single source destination combination.
     ///
@@ -29,7 +31,7 @@ module ConfigReader=
             ManagerIP:string;
             ClientName:string; 
             FFmpegPath:string option;
-            MaxJobs:Dictionary<string,int>;
+            MaxJobs:Map<string,int>;
             WatchDirs: ConfigMovementData list ;
         }
     type ConfigData={
@@ -42,6 +44,7 @@ module ConfigReader=
     }
     ///Performs some basic tests to check if a directory exists. Works using ftp or otherwise.
     let directoryTest ftpData directory errorPrinter = 
+        
         try 
             match ftpData with
             | Some data->   
@@ -72,15 +75,17 @@ module ConfigReader=
                          with 
                             | :? IOException->  Lgerrorf "'Config' Could not find WatchDirs.yaml, that file must exist"
                                                 "Failed To open 'WatchDirs.yaml' file must exist for program to run "
-        let yamlData = 
-            match (Deserialize<YamlData> configText).[0] with
-               |Success data -> 
-                    Lgwarn "'Config' Deserilaization Warnings: {@warning}" data.Warn
-                    Lginfo "'Config' Data=: {@data}" data.Data
-                    data.Data
-               |Error error ->
-                    Lgerror3 "'Config'Config file ({@conf}) malformed, there is an error at {err} becasue: {reason}" configText error.StopLocation.AsString error.Error
-                    raise (FormatException())
+        
+        
+        let yamlData2 = 
+            match Decode.Auto.fromString<YamlData>( configText) with
+               |Ok data -> 
+                    data
+               |Error err  ->
+                    printfn "'Config'Config file (%s) malformed, there is an error: %s" configText err
+                    Lgerror2 "'Config'Config file ({@conf}) malformed, there is an error: {err}" configText err
+                    failwith "failed"
+        let yamlData= yamlData2
 
         // Here we check if the directry exists by getting dir and file info about the source and dest and
         //filtering by whether it triggers an exception or not

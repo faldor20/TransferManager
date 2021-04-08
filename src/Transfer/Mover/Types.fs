@@ -8,6 +8,18 @@ type TransferResult =
     | Failed = 1
     | Cancelled = 2
 
+    type ffmpegProtocol={
+        ProtocolArgs:string;
+        Port:int;
+        Protocoll:string;
+    }
+    type CustomTCPOptions={
+        Port:int;
+        SendBuffer:int;
+    }
+    type FFmpegSendMethod=
+    |CustomTCP of CustomTCPOptions
+    |InbuiltCustom of ffmpegProtocol
     ///**Configuration relating to a receivr of an ffmpeg stream**
     /// 
     ///This should be included in the TranscodeData when you intend to have another 
@@ -21,9 +33,7 @@ type TransferResult =
 type ReceiverData=
     {
     ReceivingClientName:string;
-    ProtocolArgs:string;
-    Port:int;
-    Protocoll:string;
+    SendMethod:FFmpegSendMethod;
     ReceivingFFmpegArgs:string;
     }
         
