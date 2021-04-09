@@ -24,11 +24,15 @@
                 "ReceiverData": {
                     "ReceivingClientName": "BunRecv",
                     "SendMethod": [
-                        "InbuiltCustom",
+                        //Options include:
+                        //InbuiltCusom
+                        //CustomTCP
+                        "CustomTCP",
                         {
-                            "ProtocolArgs": "listen=1&send_buffer_size=900111&listen_timeout=8000&",
+                            ///"ProtocolArgs": "listen=1&send_buffer_size=900111&listen_timeout=8000&",
                             "Port": 5577,
-                            "Protocoll": "tcp"
+                            "SendBuffer":9000111
+                           // "Protocoll": "tcp"
                         }
                     ],
                     "ReceivingFFmpegArgs": "-i tcp://***REMOVED***:5577?recv_buffer_size=900111 -map 0:v -map 0:a -timecode 00:00:00:00 -c:v mpeg2video -pix_fmt yuv422p -r 25 -b:v 30000k -minrate 30000k -maxrate 30000k -bufsize 1200000 -rc_init_occupancy 1200000 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -intra -flags +ildct+low_delay -intra_vlc 1 -non_linear_quant 1 -ps 1 -qmin 1 -qmax 3 -top 1 -dc 10 -c:a pcm_s16le -ar 48000 -d10_channelcount 2 -f mxf_d10 -y ./outputimx30_tcp.mxf"

@@ -22,6 +22,7 @@ nuget Microsoft.AspNetCore.SignalR.Client
 nuget Microsoft.AspNetCore.SignalR.Protocols.MessagePack 
 nuget Serilog.AspNetCore
 nuget Serilog.Extensions.Hosting
+nuget Serilog.Sinks.Grafana.Loki 5.0.0
 nuget System.Net.Http.Json
 nuget Newtonsoft.Json
 
