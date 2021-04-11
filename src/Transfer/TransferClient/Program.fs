@@ -21,6 +21,9 @@ module Main=
         Lgverbosef "Verbose log"
     [<EntryPoint>]
     let main argv =
+        printfn "initialising logging"
+        Logging.initLogging()
+        printfn("logging initialised")
         logTest()
         Lginfof("Latest change: Switch to file size based availability checks")
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler

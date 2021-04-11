@@ -2,27 +2,63 @@ namespace TransferClient
 open Serilog
 open Printf
 open System
+open Serilog.Sinks.Grafana.Loki
+open System.Collections.Generic
+open System.IO
+type LoggingConfig={
+    ClientName:string
+    LogPath:string option
+    LokiURL:string
+}
 
+type LokiInfo={
+    URL:string;
+    lables:IEnumerable<LokiLabel>
+
+}
 
 module Logging=
     let startTime=DateTime.Now
-    let logpath=sprintf "./logs/log:%i;%i|%ih;%im;%is-.log" startTime.Month startTime.Day startTime.Hour startTime.Minute startTime.Second
-    printfn "%s"logpath 
-    let logger =
+    let createLogger lokiInfo logPath =
+        let logName=sprintf "%sdebugLog-%i-%i_%i;%i-%is--.log" logPath startTime.Month startTime.Day startTime.Hour startTime.Minute startTime.Second
+        printfn "%s"logName
         Serilog.LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.Console(theme=Sinks.SystemConsole.Themes.SystemConsoleTheme.Literate)
-            .WriteTo.File(logpath ,Serilog.Events.LogEventLevel.Verbose,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
-            .WriteTo.File("./logs/simpleLog-.log",Serilog.Events.LogEventLevel.Information,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
+            .WriteTo.File(logName ,Serilog.Events.LogEventLevel.Verbose,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
+            .WriteTo.File(logPath+"simpleLog-.log",Serilog.Events.LogEventLevel.Information,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
+            .WriteTo.GrafanaLoki(lokiInfo.URL,lokiInfo.lables,LokiLabelFiltrationMode.Include,[])
             .CreateLogger();
-    let signalrLogger =
+    let signalrLogger() =
         Serilog.LoggerConfiguration()
             .MinimumLevel.Debug()
             .WriteTo.File("./logs/SignalrLog-.log" ,Serilog.Events.LogEventLevel.Verbose,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
             .CreateLogger();
-    Log.Logger<-logger
 
-    let initLogging()=
-        logger|>ignore
+    let tryCatch f exHandler x =
+        try
+            Ok(f x) 
+        with
+        | ex -> (exHandler ex) |> Error 
+      
+    let getConfig = Thoth.Json.Net.Decode.Auto.fromString<LoggingConfig> 
+    let applyconfig (loggingConfig:LoggingConfig)=
+        let mutable label=new LokiLabel()
+        label.Key<-"ClientName"
+        label.Value<- loggingConfig.ClientName
+        let logPath= loggingConfig.LogPath|>Option.defaultValue "./logs/"
+        {URL=loggingConfig.LokiURL;lables=[label]},logPath
+    let initLogging lokiAddr=
+        
+        let text=  tryCatch (File.ReadAllText) (fun x->x.ToString()) "./logConfig.json"  
+        let res=
+            text 
+            |> Result.bind getConfig
+            |> Result.map applyconfig
+        match res with 
+        |Ok (lokiConfig,logPath)->  Log.Logger<-createLogger lokiConfig logPath
+        |Error e->printfn"-\n-\n-\n-\nError reading logging config. Fix this or you will have no logging.\nThis is extremely bad\nError is: %s \n-\n-\n" e
+        ()
+
 
 

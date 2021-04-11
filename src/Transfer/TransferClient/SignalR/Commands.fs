@@ -64,7 +64,7 @@ module Commands =
             (HubConnectionBuilder())
                 .WithUrl(sprintf "http://%s:8085/ClientManagerHub" managerIP )
                 .AddMessagePackProtocol()
-                .ConfigureLogging(fun (builder:ILoggingBuilder) -> builder.AddSerilog(signalrLogger,false)|>ignore ) //<- Add this line
+                .ConfigureLogging(fun (builder:ILoggingBuilder) -> builder.AddSerilog(signalrLogger(),false)|>ignore ) //<- Add this line
                 .Build()
        
         // Create connection to the ClientManager Server

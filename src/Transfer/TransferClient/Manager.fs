@@ -60,7 +60,7 @@ module Manager =
                 newFilesForEachWatchdir
                 |> List.toArray
                 |> Array.map (fun (schedules, watchDir) ->
-                    Lginfo "'Manager' Setting up observables for group: {@}" watchDir.MovementData.GroupList
+                    Lginfo "'Manager' Setting up observables for group: {@group}" watchDir.MovementData.GroupList
                     schedules
                     |>AsyncSeq.collect (fun (newFiles) ->
                         asyncSeq{
@@ -72,7 +72,7 @@ module Manager =
                                     |None-> false
                                 
                                 let task = Scheduler.scheduleTransfer file watchDir.MovementData (Some receiverFuncs) LocalDB.AcessFuncs 
-                                Lginfo "'Manager' created scheduling task for file {@}" (Path.GetFileName file.Path)
+                                Lginfo "'Manager' created scheduling task for file {@filePath}" (Path.GetFileName file.Path)
                                 yield task
                         }
                     )

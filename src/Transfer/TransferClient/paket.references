@@ -9,6 +9,7 @@ Microsoft.AspNetCore.SignalR.Protocols.MessagePack
 Serilog.Exceptions
 Serilog
 Serilog.Sinks.File
+Serilog.Sinks.Grafana.Loki
 Serilog.Sinks.Console
 Serilog.Extensions.Hosting
 TaskBuilder.fs
