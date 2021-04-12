@@ -1,1 +1,1 @@
-ffmpeg -i "tcp://***REMOVED***:5678?recv_buffer_size=90000000" ./out2.mxf
+ffmpeg.exe -i "../TransferClient/testSource/BUN-Prem-Test.mxf"  -loglevel 48 -c:v libx264  -crf 18 -pix_fmt + -preset faster -f mpegts  -y "tcp://***REMOVED***:5577?listen=1&send_buffer_size=9000&listen_timeout=80000" 2>&1 | Out-File -FilePath ./b.log

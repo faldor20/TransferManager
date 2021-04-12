@@ -20,6 +20,7 @@ let listen() =
     async{
         let listener=Sockets.TcpListener.Create(5678)
         listener.Start()
+        listener.Server.SendBufferSize<-9000111
         printfn "waiting for incoming connection"
         let client=listener.AcceptTcpClient();
         printfn "got connection"
@@ -38,7 +39,7 @@ let setupPipe() =
 
 
 let transcodeData=
-    let args=Some "-c:v h264  -crf 18 -pix_fmt + -preset faster -f mpegts"
+    let args=Some "-c:v h264  -crf 10 -pix_fmt + -preset ultrafast -f mpegts"
     let outputExt= None
     let receiverData=None
     let transcodeExtensions=[]
@@ -64,7 +65,7 @@ let doTranscode ()=
         //Wait for the cleint to connect to the tcp socket and for the local ffmpeg to connect to the pipe
         let! tcpStream=waitStream
         let! ffmpegStream=waitPipe
-        //Send it 
+        //move the data from one stream to another
         (StreamPiping.pipeStream ffmpegStream tcpStream).Wait()
         return! task
     }
