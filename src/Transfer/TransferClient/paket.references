@@ -1,7 +1,6 @@
 FluentFTP
 FSharp.Control.AsyncSeq
 FSharp.Control.Reactive
-FSharp.Json
 FSharp.Core
 Legivel
 Microsoft.AspNetCore.SignalR.Client
@@ -14,4 +13,3 @@ Serilog.Sinks.Console
 Serilog.Extensions.Hosting
 TaskBuilder.fs
 Thoth.Json.Net
-Fsharp.Data.JsonSchema

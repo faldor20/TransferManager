@@ -9,7 +9,6 @@ open Mover.Types
 open System.Collections.Generic
 open FSharp
 open LoggingFsharp
-open FSharp.Data.JsonSchema
 module ConfigReader=
     ///### Configuration for a single source destination combination.
     ///

@@ -12,6 +12,7 @@ blazClient/
 "published apps"/
 published apps
 Publish-Linux/*
+/Publish-Win/*
 testSource*
 Publish
 src/Transfer/TransferClient/logs
