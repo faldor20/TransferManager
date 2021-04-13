@@ -66,7 +66,7 @@ let checkAvailabilityFileSize (source:string) (ct:CancellationToken) (sleepTime:
                     loop<- false
                 try
                     let newSize=(new FileInfo(source)).Length
-                    Lgdebug3 "'Availability checker' {@file} olsize={@old} newSize={@new}" fileName newSize lastSize
+                    Lgdebug3 "'Availability checker' {@file} olsize={@old} newSize={@new}" fileName  lastSize newSize
                     if newSize=lastSize then
                         availability<-Availability.Available
                         loop<-false
