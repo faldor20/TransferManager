@@ -33,6 +33,8 @@ Features:
   --Do some clientmanager connection and initialisation stuff --
   ### Main loop:
   
+  The project that primarily deals with it is specified in() eg: (project)
+  
   1. (Watcher) Files get found by the watcher
   2. (TransferClient) Each file gets given to the scheduler where a job is made and added to the jobdb
   3. (JobDB) The jobdb responds to various events and shuffels jobs about. Once that job is ready to run 
