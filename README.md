@@ -26,9 +26,10 @@ Features:
 ## Features that do not exist:
 - Good documentation. its a big complex machine, many parts still change.
 
-## How it all works
+# How it all works
 
-  The basic gist is as follows:
+  ## The basic gist is as follows:
+  
   --Do some clientmanager connection and initialisation stuff --
   ### Main loop:
   
