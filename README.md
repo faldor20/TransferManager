@@ -32,9 +32,9 @@ Features:
   --Do some clientmanager connection and initialisation stuff --
   ### Main loop:
   
-  1.(Watcher) Files get found by the watcher
-  2.(TransferClient) Each file gets given to the scheduler where a job is made and added to the jobdb
-  3.(JobDB) The jobdb responds to various events and shuffels jobs about. Once that job is ready to run 
+  1. (Watcher) Files get found by the watcher
+  2. (TransferClient) Each file gets given to the scheduler where a job is made and added to the jobdb
+  3. (JobDB) The jobdb responds to various events and shuffels jobs about. Once that job is ready to run 
     (the file has stopped growing nad it has all its needed tokens
       (Each job needs a token fomr every group it is a part of. Each group starts with a number of tokens equal to the max jobs it allows.
         Once a job takes a token it is unavaialable till it is returned when the job is complete.))
@@ -43,8 +43,8 @@ Features:
       2. job finishes (deleted, cancelled success, failure, whatever)
       3. reordering)
       The jobDB does nothing except when one of those events occurs. IT has no internal loop or anythig like that.
-  4.(JoBD) The Job Is run, which starts the mover code. (Mover) This may mean starting ffmpeg, tcp,ftp or any other process that is part of the jobs movement
-  5.(TransferClient) job finsishes cancels etc
-  6.(JobDB) tokens are released
+  4. (JoBD) The Job Is run, which starts the mover code. (Mover) This may mean starting ffmpeg, tcp,ftp or any other process that is part of the jobs movement
+  5. (TransferClient) job finsishes cancels etc
+  6. (JobDB) tokens are released
   
   
