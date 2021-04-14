@@ -27,9 +27,11 @@ Features:
 - Good documentation. its a big complex machine, many parts still change.
 
 ## How it all works
+
   The basic gist is as follows:
   --Do some clientmanager connection and initialisation stuff --
-  ###Main loop:
+  ### Main loop:
+  
   1.(Watcher) Files get found by the watcher
   2.(TransferClient) Each file gets given to the scheduler where a job is made and added to the jobdb
   3.(JobDB) The jobdb responds to various events and shuffels jobs about. Once that job is ready to run 
