@@ -9,6 +9,7 @@ type LoggingConfig={
     ClientName:string
     LogPath:string option
     LokiURL:string
+    labels:(string*string) list
 }
 
 type LokiInfo={
@@ -42,12 +43,18 @@ module Logging=
         | ex -> (exHandler ex) |> Error 
       
     let getConfig = Thoth.Json.Net.Decode.Auto.fromString<LoggingConfig> 
-    let applyconfig (loggingConfig:LoggingConfig)=
+    let makelabel (key,value) =
         let mutable label=new LokiLabel()
-        label.Key<-"ClientName"
-        label.Value<- loggingConfig.ClientName
-        let logPath= loggingConfig.LogPath|>Option.defaultValue "./logs/"
-        {URL=loggingConfig.LokiURL;lables=[label]},logPath
+        label.Key<-key
+        label.Value<- value
+        label
+    let makeLabels pairs =
+        pairs|>List.map makelabel 
+    let applyconfig (loggingConfig:LoggingConfig)=
+        let nameLabel = makelabel ("ClientName" ,loggingConfig.ClientName)
+        let labels=nameLabel::(makeLabels loggingConfig.labels)
+        let logPath = loggingConfig.LogPath|>Option.defaultValue "./logs/"
+        {URL=loggingConfig.LokiURL;lables=labels},logPath
     let initLogging lokiAddr=
         
         let text=  tryCatch (File.ReadAllText) (fun x->x.ToString()) "./logConfig.json"  

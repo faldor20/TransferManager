@@ -2,7 +2,11 @@
    
     "ClientName":"Test",
     "LokiURL":"http://10.41.57.194:3100",
-    "LogPath":"./logs/"
+    "LogPath":"./logs/",
+    "labels":[
+        ["SoftwareGroup","TransferManager"],
+        ["Process","Client"]
+    ]
         
  
 }
