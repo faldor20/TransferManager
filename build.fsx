@@ -30,7 +30,7 @@ let buildProject target output selfContained projectFile  =
                       Runtime = Some target })
     with ex -> printfn "failed to build %s: reason %A" projectFile ex
 
-let buildProjects target outputPath =
+let buildProjects target outputPath selfContained =
     let managerOutput = outputPath + "Transfer/Clientmanager"
     let clientOutput = outputPath + "/Transfer/TransferClient"
     let webOutput = outputPath + "/WebServer"
@@ -41,17 +41,17 @@ let buildProjects target outputPath =
     |> Shell.cleanDirs
     
     "src/Transfer/ClientManager/ClientManager.fsproj"
-    |> buildProject target managerOutput false
+    |> buildProject target managerOutput selfContained
 
     "src/Transfer/TransferClient/TransferClient.fsproj"
-    |> buildProject target clientOutput false
+    |> buildProject target clientOutput selfContained
 
     "src/WebUI/Server/WebUI.Server.csproj"
     |> buildProject target webOutput true
 
-Target.create "PubLinux" (fun _ -> buildProjects "linux-x64" "./Publish-linux/")
+Target.create "PubLinux" (fun _ -> buildProjects "linux-x64" "./Publish-linux/" true)
 
-Target.create "PubWin" (fun _ -> buildProjects "win-x64" "./Publish-Win/")
+Target.create "PubWin" (fun _ -> buildProjects "win-x64" "./Publish-Win/" false)
 
 
 Target.create "All" ignore
