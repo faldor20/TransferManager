@@ -225,7 +225,7 @@ module FileMove =
         }
 open FluentFTP
 let host ="***REMOVED***"
-let user= "***REMOVED***admin-***REMOVED***"
+let user= "***REMOVED******REMOVED***"
 let password="***REMOVED***"
 let sourceDir="***REMOVED***TransferManager/Source"
 let destinationDir= "***REMOVED***TransferManager/Dest/"
