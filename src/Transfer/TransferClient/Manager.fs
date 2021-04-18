@@ -91,12 +91,22 @@ module Manager =
             let baseUIData=initialiseDataStructures configData watchDirsData
 
             //create a asyncstream that yields newly found files
-            let newFilesForEachWatchdir =
-                watchDirsData|>List.map(fun watchDir->
-                getNewFiles watchDir.MovementData.SourceFTPData watchDir.MovementData.DirData.SourceDir
-                ,watchDir
-                )
+            let resetWatchedFiles,newFilesForEachWatchdir =
+                let resetEvents, filesAndWatchDir=
+                    watchDirsData
+                    |>List.map(fun watchDir->
+                        let files,resetEvent=getNewFiles watchDir.MovementData.SourceFTPData watchDir.MovementData.DirData.SourceDir 500
+                        resetEvent,(files,watchDir)
+                        )
+                    |>List.unzip
 
+                let resetWatchedFiles()= 
+                        resetEvents|>List.iter(fun x->x.Trigger())
+
+                (resetWatchedFiles,filesAndWatchDir)
+            //subscribe the watch fie reset to the dbreset event. this makes sure that when the job history
+            // is reset the watched file history is as well
+            SignalR.ClientApi.resetEvent.Publish.Add resetWatchedFiles
             
             let! connection = setupSignalR configData baseUIData           
 

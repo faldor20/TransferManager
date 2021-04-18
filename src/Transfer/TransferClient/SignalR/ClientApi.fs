@@ -7,6 +7,8 @@ open Mover;
 open Types;
 open LoggingFsharp
 module ClientApi=
+    ///Triggered when the clientmanager tells the client to reset it's databse
+    let resetEvent= Event<unit>()
     let CancelTransfer=Action<int>(fun  id->
         Lgdebug "'SignalR' Cancellation request recieved for id {@id}"  id
         LocalDB.AcessFuncs.CancelJob id
@@ -15,6 +17,7 @@ module ClientApi=
     let ResetDB=Action(fun ()->
         Lgdebugf "'SignalR' reset request recieved"
         LocalDB.reset()
+        resetEvent.Trigger()
         ()
     ) 
     let SwitchJobs=Action<int,int>(fun job1 job2->
@@ -38,7 +41,7 @@ module ClientApi=
         with|e-> Lgerror "'SignalR' Exception whils receivng ffmpeg stream: Reason: {@excp}" e
     )
 
-    let InitManagerCalls (connection:HubConnection)= 
+    let InitManagerCalls (connection:HubConnection) = 
         
         Lginfof "'ClientAPI' Initialising Client Signalr Triggers (connection.On...etc)"
 
