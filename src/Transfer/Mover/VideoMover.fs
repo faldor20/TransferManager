@@ -121,9 +121,9 @@ let runTranscode (transferError:ref<bool>) args (mpeg:Engine) ct=
         Logging.Lginfo "'FFmpeg' Calling with args: {@args}" args
         let task=mpeg.ExecuteAsync( args,ct)
         let! fin= Async.AwaitTask task
-                       
-        if !transferError then return  TransferResult.Failed
-        else if ct.IsCancellationRequested then return TransferResult.Cancelled
+        // the assumption is taht if the task ended and cancellation was requested. the task musthave been cancelled                
+        if ct.IsCancellationRequested then return TransferResult.Cancelled
+        else if !transferError then return  TransferResult.Failed
         else return TransferResult.Success
     }
 
@@ -199,7 +199,7 @@ let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progr
                 |None->
                     Logging.Lgerrorf "'VideoMover' tried to run send to recceiver function but ffmpeg data's receiverdata was set to 'NOne'"
                     raise (new ArgumentException("see above^^"))
-            
+            //here we select which sneding method to use based on the union provided
             let runSend=
                 match recv.SendMethod with
                 |CustomTCP data->customTCPSend data
