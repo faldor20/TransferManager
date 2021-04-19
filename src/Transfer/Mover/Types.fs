@@ -10,11 +10,9 @@ type TransferResult =
 
     type ffmpegProtocol={
         ProtocolArgs:string;
-        Port:int;
         Protocoll:string;
     }
     type CustomTCPOptions={
-        Port:int;
         SendBuffer:int;
     }
     type FFmpegSendMethod=
@@ -35,6 +33,8 @@ type ReceiverData=
     ReceivingClientName:string;
     SendMethod:FFmpegSendMethod;
     ReceivingFFmpegArgs:string;
+    DynamicPort:bool;
+    Port:int;
     }
         
     ///Configuration for Transcoding using ffmpeg.

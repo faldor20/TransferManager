@@ -17,6 +17,7 @@ module Logging=LoggingFsharp
 //TODO: This is actually cancer... you need to set this somewhere manually, there si no constructor, you just mutate it.
 //It's so ugly but it works.
 let mutable ffmpegPath:string option=None
+let portOffset = ref 0;
 /// This will take an ffmpeg stdout streama nd pipe it down an ftpwriting stream... not totally sure about this one working tbh
 let private ftpFFmpeg ftpData outpath (ffmpegProc:Process) =
     task{
@@ -155,7 +156,7 @@ let setupPipe (pipeName:string)  =
         return pipeServer
     }
 
-let customTCPSend customTCPData startReceiver createTranscodeTask =
+let customTCPSend customTCPData port startReceiver createTranscodeTask =
     async{
         //create a unique name for our pipe
         let id=Guid.NewGuid().ToString("N")
@@ -164,7 +165,7 @@ let customTCPSend customTCPData startReceiver createTranscodeTask =
         let outArgs= "\\\\.\\pipe\\"+pipeName
         let transcodeTask= createTranscodeTask outArgs
         Lgdebugf "'VideoMover' Creating tcp server and Named pipe"
-        let! waitStream=listen customTCPData.Port|>Async.StartChild
+        let! waitStream=listen port|>Async.StartChild
         let! waitPipe= setupPipe pipeName|>Async.StartChild
         //message client to tell it to connect to the newly created socket
         startReceiver()
@@ -180,15 +181,23 @@ let customTCPSend customTCPData startReceiver createTranscodeTask =
         let! out=res
         return out
     }
-let ffmpegProtocolSend (data:ffmpegProtocol) startReceiver createTranscodeTask=
+let ffmpegProtocolSend (data:ffmpegProtocol) port startReceiver createTranscodeTask=
     async{
-        let outArgs= sprintf "-y %s://0.0.0.0:%i?%s" data.Protocoll data.Port data.ProtocolArgs
+        let outArgs= sprintf "-y %s://0.0.0.0:%i?%s" data.Protocoll port data.ProtocolArgs
         let transcodeTask=createTranscodeTask outArgs
         let! res= transcodeTask|>Async.StartChild
         startReceiver()
         return! res
          
     }
+let getFreePort startPort =
+    let port=
+        lock portOffset (fun()->
+            let port=startPort+(!portOffset%200)
+            portOffset:=(!portOffset+1)
+            port
+         ) 
+    port
 let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken)=
     async{
         try
@@ -204,13 +213,22 @@ let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progr
                 match recv.SendMethod with
                 |CustomTCP data->customTCPSend data
                 |InbuiltCustom data->ffmpegProtocolSend data
-            
+
+
+            let port =
+                if recv.DynamicPort then getFreePort recv.Port
+                else recv.Port
+                
             let outPath=
                 IO.Path.ChangeExtension( destFilePath,"mxf")
             let recvArgs=
-                recv.ReceivingFFmpegArgs+" \""+outPath+"\""
+                let args=(recv.ReceivingFFmpegArgs+" \""+outPath+"\"")
+                if recv.DynamicPort then args.Replace("##port##",port.ToString())
+                else args
+                
 
             let startReceiver()=
+                Lgdebug "Vidoe Mover' Sending message to receiver to start ffmpeg with these args: {@args}" recvArgs
                 match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recvArgs)|>Async.RunSynchronously with
                 |true->()
                 |false->
@@ -222,7 +240,7 @@ let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progr
                 //It is importnt to remeber the async job is not actually started here just created ready to be started elsewhere
                 runTranscode transcodeError args mpeg ct
             
-            let! res= runSend startReceiver transcodeTask
+            let! res= runSend port startReceiver transcodeTask
             return res
     
         with|err->
