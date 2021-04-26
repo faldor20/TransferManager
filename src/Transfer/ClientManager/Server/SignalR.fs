@@ -29,6 +29,7 @@ module SignalR=
                     lock DataBase.dataBase (fun ()->
                         match DataBase.tryGetUserName this.Context.ConnectionId with
                         |Some(x)->
+                            printfn "client with name: %s has diconnected" x
                             DataBase.dataBase.[x].ClientConnected<-false
                         |None-> printfn "client that has no username disconnected"
                     )
