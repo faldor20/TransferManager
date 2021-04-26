@@ -35,7 +35,7 @@ module DataBase=
     let tryGetUserName id =
         userIDs
         |>Seq.tryFind(fun pair->pair.Value.ClientID=id) 
-        |>Option.bind(fun x->Some x.Value.ClientID)
+        |>Option.bind(fun x->Some x.Key)
             
    
 
