@@ -198,6 +198,17 @@ let getFreePort startPort =
             port
          ) 
     port
+    
+let makeReceiverArgs recv outPath port=
+    let args=(recv.ReceivingFFmpegArgs+" \""+outPath+"\"")
+    if recv.DynamicPort then 
+        let newargs=args.Replace("##port##",port.ToString())
+        if newargs=args then 
+            Lgerrorf "'VideoMover' you have selected dynamicport but have not included '##port##' in your receiver args. This means the port has not been dynamically set."
+            raise (ArgumentException("DynamicPort is true and ReceiverArgs does not contain '##port##' to be replaced with the port number.  "))
+        else newargs
+    else args
+            
 let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken)=
     async{
         try
@@ -221,10 +232,8 @@ let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progr
                 
             let outPath=
                 IO.Path.ChangeExtension( destFilePath,"mxf")
-            let recvArgs=
-                let args=(recv.ReceivingFFmpegArgs+" \""+outPath+"\"")
-                if recv.DynamicPort then args.Replace("##port##",port.ToString())
-                else args
+            let recvArgs= makeReceiverArgs recv outPath port
+               
                 
 
             let startReceiver()=
