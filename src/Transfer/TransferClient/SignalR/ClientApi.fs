@@ -34,8 +34,10 @@ module ClientApi=
        }
     )  *)
     let StartReceivingTranscode=Action<string>(fun args->
+        Lginfo "'SignalR' Received args for a Transcode job from manager. Args: {@args}" args
         try
-            match VideoMover.startReceiving args|>Async.RunSynchronously with
+            let result= VideoMover.startReceiving args|>Async.RunSynchronously
+            match result with
             |TransferResult.Success-> Lginfof "[SignalR] Receiving data from ffmpeg stream was sucessful"
             |_->Lgwarnf "'SignalR' Receiving data from FFmpeg failed."
         with|e-> Lgerror "'SignalR' Exception whils receivng ffmpeg stream: Reason: {@excp}" e
@@ -50,6 +52,6 @@ module ClientApi=
         connection.On<int>("CancelTransfer",CancelTransfer )|>ignore
         connection.On("ResetDB",ResetDB) |>ignore
         connection.On("SwitchJobs",SwitchJobs)|>ignore
-        connection.On("StartReceivingTranscode",StartReceivingTranscode)|>ignore
+        connection.On<string>("StartReceivingTranscode",StartReceivingTranscode)|>ignore
         (* connection.On("GetIP",GetIP)|>ignore *)
         

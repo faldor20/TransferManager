@@ -30,7 +30,9 @@ module SignalR=
                         match DataBase.tryGetUserName this.Context.ConnectionId with
                         |Some(x)->
                             printfn "client with name: %s has diconnected" x
+                            lock(DataBase.dataBase) (fun ()->
                             DataBase.dataBase.[x].ClientConnected<-false
+                            )
                         |None-> printfn "client that has no username disconnected"
                     )
                 }:>Task
@@ -47,7 +49,7 @@ module SignalR=
             
         member this.OverwriteTransferData(userName:string) ( changes:UIData) =
             printfn "overwriting local info with client info. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
-            lock(DataBase.dataBase) (fun x->
+            lock(DataBase.dataBase) (fun ()->
             DataBase.dataBase.[userName]<- changes
             )
 
@@ -59,9 +61,12 @@ module SignalR=
 
 
         member this.StartReceiver  (receiverName:string) args=
+            printfn "Received request to make client '%s' run FFmpeg with args: '%s'"receiverName args 
             match DataBase.getConnectionID receiverName with 
             |Ok(connectionId)->
+                printfn "starting to trigger client to receive"
                 (this.Clients.Client(connectionId).StartReceivingTranscode args).Wait();
+                printfn "finished triggering client %s to receive an ffmpeg stream"  receiverName
                 true //TODO: get some kind of failure or sucess from reciver?
             |Error()->
                 printfn "EROR: Could not find reciver in list of clients. Not sending args or triggering ffmpeg start on reciever "

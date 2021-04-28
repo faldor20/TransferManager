@@ -6,14 +6,8 @@
         <AssemblyName>$(AssemblyName.Replace(' ', '_'))</AssemblyName>
 
   </PropertyGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\..\Shared\SharedData.fsproj">
-      <Name>SharedFs</Name>
-    </ProjectReference>
-    <!-- <ProjectReference Include="..\..\Transfer\TransferClient\TransferClient.fsproj" >
-<Name>TransferClient</Name>
-</ProjectReference> -->
- 
-  </ItemGroup>
   <Import Project="..\..\..\.paket\Paket.Restore.targets" />
+  <ItemGroup>
+    <ProjectReference Include="..\..\Shared\SharedData.fsproj" />
+  </ItemGroup>
 </Project>
