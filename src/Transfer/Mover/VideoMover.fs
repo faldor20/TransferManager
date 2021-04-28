@@ -228,7 +228,7 @@ let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progr
                 
 
             let startReceiver()=
-                Lgdebug "Vidoe Mover' Sending message to receiver to start ffmpeg with these args: {@args}" recvArgs
+                Lginfo "Video Mover' Sending message to receiver to start ffmpeg with these args: {@args}" recvArgs
                 match (receiverFuncs.StartTranscodeReciever recv.ReceivingClientName recvArgs)|>Async.RunSynchronously with
                 |true->()
                 |false->
