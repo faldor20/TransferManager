@@ -208,10 +208,20 @@ let makeReceiverArgs recv outPath port=
             raise (ArgumentException("DynamicPort is true and ReceiverArgs does not contain '##port##' to be replaced with the port number.  "))
         else newargs
     else args
-            
-let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken)=
-    async{
+let handleTranscodeErrors (prefix:string) (filePath:string) f =
+   async{
         try
+               return! f()
+        with
+            | :? Tasks.TaskCanceledException as ex->
+                Lgerror3 "{@prefix} from {@path} was canceled {@ex}" prefix filePath ex
+                return TransferResult.Cancelled
+            |err->
+                Lgerror3 "{@prefix} from {@path} failed {@ex}" prefix filePath err
+                return TransferResult.Failed
+    }            
+let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken)=
+    handleTranscodeErrors "'Video Mover' SendToReceiver transcode job " filePath (fun()->
             //---check if the receiver is available and get an ip---
             let recv=
                 match ffmpegInfo.ReceiverData with
@@ -249,15 +259,10 @@ let sendToReceiver(receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progr
                 //It is importnt to remeber the async job is not actually started here just created ready to be started elsewhere
                 runTranscode transcodeError args mpeg ct
             
-            let! res= runSend port startReceiver transcodeTask
-            return res
-    
-        with|err->
-            Logging.Lgerrorf "Transcode job failed, reason:%A" err
-
-            return TransferResult.Failed
+            let res= runSend port startReceiver transcodeTask
+            res
+    )
                 
-    }
 
 ///This is a simplified transcode function designed to be called to start a reciver 
 let startReceiving args=
@@ -276,18 +281,13 @@ type sourceFilePath=  string
 type destFilePath=string
 
 let private basicTranscode outType ffmpegInfo (progressHandler:TranscodeProgress) (filePath:sourceFilePath)   (destDir:destFilePath) (ct:CancellationToken) =
-    async{ 
-        
-        try
-            let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
-            let args=prepArgs ffmpegInfo.FfmpegArgs None outType  destDir filePath;
-            let res=runTranscode transcodeError args mpeg ct
-            return! res
-        with|err->
-            Logging.Lgerrorf "Transcode job failed, reason:%A" err
-            return TransferResult.Failed
-                
-    }
+    handleTranscodeErrors "'Video Mover' Transcode Job" filePath (fun()->
+        let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
+        let args=prepArgs ffmpegInfo.FfmpegArgs None outType  destDir filePath;
+        let res=runTranscode transcodeError args mpeg ct
+        res
+    )
+
 /// Transcodes a file onto an ftp server
 let transcodetoFTP destftpInfo =    
     basicTranscode (FTP destftpInfo) 
