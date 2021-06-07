@@ -46,3 +46,5 @@ src/Transfer/TransferClient/vdcp1Dest
 .vs/
 .idea
 .vs
+
+.lh/
