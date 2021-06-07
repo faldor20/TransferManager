@@ -37,7 +37,7 @@ let buildProject2 pathext source target outputPath selfContained   =
     source|>buildProject target output selfContained
 
 let managerProj="src/Transfer/ClientManager/ClientManager.fsproj"
-let clientProj="src/Transfer/ClientManager/ClientManager.fsproj"
+let clientProj="src/Transfer/TransferClient/TransferClient.fsproj"
 let webUIProj="src/WebUI/Server/WebUI.Server.csproj"
 
 let buildManager =
@@ -54,12 +54,12 @@ let buildProjects target outputPath selfContained =
     buildClient target outputPath selfContained
     buildWebUI target outputPath true
 
-Target.create "PubLinux" (fun _ -> buildProjects "linux-x64" "./Publish-linux/" true)
-Target.create "PubMan-Lin" (fun _ -> buildManager "linux-x64" "./Publish-linux/" true )
-Target.create "PubClient-Lin" (fun _ -> buildClient "linux-x64" "./Publish-linux/" true )
-Target.create "PubWeb-Lin" (fun _ -> buildWebUI "linux-x64" "./Publish-linux/" true )
+Target.create "PubLinux" (fun _ -> buildProjects "linux-x64" "./Publish-linux" true)
+Target.create "PubMan-Lin" (fun _ -> buildManager "linux-x64" "./Publish-linux" true )
+Target.create "PubClient-Lin" (fun _ -> buildClient "linux-x64" "./Publish-linux" true )
+Target.create "PubWeb-Lin" (fun _ -> buildWebUI "linux-x64" "./Publish-linux" true )
 
-Target.create "PubWin" (fun _ -> buildProjects "win-x64" "./Publish-Win/" false)
+Target.create "PubWin" (fun _ -> buildProjects "win-x64" "./Publish-Win" false)
 
 
 Target.create "All" ignore
