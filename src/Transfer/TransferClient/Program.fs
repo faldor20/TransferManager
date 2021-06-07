@@ -25,7 +25,7 @@ module Main=
         Logging.initLogging()
         printfn("logging initialised")
         logTest()
-        Lginfof("Latest change: Switch to file size based availability checks")
+        Lginfof("Latest change: Switch to file size and stream availability checks")
         AppDomain.CurrentDomain.UnhandledException.Add exceptionHandler
         
      //   printfn"Begining"

@@ -37,7 +37,9 @@ let doAvailabilityCheck checker (fileName:string) (ct:CancellationToken) =
 ///Checks if a file is available by opening it and seeing if an error is triggered
 let FileStreamCheck (currentFile:FileInfo) ct=
     let checker ()=
+        Lgdebug "'Availability checker' {@file} being opened as stream" currentFile.Name 
         using (currentFile.Open(FileMode.Open, FileAccess.Read, FileShare.None)) (fun stream ->
+            Lgdebug "'Availability checker' {@file} stream opened succesfully and now closing." currentFile.Name 
             stream.Close())
         Some Availability.Available
     doAvailabilityCheck checker currentFile.FullName ct
@@ -54,14 +56,19 @@ let FileSizeCheck (lastFile:FileInfo) (currentFile:FileInfo) ct =
     doAvailabilityCheck checker currentFile.FullName ct
 ///Evaluates **f** if a is None. 
 ///Usefull for chainging failure states of options
-let inline ifNone  f a=
+let inline ifAvailable  f a=
+    match a with
+    |Availability.Available ->f()
+    |a->Some a
+///Evaluates **f** if a is None. 
+///Usefull for chainging failure states of options
+let inline ifNone f a=
     match a with
     |Some y->Some y
     |None->f()
-
 let fileSizeAndStreamCheck lastFile currentFile ct=
     FileSizeCheck lastFile currentFile ct 
-    |> ifNone (fun ()-> FileStreamCheck currentFile ct)
+    |> Option.bind (ifAvailable  (fun ()-> FileStreamCheck currentFile ct))
     
 ///Checks if a file is aailable by opening it for exclusive use and waiting for an exception
 //This will return once the file is not being acessed by other programs.
