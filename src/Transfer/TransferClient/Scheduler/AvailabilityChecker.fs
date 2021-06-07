@@ -1,5 +1,3 @@
-
-
 module TransferClient.Scheduling.AvailabilityChecker 
 open TransferClient
 open System.IO
@@ -17,80 +15,82 @@ type Availability=
     |Available=0
     |Deleted=1
     |Cancelled=2
+
+let doAvailabilityCheck checker (fileName:string) (ct:CancellationToken) =
+    if ct.IsCancellationRequested then
+            Some Availability.Cancelled
+    else        
+        try
+            checker()
+        with 
+            | :? FileNotFoundException | :? DirectoryNotFoundException  ->
+                Lgwarn "'Availability check' {@file} deleted while waiting to be available" fileName
+                Some Availability.Deleted
+
+            | :? IOException ->
+                None
+
+            | ex  ->
+                Lgwarn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
+                Some Availability.Deleted
+                
+///Checks if a file is available by opening it and seeing if an error is triggered
+let FileStreamCheck (currentFile:FileInfo) ct=
+    let checker ()=
+        using (currentFile.Open(FileMode.Open, FileAccess.Read, FileShare.None)) (fun stream ->
+            stream.Close())
+        Some Availability.Available
+    doAvailabilityCheck checker currentFile.FullName ct
+///Checks if a file is bigger now thn last check
+let FileSizeCheck (lastFile:FileInfo) (currentFile:FileInfo) ct =
+    let newSize=currentFile.Length
+    let oldSize=lastFile.Length
+    let checker()=
+        Lgdebug3 "'Availability checker' {@file} oldsize={@old} newSize={@new}" currentFile.Name  oldSize newSize
+        if newSize=oldSize then
+            Lgdebugf "'Availability Checker' File is available. Returning"
+            Some Availability.Available
+        else None
+    doAvailabilityCheck checker currentFile.FullName ct
+///Evaluates **f** if a is None. 
+///Usefull for chainging failure states of options
+let inline ifNone  f a=
+    match a with
+    |Some y->Some y
+    |None->f()
+
+let fileSizeAndStreamCheck lastFile currentFile ct=
+    FileSizeCheck lastFile currentFile ct 
+    |> ifNone (fun ()-> FileStreamCheck currentFile ct)
+    
 ///Checks if a file is aailable by opening it for exclusive use and waiting for an exception
 //This will return once the file is not being acessed by other programs.
 //it returns false if the file is discovered to be deleted before that point.
-let checkAvailabilityFileStream (source:string) (ct:CancellationToken) =
+let checkAvailability checker (source:string) (ct:CancellationToken) (sleepTime:int) =
     async {
         
         let fileName= Path.GetFileName (string source)
-        let mutable currentFile = new FileInfo(source)
         let mutable loop = true
         let mutable availability=Availability.Available
+        let mutable lastFile= new FileInfo(source)
         while loop do
-            if ct.IsCancellationRequested then
-                availability<- Availability.Cancelled
-                loop<- false
-            try
-                using (currentFile.Open(FileMode.Open, FileAccess.Read, FileShare.None)) (fun stream ->
-                    stream.Close())
-                availability<-Availability.Available
+            do! Async.Sleep(sleepTime)
+            let currentFile = new FileInfo(source)
+            match checker lastFile currentFile ct with
+            |Some av-> 
+                availability<-av
                 loop<-false
-            with 
-                | :? FileNotFoundException | :? DirectoryNotFoundException  ->
-                    Lgwarn "'Availability check' {@file} deleted while waiting to be available" fileName
-                    availability<-Availability.Deleted
-                    loop<-false
-                | :? IOException ->
-                    
-                    do! Async.Sleep(1000)
-
-                | ex  ->
-                    Lgwarn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
-                    loop<- false
-                    availability<-Availability.Deleted
+            |None ->
+                ()
+            lastFile<-currentFile
         return availability
     }
-///Checks if s file is available by checking if it's size is bigger than last time.
-let checkAvailabilityFileSize (source:string) (ct:CancellationToken) (sleepTime:int)=
-    async {
-            let fileName= Path.GetFileName (string source)
-            let mutable currentFile = new FileInfo(source)
-            let mutable loop = true
-            let mutable availability=Availability.Available
-            let mutable lastSize= currentFile.Length
-            while loop do
-                do! Async.Sleep(sleepTime)
-                if ct.IsCancellationRequested then
-                    availability<- Availability.Cancelled
-                    loop<- false
-                try
-                    let newSize=(new FileInfo(source)).Length
-                    Lgdebug3 "'Availability checker' {@file} olsize={@old} newSize={@new}" fileName  lastSize newSize
-                    if newSize=lastSize then
-                        availability<-Availability.Available
-                        loop<-false
-                        Lgdebugf "'Availability Checker' File is available. Returning"
-                    lastSize<-newSize
-                with 
-                    | :? FileNotFoundException | :? DirectoryNotFoundException  ->
-                        Lgwarn "'Availability check' {@file} deleted while waiting to be available" fileName
-                        availability<-Availability.Deleted
-                        loop<-false
-                    | :? IOException ->()
-
-                    | ex  ->
-                        Lgwarn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
-                        loop<- false
-                        availability<-Availability.Deleted
-            return availability
-        }
 
 ///This will return once the file is not being accessed by other programs.
 ///it returns false if the file is discovered to be deleted before that point.
 let isAvailable (source:string) (ct:CancellationToken) (sleepTime:int option) =
     let sleepTime= sleepTime|>Option.defaultValue 1000
-    checkAvailabilityFileSize source ct sleepTime
+    checkAvailability fileSizeAndStreamCheck source ct sleepTime
 
 let isAvailableFTP (ct:CancellationToken) (client:FtpClient)(source:string)  =
         async {
