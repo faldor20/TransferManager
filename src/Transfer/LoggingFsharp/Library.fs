@@ -40,3 +40,10 @@ let Lgdebug2  (message:string) (data:obj) (data2:obj)=
     Log.Debug(message, data,data2)
 let Lgdebug3  (message:string) (data:obj) (data2:obj) (data3:obj)=
     Log.Debug(message, data,data2,data3)
+    
+let Lgverb  (message:string) (data:obj)=
+    Log.Verbose(message, data)
+let Lgverb2  (message:string) (data:obj) (data2:obj)=
+    Log.Verbose(message, data,data2)
+let Lgverb3  (message:string) (data:obj) (data2:obj) (data3:obj)=
+    Log.Verbose(message, data,data2,data3)

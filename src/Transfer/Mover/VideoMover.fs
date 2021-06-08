@@ -75,6 +75,7 @@ let private startMpegErrorLogging (mpeg:Engine)=
         try
             Logging.Lgerror2 "'FFmpeg' Transcode transfer failed with error {@err} \n FFmpegLog= {@log}"  errorArgs.Exception ffmpegLog 
         with|_->  Logging.Lgerrorf "'FFmpeg' transcode transfer failed with no error message "
+    mpeg.Data.Add (fun x-> x.Data|>Lgverb "'FFmpeg' Data: {@data} ")
     mpeg.Error.Add errorHandler
     mpeg.Data.Add (fun arg->(ffmpegLog<-ffmpegLog+ arg.Data+"\n" ))
     Logging.Lgdebugf "'VideoMover' FFmpeg error logging setup."
@@ -285,6 +286,7 @@ let private basicTranscode outType ffmpegInfo (progressHandler:TranscodeProgress
         let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
         let args=prepArgs ffmpegInfo.FfmpegArgs None outType  destDir filePath;
         let res=runTranscode transcodeError args mpeg ct
+        
         res
     )
 
