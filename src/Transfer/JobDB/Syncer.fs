@@ -36,7 +36,7 @@ module Syncer=
                         |>List.map(fun (trans,jobID)-> 
                             KeyValuePair(jobID,trans))
                         |>Dictionary
-                    Lgdebugf "Sending database update to ClientManager"
+                    Lgverbosef "'JobDB Syncer' Sending database update to ClientManager"
                     let latestData={uiData with TransferDataList= transDataList}
                     syncFunc  latestData
                 )
@@ -45,7 +45,7 @@ module Syncer=
             |>Observable.bufferSpan (TimeSpan.FromMilliseconds syncInterval)
             |>Observable.subscribe(fun x ->
                 if x.Count>0 then 
-                    Lgdebugf "Sending database update to ClientManager"
+                    Lgverbosef "'JobDB Syncer' Sending database update to ClientManager"
                     let jobList,trans=x.[0]
                     syncFunc ({uiData with UIData.Jobs=jobList; TransferDataList=trans})
                 )

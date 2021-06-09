@@ -35,7 +35,7 @@ let doRequest (req: Requests) (f:'a->'c) a =
     } 
 ///schedules a job to interact with the database and returns an async function to return the result
 let doSyncReq (reqQueue:Requests) (f:'a->'c) a =
-    Lgdebugf "{Request Handler} Running JobDB Interaction "
+    //Lgdebugf "{Request Handler} Running JobDB Interaction "
     let finished = Channel.CreateUnbounded<Object>() //TODO:This is proabbly very unperforamnt. it may be worth poolnig the channels 
     reqQueue.Trigger ((fun ()-> (f a ):>Object ),finished.Writer)
     let res= finished.Reader.ReadAsync().AsTask()|>Async.AwaitTask|>Async.RunSynchronously
