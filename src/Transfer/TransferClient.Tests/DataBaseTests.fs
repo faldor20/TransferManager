@@ -1,11 +1,11 @@
 module DataBaseTests
 
-open TransferClient
+
 open System
-open SharedFs.SharedTypes
+
 open Expecto
 open Utils
-
+(*
 let localDBAcess = DataBase.LocalDB.AccessFuncs
 let sampleData: TransferData =
         { Destination = dest
@@ -37,3 +37,4 @@ let DataBaseTests=
         Expect.isEmpty DataBase.LocalDB.localDB <|"localDBEmpty"
     }
     ]
+    *)

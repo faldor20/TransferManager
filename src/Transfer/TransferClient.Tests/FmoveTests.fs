@@ -1,13 +1,12 @@
 module FmoveTests
 
-open TransferClient
 open System
 open System.Diagnostics
 
 
-open TransferClient.IO.FileMove
+open Mover.Types
+open Mover.FileMove
 open System.Threading
-open SharedFs.SharedTypes
 open System.IO
 open Expecto
 open Expecto

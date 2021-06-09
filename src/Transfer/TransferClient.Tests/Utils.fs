@@ -1,14 +1,14 @@
 module Utils
 
-open TransferClient
+
 open System
 open System.Diagnostics
 
 
-open TransferClient.IO.FileMove
+
 open System.Threading
-open SharedFs.SharedTypes
 open Expecto.Logging
+open Mover.FileMove
 open System.IO
 open Microsoft.FSharp.Core.Printf
 let mutable logger = Log.create "Expecto"

@@ -3,3 +3,4 @@ Microsoft.NET.Test.Sdk
 xunit
 xunit.runner.visualstudio
 coverlet.collector
+TaskBuilder.fs
