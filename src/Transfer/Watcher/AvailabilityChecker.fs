@@ -49,8 +49,11 @@ let doAvailabilityCheck checker (fileName:string) (ct:CancellationToken) =
                     FinishLooping Availability.Deleted
         with 
             | :? FileNotFoundException | :? DirectoryNotFoundException  ->
-                Lgwarn "'Availability check' {@file} deleted while waiting to be available" fileName
+                Lgwarn2 "'Availability check' {@file} deleted while waiting to be available should have been at path {@path}" fileName fileName
                 FinishLooping Availability.Deleted
+            | ex  ->
+                    Lgwarn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
+                    FinishLooping Availability.Deleted
                 
 ///Checks if a file is available by opening it and seeing if an error is triggered
 let checkFileStream (lastFile:StaticFileInfo)(currentFile:StaticFileInfo) =
@@ -112,7 +115,7 @@ let checkAvailability checker (source:string) (ct:CancellationToken) (checkInter
         while loop do
             do! Async.Sleep(checkInterval)
             let inf= new FileInfo(source)
-            let res=doAvailabilityCheck (checker lastFile) fileName ct
+            let res=doAvailabilityCheck (checker lastFile) source ct
             match res with
             |FinishLooping av-> 
                 availability<-av

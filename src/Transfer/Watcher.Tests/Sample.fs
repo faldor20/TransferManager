@@ -42,7 +42,8 @@ let writeIntermittently (file:string) (interval:int) numtimes=
     
 let testInterval checker writeInterval writes (checkInterval:int)  =
     async{
-        let name= "./testfile.test"
+        let name= "./testInternal/testfile.test"
+        Directory.CreateDirectory("./testInternal") |>ignore
         let a=File.WriteAllText(name,"sart")
         let source= new CancellationTokenSource()
         let ct= source.Token
