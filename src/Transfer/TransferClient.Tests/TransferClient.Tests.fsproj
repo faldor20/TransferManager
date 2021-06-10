@@ -6,7 +6,6 @@
     <GenerateProgramFile>false</GenerateProgramFile>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="Availability.fs" />
     <Compile Include="Utils.fs" />
     <Compile Include="DataBaseTests.fs" />
     <Compile Include="FmoveTests.fs" />

@@ -3,7 +3,6 @@ source https://api.nuget.org/v3/index.json
 storage: none
 nuget BlazorStrap 
 nuget coverlet.collector 
-nuget Expecto
 nuget FluentFTP 
 nuget FSharp.Control.AsyncSeq 
 nuget FSharp.Control.Reactive 
@@ -34,5 +33,10 @@ nuget Serilog.Sinks.Console
 nuget Serilog.Sinks.File 
 nuget Thoth.Json.Net 5.0.0
 
+nuget Expecto
+nuget Unquote
+nuget YoloDev.Expecto.TestSdk
 nuget xunit 
 nuget xunit.runner.visualstudio 
+
+nuget TaskBuilder.fs 
