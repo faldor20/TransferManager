@@ -11,7 +11,7 @@ open TransferClient.DataBase.Types
 open FluentFTP
 open JobManager
 open JobManager.Main
-open AvailabilityChecker
+open FileWatcher.AvailabilityChecker
 open TransferClient
 open LoggingFsharp
 

@@ -6,6 +6,7 @@
   </PropertyGroup>
   <ItemGroup>
     <None Include="paket.references" />
+    <Compile Include="AvailabilityChecker.fs" />
     <Compile Include="Watcher.fs" />
   </ItemGroup>
   <ItemGroup>

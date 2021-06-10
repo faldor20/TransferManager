@@ -1,6 +1,6 @@
 namespace TransferClient
 
-open Watcher
+open FileWatcher.Watcher
 open System
 open FSharp.Control.Reactive
 

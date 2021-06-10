@@ -1,4 +1,4 @@
-namespace TransferClient
+namespace FileWatcher
 
 open System.IO
 open Mover.Types

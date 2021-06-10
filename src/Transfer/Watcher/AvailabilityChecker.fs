@@ -1,15 +1,10 @@
-module TransferClient.Scheduling.AvailabilityChecker 
-open TransferClient
+module FileWatcher.AvailabilityChecker 
 open System.IO
 open System.Threading
 open System
 open Mover.Types
-open SharedFs.SharedTypes
-open TransferClient.DataBase.Types
 
 open FluentFTP
-open JobManager
-open JobManager.Main
 open LoggingFsharp
 type Availability=
     |Available=0

@@ -30,7 +30,6 @@
     <Compile Include="SignalR/ManagerCalls.fs" />
     <Compile Include="SignalR/ClientApi.fs" />
     <Compile Include="SignalR/Commands.fs" />
-    <Compile Include="Scheduler\AvailabilityChecker.fs" />
     <Compile Include="Scheduler\Scheduler.fs" />
     <Compile Include="HierarchyGenerator.fs" />
     <Compile Include="Manager.fs" />
