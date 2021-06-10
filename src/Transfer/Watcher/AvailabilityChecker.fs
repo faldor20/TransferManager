@@ -10,10 +10,23 @@ type Availability=
     |Available=0
     |Deleted=1
     |Cancelled=2
+///This Type mostly mirrors the noraml fileInfo type except it isn't lazily resolved.
+///The normal fileinfo only computes each value when it is accesed. then has the value remain as it was when computed
+///This precomputes all values so they remain the same.
+type StaticFileInfo=
+    {
+        Length:int64
+        LastWriteTime:DateTime
+        LastAccesTime:DateTime
+        FullName:String
+        Name:String
+    }
+let StaticFileInfo (path)=
+    let fileInfo = new FileInfo(path)
+    {Length=fileInfo.Length;LastWriteTime =fileInfo.LastWriteTime; LastAccesTime=fileInfo.LastAccessTime; FullName=fileInfo.FullName;Name= fileInfo.Name}
 type Status=
     |FinishLooping of Availability
-    |ContinueLooping of FileInfo
-
+    |ContinueLooping of StaticFileInfo
 
 
 
@@ -22,7 +35,7 @@ let doAvailabilityCheck checker (fileName:string) (ct:CancellationToken) =
             FinishLooping Availability.Cancelled
     else        
         try
-            let currentFile = new FileInfo(fileName)
+            let currentFile = StaticFileInfo( fileName)
             try
                match (checker currentFile) with
                     |Some x-> FinishLooping x
@@ -40,14 +53,15 @@ let doAvailabilityCheck checker (fileName:string) (ct:CancellationToken) =
                 FinishLooping Availability.Deleted
                 
 ///Checks if a file is available by opening it and seeing if an error is triggered
-let checkFileStream (lastFile:FileInfo)(currentFile:FileInfo) =
+let checkFileStream (lastFile:StaticFileInfo)(currentFile:StaticFileInfo) =
     Lgdebug "'Availability checker' {@file} being opened as stream" currentFile.Name 
-    using (currentFile.Open(FileMode.Open, FileAccess.Read, FileShare.None)) (fun stream ->
+
+    using (File.Open(currentFile.FullName,FileMode.Open, FileAccess.Read, FileShare.None)) (fun stream ->
         Lgdebug "'Availability checker' {@file} stream opened succesfully and now closing." currentFile.Name 
         stream.Close())
     Some Availability.Available
 
-let checkFileWriteTime (lastFile:FileInfo) (currentFile:FileInfo)  =
+let checkFileWriteTime (lastFile:StaticFileInfo) (currentFile:StaticFileInfo)  =
         let newWriteTime=currentFile.LastWriteTime
         let oldWriteTime=lastFile.LastWriteTime
         Lgdebug3 "'Availability checker' {@file} oldTime={@old} newTime={@new}" currentFile.Name  oldWriteTime newWriteTime
@@ -57,10 +71,9 @@ let checkFileWriteTime (lastFile:FileInfo) (currentFile:FileInfo)  =
         else None
     
 ///Checks if a file is bigger now thn last check
-let checkFileSize (lastFile:FileInfo) (currentFile:FileInfo)  =
+let checkFileSize (lastFile:StaticFileInfo) (currentFile:StaticFileInfo)  =
     let newSize=currentFile.Length
     let oldSize=lastFile.Length
-    printfn "'Availability checker' {%s oldsize={%i} newSize={%i" currentFile.Name  oldSize newSize
     Lgdebug3 "'Availability checker' {@file} oldsize={@old} newSize={@new}" currentFile.Name  oldSize newSize
     if newSize=oldSize then
         Lgdebugf "'Availability Checker' File is available. Returning"
@@ -82,6 +95,7 @@ let ifFinished f (a:Status)=
     match a with
     | FinishLooping b -> f b
     |_-> a
+
 let checkSizeandWriteTime lastInfo currentInfo =
     checkFileSize lastInfo currentInfo
     |>Option.bind (ifAvailable (fun ()-> checkFileWriteTime lastInfo currentInfo))
@@ -94,12 +108,10 @@ let checkAvailability checker (source:string) (ct:CancellationToken) (checkInter
         let fileName= Path.GetFileName (string source)
         let mutable loop = true
         let mutable availability=Availability.Available
-        let mutable lastFile= new FileInfo(source)
+        let mutable lastFile= StaticFileInfo (source)
         while loop do
-            Lgdebug2 "'Availability checker' {@file} oldfile.Length={@length}" source lastFile.Length
             do! Async.Sleep(checkInterval)
             let inf= new FileInfo(source)
-            printfn "len= %i"inf.Length
             let res=doAvailabilityCheck (checker lastFile) fileName ct
             match res with
             |FinishLooping av-> 
