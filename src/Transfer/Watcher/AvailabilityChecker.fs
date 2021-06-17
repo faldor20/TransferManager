@@ -98,10 +98,15 @@ let ifFinished f (a:Status)=
     match a with
     | FinishLooping b -> f b
     |_-> a
-
-let checkSizeandWriteTime lastInfo currentInfo =
-    checkFileSize lastInfo currentInfo
-    |>Option.bind (ifAvailable (fun ()-> checkFileWriteTime lastInfo currentInfo))
+let appendCheck check2 check1  lastInfo currentInfo =
+    check1 lastInfo currentInfo
+    |>Option.bind (ifAvailable (fun ()-> check2 lastInfo currentInfo))
+let checkSizeWriteTimeandFileStream lastInfo currentInfo =
+    let func=
+        checkFileSize
+        |>appendCheck  checkFileWriteTime 
+        |>appendCheck checkFileStream
+    func lastInfo currentInfo
 
     
 ///Checks if a file is available by applying the given checker at the given interval
@@ -130,7 +135,7 @@ let checkAvailability checker (source:string) (ct:CancellationToken) (checkInter
 ///it returns false if the file is discovered to be deleted before that point.
 let isAvailable (source:string) (ct:CancellationToken) (sleepTime:int option) =
     let sleepTime= sleepTime|>Option.defaultValue 1000
-    checkAvailability checkSizeandWriteTime source ct sleepTime
+    checkAvailability checkSizeWriteTimeandFileStream source ct sleepTime
 
 let isAvailableFTP (ct:CancellationToken) (client:FtpClient)(source:string)  =
         async {
