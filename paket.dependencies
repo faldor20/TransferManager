@@ -34,6 +34,8 @@ nuget Serilog.Sinks.File
 nuget Thoth.Json.Net 5.0.0
 
 nuget Expecto
+nuget Expecto.BenchmarkDotNet
+nuget BenchmarkDotNet 0.12.1
 nuget Unquote
 nuget YoloDev.Expecto.TestSdk
 nuget xunit 
