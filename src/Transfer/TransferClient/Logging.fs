@@ -24,7 +24,7 @@ module Logging=
         let logName=sprintf "%sdebugLog-%i-%i_%i;%i-%is--.log" logPath startTime.Month startTime.Day startTime.Hour startTime.Minute startTime.Second
         printfn "%s"logName
         Serilog.LoggerConfiguration()
-            .MinimumLevel.Debug()
+            .MinimumLevel.Verbose()
             .WriteTo.Console(theme=Sinks.SystemConsole.Themes.SystemConsoleTheme.Literate)
             .WriteTo.File(logName ,Serilog.Events.LogEventLevel.Verbose,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
             .WriteTo.File(logPath+"simpleLog-.log",Serilog.Events.LogEventLevel.Information,rollingInterval=RollingInterval.Day,fileSizeLimitBytes=(int64 (1000*1000)))
