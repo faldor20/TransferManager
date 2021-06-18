@@ -8,6 +8,8 @@ open BenchmarkDotNet
 open BenchmarkDotNet.Attributes
 open BenchmarkDotNet.Running
 open FSharp.Control
+open System
+open System.Threading.Tasks
 module mb=
   type Message<'a> = (unit -> 'a)*AsyncReplyChannel<'a>
   let  handler (msg:Message<'a>)=
@@ -15,7 +17,7 @@ module mb=
       let res = actionToRun ()
       replyChannel.Reply(res)
 
-  let   messageLoop(inbox:MailboxProcessor<Message< ^a>>)=
+  let messageLoop(inbox:MailboxProcessor<Message< ^a>>)=
       let rec loop()= async{
           let! msg= inbox.Receive()
           handler msg
@@ -31,15 +33,7 @@ module mb=
           handlerAgent.PostAndReply((fun reply->func,reply))
         
   let processor=MailboxProcessor.Start(messageLoop)
-type requestDoer()=
-  let a= Requests()
-  let _handler=requestHandler(a)
-(*   let runtime=  System.Threading.Tasks.Task.Run((fun ()->
-    printfn "running request handler"
-    _handler)) *)
-  member x.event= a
-  member x.handler=_handler
-  member x.processrequest f a = doRequest(a) (f) (a) 
+
 
 let isPrime a=
   let start=a/2
@@ -48,22 +42,20 @@ let isPrime a=
   |>Option.isSome
 let calcPrimes start number= 
   [start..(number+start)]|>List.map(fun x-> x,isPrime x)
-  System.Threading.Tasks.Task.Delay(1).Wait()
-
+[<MemoryDiagnoser>]
 type RequesthandlerBenchMark()=
-  let requestQueue=requestDoer()
-  
-  [<Params(10,100)>]
+  let requestQueue=LockingRequestHandler() 
+  let processor= MailboxProcessor.Start(mb.messageLoop)
+  [<Params(100)>]
   member val numArgs=1 with get,set
-  [<Params(10)>]
+  [<Params(1)>]
   member val MinPrime=1 with get,set
   [<Benchmark>]
   member x.reuestQueue()= 
     async{
-      let requestQueue=requestDoer()
 
       for i in [x.numArgs..x.numArgs+x.MinPrime] do
-        let! a= (doRequest (requestQueue.event) (fun ()-> isPrime i) ())
+        let! a= (requestQueue.doRequest (fun ()-> isPrime i) ())
         ()
       
       ()
@@ -71,7 +63,6 @@ type RequesthandlerBenchMark()=
   [<Benchmark>]
   member x.message()= 
     async{
-      let processor=MailboxProcessor.Start(mb.messageLoop)
       for i in [x.numArgs..x.numArgs+x.MinPrime] do
         let! a= (mb.doRequest (processor) (fun ()-> isPrime i) ())
         ()
@@ -92,11 +83,77 @@ type RequesthandlerBenchMark()=
         ()
       ()
     
+let infinterandom min max=
+  seq{
+    let rand=System.Random()
+    while true do
+      yield ( rand.Next(min,max))
+  }
+let delay (a:int)=
+  Async.RunSynchronously (Async.Sleep(a))
 
+
+
+let requestsExecutedInOrder (waits:int list) handler=
+  let doer:RequestHandler= handler
+  let watch=Stopwatch()
+  let delyThenTime x=
+    delay x
+    watch.Elapsed
+  watch.Start()
+  let times=
+    waits
+    |>List.map(fun x-> 
+        let task=new Task<TimeSpan>((fun ()-> 
+          printfn "starting"
+          doer.doSyncReq delyThenTime x))
+        task.Start()
+        task )
+    |>List.map (fun x->x.Result)
+  let happenedInOrder=times|>List.pairwise|>List.map(fun (x,y)-> 
+    printfn "time diff %A"( x-y).Milliseconds
+    x <y
+    )
+  let correctlyOrdered= happenedInOrder|>List.tryFind ((=)false) |>Option.isNone
+  correctlyOrdered
+
+
+let requestsExecutedInOrder2 (waits:int list) handler=
+  let doer:RequestHandler= handler
+  let watch=Stopwatch()
+  let delyThenTime x=
+    delay x
+    watch.Elapsed
+  watch.Start()
+  let times=
+    waits
+    |>AsyncSeq.ofSeq
+    |>AsyncSeq.mapAsync(fun x-> 
+          printfn "starting"
+          Async.StartChild (doer.doRequest delyThenTime x))
+    |>AsyncSeq.mapAsyncParallel(fun x->x )
+    |>AsyncSeq.toListSynchronously
+  let happenedInOrder=times|>List.pairwise|>List.map(fun (x,y)-> 
+    printfn "time diff %A"(x.TotalMilliseconds ,y.TotalMilliseconds)
+    x <y
+    )
+  let correctlyOrdered= happenedInOrder|>List.tryFind ((=)false) |>Option.isNone
+  correctlyOrdered
+let waitList=[1;2;1;100;2;1;1;1;10;1;1;2;]
 [<Tests>]
 let tests =
   testSequenced<|testList "RequestHandler" [
-    test "Benchmark" {
-      benchmark<RequesthandlerBenchMark> benchmarkConfig (fun _ -> null) |> ignore
+(*     test "Benchmark" {
+      
+      
+      benchmark<RequesthandlerBenchMark> benchmarkConfig  (fun _-> null) |> ignore
+    } *)
+    test "Message request handler ordered" {
+      let correctlyOrdered= requestsExecutedInOrder2 waitList (MessageRequestHandler())
+      Expect.isTrue correctlyOrdered "all actions eecuted in order"
+    }
+    test "Locking request handler ordered" {
+      let correctlyOrdered= requestsExecutedInOrder2 waitList (LockingRequestHandler())
+      Expect.isTrue correctlyOrdered "all actions eecuted in order"
     }
   ]
