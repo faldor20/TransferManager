@@ -245,13 +245,13 @@ let makeJobAvailable jobDB id =
     tryrunJob jobDB id
 
 
-type JobListAccess(jobList, req: RequestHandler.Requests) =
-    let d1 (f: 'a -> 'c) = doSyncReq req f
+type JobListAccess(jobList, req:RequestHandler) =
+    let d1 (f: 'a -> 'c) = req.doSyncReq f
     member this.GetJob id = d1 (JobList.getJob jobList) id
     member this.RemoveJob id = d1 (JobList.removeJob jobList) id
 
-type TransDataAccess(transDataList: TransferDataList, req, syncer) =
-    let d (f: 'a -> 'c) = doSyncReq req f
+type TransDataAccess(transDataList: TransferDataList, req:RequestHandler, syncer) =
+    let d (f: 'a -> 'c) = req.doSyncReq f
 
     member this.SetAndSync jobID data =
         d (TransferDataList.setAndSync transDataList syncer jobID) data
@@ -263,16 +263,15 @@ type TransDataAccess(transDataList: TransferDataList, req, syncer) =
         d (TransferDataList.remove transDataList) id
 ///Allows for access to the job database. All access is single threaded.
 ///Each function call will have to wait for any calls before it to complete before being run.
-type DBAccess(jobDB: JobDataBase) =
-    let req = Requests()
-    let reqHandler = requestHandler (req)
-    
-    let d (f: 'a -> 'c) = doSyncReq req f
+type DBAccess(jobDB: JobDataBase) =    
+    let handler:RequestHandler= MessageRequestHandler() :>RequestHandler
+
+    let d (f:'a->'c)= handler.doSyncReq f
     let a x = x :> Object
-    member this.JobListAccess = JobListAccess(jobDB.JobList, req)
+    member this.JobListAccess = JobListAccess(jobDB.JobList, handler)
 
     member this.TransDataAccess =
-        TransDataAccess( jobDB.TransferDataList,req, jobDB.SyncEvents)
+        TransDataAccess( jobDB.TransferDataList,handler, jobDB.SyncEvents)
 
     member this.GetUIData() = d getUIData jobDB
     member this.MakeJobFinished id = d (MakeJobFinished jobDB) id
