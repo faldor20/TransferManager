@@ -1,6 +1,5 @@
 {
-	"editor.detectIndentation": false,
-    "editor.formatOnSave": false,
+        "editor.formatOnSave": false,
     "dotnet-test-explorer.testProjectPath": "/testing/",
     "yaml.schemas": {
      "./WatchDirs.Schema.json": "WatchDirs.yaml"

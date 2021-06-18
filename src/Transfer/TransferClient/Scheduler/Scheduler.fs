@@ -25,6 +25,18 @@ let getFileData (file:FoundFile) currentTransferData=
     let fileSizeMB=(float(fileSize/int64 1000))/1000.0
 
     {currentTransferData with FileSize=fileSizeMB}
+let mapAvailabilityTest (availabilityTest:AvailableTest list option)=
+    let getFunc (av:AvailableTest)  =
+        match av with
+        |AvailableTest.LastSize->Checks.checkFileSize
+        |AvailableTest.OpenAsStream->Checks.checkFileStream
+        |AvailableTest.LastWriteTime->Checks.checkFileWriteTime
+        |_->raise (ArgumentException (sprintf"enum val %A is not supported" availabilityTest))
+    availabilityTest
+    |>Option.map(List.map getFunc)
+    |>Option.defaultValue([Checks.checkFileSize;Checks.checkFileWriteTime;Checks.checkFileStream])
+    |>checkList
+
 
 let transferType moveData=
             let{SourceFTPData= source; DestFTPData=dest;}=moveData
@@ -113,8 +125,12 @@ let scheduleTransfer (file:FoundFile) (moveData:MovementData) (receiverFuncs:Rec
                 |Some ftpData-> 
                     let client=Mover.FTPMove.ftpClient ftpData
                     client.Connect()
-                    Async.RunSynchronously<| (file.Path|>isAvailableFTP  ct.Token client)
-                |None-> Async.RunSynchronously( isAvailable file.Path ct.Token moveData.SleepTime)
+                    file.Path|>isAvailableFTP  ct.Token client
+                |None-> 
+                    let checkFunc=mapAvailabilityTest moveData.DirData.FileAvailableTest
+                    isAvailable file.Path ct.Token moveData.SleepTime checkFunc
+            |>Async.RunSynchronously
+                
     
         let trans= dbAccess.TransDataAccess.Get jobID
         if fileAvailable= Availability.Available then

@@ -3,6 +3,13 @@
 module Mover.Types 
 open System.Threading
 open SharedFs.SharedTypes
+
+[<System.Flags>]
+type AvailableTest=
+    |LastSize=1
+    |LastWriteTime=2
+    |OpenAsStream=3
+
 type TransferResult =
     | Success = 0
     | Failed = 1
@@ -67,13 +74,15 @@ type DirectoryData =
     { 
         SourceDir: string
         DestinationDir: string
-        DeleteCompleted: bool }
+        DeleteCompleted: bool
+        FileAvailableTest:AvailableTest list option }
 
-let DirectoryData groupName source destination deleteCompleted =
+let DirectoryData groupName source destination deleteCompleted availableTest =
     {
         SourceDir = source
         DestinationDir = destination
-        DeleteCompleted = deleteCompleted }
+        DeleteCompleted = deleteCompleted
+        FileAvailableTest=availableTest }
 
 type MovementData =
     {   GroupList: int list

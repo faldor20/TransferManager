@@ -27,10 +27,64 @@ let StaticFileInfo (path)=
 type Status=
     |FinishLooping of Availability
     |ContinueLooping of StaticFileInfo
+type CheckFunc= StaticFileInfo->StaticFileInfo->Availability option
+
+module Checks=
+            ///Checks if a file is available by opening it and seeing if an error is triggered
+    let checkFileStream (lastFile:StaticFileInfo)(currentFile:StaticFileInfo) =
+        Lgdebug "'Availability checker' {@file} being opened as stream" currentFile.Name 
+
+        using (File.Open(currentFile.FullName,FileMode.Open, FileAccess.Read, FileShare.None)) (fun stream ->
+            Lgdebug "'Availability checker' {@file} stream opened succesfully and now closing." currentFile.Name 
+            stream.Close())
+        Some Availability.Available
+
+    let checkFileWriteTime (lastFile:StaticFileInfo) (currentFile:StaticFileInfo)  =
+            let newWriteTime=currentFile.LastWriteTime
+            let oldWriteTime=lastFile.LastWriteTime
+            Lgdebug3 "'Availability checker' {@file} oldTime={@old} newTime={@new}" currentFile.Name  oldWriteTime newWriteTime
+            if newWriteTime=oldWriteTime then
+                Lgdebugf "'Availability Checker' File is available. Returning"
+                Some Availability.Available
+            else None
+        
+    ///Checks if a file is bigger now thn last check
+    let checkFileSize (lastFile:StaticFileInfo) (currentFile:StaticFileInfo)  =
+        let newSize=currentFile.Length
+        let oldSize=lastFile.Length
+        Lgdebug3 "'Availability checker' {@file} oldsize={@old} newSize={@new}" currentFile.Name  oldSize newSize
+        if newSize=oldSize then
+            Lgdebugf "'Availability Checker' File is available. Returning"
+            Some Availability.Available
+        else None
+///Evaluates **f** if a is None. 
+///Usefull for chainging failure states of options
+let  private  ifAvailable  f a=
+    match a with
+    |Availability.Available ->f()
+    |a->Some a
+///Evaluates **f** if a is None. 
+///Usefull for chainging failure states of options
+let private ifNone f a=
+    match a with
+    |Some y->Some y
+    |None->f()
+let private ifFinished f (a:Status)=
+    match a with
+    | FinishLooping b -> f b
+    |_-> a
+let private  appendCheck check2 check1  lastInfo currentInfo =
+    check1 lastInfo currentInfo
+    |>Option.bind (ifAvailable (fun ()-> check2 lastInfo currentInfo))
+///performs all the checks in the given list in the order given.
+/// Will only perform each subsiquent check if the previous check was a sucess
+let checkList funcs lastInfo currentInfo =
+    let func=
+        funcs|>List.reduce(fun  x y->x|>appendCheck y)
+    func lastInfo currentInfo
 
 
-
-let doAvailabilityCheck checker (fileName:string) (ct:CancellationToken) =
+let private doAvailabilityCheck checker (fileName:string) (ct:CancellationToken) =
     if ct.IsCancellationRequested then
             FinishLooping Availability.Cancelled
     else        
@@ -55,58 +109,7 @@ let doAvailabilityCheck checker (fileName:string) (ct:CancellationToken) =
                     Lgwarn2 "'Availability check' file {@file} failed with {@err}" fileName ex.Message
                     FinishLooping Availability.Deleted
                 
-///Checks if a file is available by opening it and seeing if an error is triggered
-let checkFileStream (lastFile:StaticFileInfo)(currentFile:StaticFileInfo) =
-    Lgdebug "'Availability checker' {@file} being opened as stream" currentFile.Name 
 
-    using (File.Open(currentFile.FullName,FileMode.Open, FileAccess.Read, FileShare.None)) (fun stream ->
-        Lgdebug "'Availability checker' {@file} stream opened succesfully and now closing." currentFile.Name 
-        stream.Close())
-    Some Availability.Available
-
-let checkFileWriteTime (lastFile:StaticFileInfo) (currentFile:StaticFileInfo)  =
-        let newWriteTime=currentFile.LastWriteTime
-        let oldWriteTime=lastFile.LastWriteTime
-        Lgdebug3 "'Availability checker' {@file} oldTime={@old} newTime={@new}" currentFile.Name  oldWriteTime newWriteTime
-        if newWriteTime=oldWriteTime then
-            Lgdebugf "'Availability Checker' File is available. Returning"
-            Some Availability.Available
-        else None
-    
-///Checks if a file is bigger now thn last check
-let checkFileSize (lastFile:StaticFileInfo) (currentFile:StaticFileInfo)  =
-    let newSize=currentFile.Length
-    let oldSize=lastFile.Length
-    Lgdebug3 "'Availability checker' {@file} oldsize={@old} newSize={@new}" currentFile.Name  oldSize newSize
-    if newSize=oldSize then
-        Lgdebugf "'Availability Checker' File is available. Returning"
-        Some Availability.Available
-    else None
-///Evaluates **f** if a is None. 
-///Usefull for chainging failure states of options
-let inline ifAvailable  f a=
-    match a with
-    |Availability.Available ->f()
-    |a->Some a
-///Evaluates **f** if a is None. 
-///Usefull for chainging failure states of options
-let inline ifNone f a=
-    match a with
-    |Some y->Some y
-    |None->f()
-let ifFinished f (a:Status)=
-    match a with
-    | FinishLooping b -> f b
-    |_-> a
-let appendCheck check2 check1  lastInfo currentInfo =
-    check1 lastInfo currentInfo
-    |>Option.bind (ifAvailable (fun ()-> check2 lastInfo currentInfo))
-let checkSizeWriteTimeandFileStream lastInfo currentInfo =
-    let func=
-        checkFileSize
-        |>appendCheck  checkFileWriteTime 
-        |>appendCheck checkFileStream
-    func lastInfo currentInfo
 
     
 ///Checks if a file is available by applying the given checker at the given interval
@@ -133,9 +136,9 @@ let checkAvailability checker (source:string) (ct:CancellationToken) (checkInter
 
 ///This will return once the file is not being accessed by other programs.
 ///it returns false if the file is discovered to be deleted before that point.
-let isAvailable (source:string) (ct:CancellationToken) (sleepTime:int option) =
+let isAvailable (source:string) (ct:CancellationToken) (sleepTime:int option)  checker=
     let sleepTime= sleepTime|>Option.defaultValue 1000
-    checkAvailability checkSizeWriteTimeandFileStream source ct sleepTime
+    checkAvailability checker source ct sleepTime
 
 let isAvailableFTP (ct:CancellationToken) (client:FtpClient)(source:string)  =
         async {
