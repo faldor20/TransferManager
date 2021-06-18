@@ -48,3 +48,4 @@ src/Transfer/TransferClient/vdcp1Dest
 .vs
 
 .lh/
+BenchmarkDotNet.Artifacts/
