@@ -22,7 +22,7 @@
     <None Include="paket.references" />
     <Compile Include="Logging.fs" />
     <Compile Include="DataBase/Types.fs" />
-    <Compile Include="ConfigReader.fs" />
+    <Compile Include="ConfigReader/ConfigReader.fs" />
     <Compile Include="FTParser.fs" />
     <Compile Include="DataBase/LocalDB.fs" />
     <Compile Include="TransferHandling.fs" />
