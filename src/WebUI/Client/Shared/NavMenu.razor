@@ -4,12 +4,6 @@
 @inject DataGetter Getter
 @inject NavigationManager UriHelper  
 
-<div class="top-row pl-4 navbar navbar-dark">
-    <a class="navbar-brand" href="">File Transfer Monitor</a>
-    <button class="navbar-toggler" @onclick="ToggleNavMenu">
-        <span class="navbar-toggler-icon"></span>
-    </button>
-</div>
 @{  void wrap( Dictionary<int ,List<int>>[] heirachy,string userString ,UIData uiData){
 
         void ListOp (List<int> belowGroups,int currentGroup, int currentIndex){
@@ -37,53 +31,45 @@
                 </li>
             }
         }
+        //We skip he first element beuase it is allways the "Clientname+limit" group representing the whole client, which we are technically already in by selecting the clients name.
+        var first= true;
         foreach (var group in heirachy[0])
         {
-           ListOp (group.Value,group.Key, 0 );
+            if(first) {first=false;continue;}
+            ListOp (group.Value,group.Key, 0 );
         }
     }
     
 }
+<div class="top-row pl-4 navbar navbar-dark">
+    <a class="navbar-brand" href="">File Transfer Monitor</a>
+    <button class="navbar-toggler" @onclick="ToggleNavMenu">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+</div>
 <div class="@NavMenuCssClass" @onclick="ToggleNavMenu">
     <ul class="nav-list ">
-     @*    <li class="nav-item px-1">
-            <NavLink class="nav-link" href="/All" @onclick='()=>selectedUser="" '>
-                <span class="oi oi-list-rich" aria-hidden="true"></span> All
-            </NavLink>
-        </li> *@
        @if(Getter.status==Status.Connected){ 
-        @foreach (var user in Getter.CopyTasks)
-        {
-            string url= "/JobList/"+user.Key+"/-1";
-            RenderFragment Status(){if (!user.Value.ClientConnected){return @<span style="color: red; padding-left: 0.5em;"> Disconnected</span>; } else return @<div></div>;}
-            
-            <li class="nav-item px-1">
-                <NavLink class="nav-link" href="@url" @onclick="()=>{selectedUser=user.Key;selections[0]=-1;}">
-                    <span class="oi oi-list-rich" aria-hidden="true"></span> @(user.Key)@(" ")@Status()
-                </NavLink>
-                @if(user.Key==selectedUser){
-                    <ul class="nav-list ">
-                        @{wrap(user.Value.Heirachy,user.Key,user.Value);}
-                    </ul>
-                }
-            </li>
-            
-        }}
-       @*  <li class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </li>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="oi oi-plus" aria-hidden="true"></span> Counter
-            </NavLink>
-        </li>
-        <li class="nav-item px-3">
-            <NavLink class="nav-link" href="fetchdata">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Fetch data
-            </NavLink>
-        </li> *@
+            var clients=Getter.TransClientData.OrderByDescending((client)=>client.Value.DisplayPriority);
+            foreach (var client in clients)
+            {
+                string url= "/JobList/"+client.Key+"/-1";
+
+                RenderFragment Status(){if (!client.Value.ClientConnected){return @<span style="color: red; padding-left: 0.5em;"> Disconnected</span>; } else return @<div></div>;}
+                
+                <li class="nav-item px-1">
+                    <NavLink class="nav-link" href="@url" @onclick="()=>{selectedUser=client.Key;selections[0]=-1;}">
+                        <span class="oi oi-list-rich" aria-hidden="true"></span> @(client.Key)@(" ")@Status()
+                    </NavLink>
+                    @if(client.Key==selectedUser){
+                        <ul class="nav-list ">
+                            @{wrap(client.Value.Heirachy,client.Key,client.Value);}
+                        </ul>
+                    }
+                </li>
+                
+            }
+            }
          
     </ul>
 </div>

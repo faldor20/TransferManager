@@ -28,9 +28,9 @@
          this.StateHasChanged();});
         if(GroupString==null||GroupString=="") Group=-1;
         else if( int.TryParse(GroupString,out Group));
-        else if(Getter.CopyTasks[User].Mapping.ContainsValue(GroupString)){
+        else if(Getter.TransClientData[User].Mapping.ContainsValue(GroupString)){
             //TODO: this wil not necissarily work if there are groups with the same names
-            Getter.CopyTasks[User].Mapping.First(x=>x.Value==GroupString);
+            Getter.TransClientData[User].Mapping.First(x=>x.Value==GroupString);
         }
         User = User ?? "All";
 
@@ -67,9 +67,9 @@ else
     <div>
         <ol>
 
-            @if (User == "All"||!Getter.CopyTasks.ContainsKey(User))
+            @if (User == "All"||!Getter.TransClientData.ContainsKey(User))
             {  
-                @* var tasks=Getter.CopyTasks.SelectMany(user => user.Value.Jobs.Select(task=>(user:user.Key,task:task.JobID,scheduledTime:user.Value.TransferDataList[task.JobID].ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
+                @* var tasks=Getter.TransClientData.SelectMany(user => user.Value.Jobs.Select(task=>(user:user.Key,task:task.JobID,scheduledTime:user.Value.TransferDataList[task.JobID].ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
                 Console.WriteLine("loading all tasks. Count= "+tasks.Count);
                 foreach (var task in tasks)
                 {   
@@ -79,7 +79,7 @@ else
                 <div> please select a group from the left side</div>
             }
             else {
-                var uiData= Getter.CopyTasks[User];
+                var uiData= Getter.TransClientData[User];
                 <UserRender UserData="@uiData" Group="@Group" UserName="@User" />
                     
                 }

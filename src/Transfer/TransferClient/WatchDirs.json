@@ -2,10 +2,12 @@
     "ClientName": "elipc",
     "ManagerIP": "10.41.57.193",
     "FFmpegPath": "C:/Users/***REMOVED***/scoop/shims/ffmpeg.exe",
-    "MaxJobs": {
-        "Main": 3
+    "TotalMaxJobs":100,
+    "GroupMaxJobs": {
+        "Eli": 3
 
     },
+    "DisplayPriority":100,
     "WatchDirs": [
         {
             "GroupList": [

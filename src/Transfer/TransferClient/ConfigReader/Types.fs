@@ -20,13 +20,18 @@ type YamlData =
     {
         ManagerIP:string;
         ClientName:string; 
+        DisplayPriority:int;
         FFmpegPath:string option;
-        MaxJobs:Map<string,int>;
+        TotalMaxJobs:int;
+        GroupMaxJobs:Map<string,int>;
         WatchDirs: ConfigMovementData list ;
     }
 type ConfigData={
     manIP: string 
     ClientName:string
+    ///For ui related things this sets how high up the list that client will be
+
+    DisplayPriority:int;
     FFmpegPath:string option
     FreeTokens:Dictionary<int,int>
     SourceIDMapping:Dictionary<string,int>

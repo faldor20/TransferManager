@@ -32,7 +32,7 @@
 
 }
 
-@{  var uiData= Getter.CopyTasks[UserName];
+@{  var uiData= Getter.TransClientData[UserName];
     Getter.userUpdates[UserName]= ()=>{Console.WriteLine($"StateChanged|User|{UserName}"); this.StateHasChanged();};
     void thing(IEnumerable<UIJobInfo> jobs){
         <div>

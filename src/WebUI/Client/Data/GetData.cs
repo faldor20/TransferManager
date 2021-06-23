@@ -22,7 +22,7 @@ namespace WebUI.Data
         public static Uri baseAddress;
         HttpClient http = new HttpClient { BaseAddress = baseAddress };
         public Dictionary<string, Action> userUpdates = new Dictionary<string, Action>();
-        public Dictionary<string, UIData> CopyTasks = null;
+        public Dictionary<string, UIData> TransClientData = null;
         public List<(string group, string user, TransferData task)> AllTasks = null;
         public bool first = true;
         public bool GotFirstConnectData = false;
@@ -92,7 +92,7 @@ namespace WebUI.Data
                    }
 
                }
-               CopyTasks = dataList;
+               TransClientData = dataList;
                status = Status.Connected;
 
                newData.Invoke();
@@ -115,7 +115,7 @@ namespace WebUI.Data
                  {
                      Console.WriteLine($"new jobs in user : {user}. Doing full update ");
                      
-                     CopyTasks[user] = change;             
+                     TransClientData[user] = change;             
                      newData.Invoke();
 
                  }
@@ -126,15 +126,15 @@ namespace WebUI.Data
                      foreach (var transData in change.TransferDataList)
                      {
                          //TOOD: impliment rest of fields
-                         CopyTasks[user].TransferDataList[transData.Key].FileRemaining = transData.Value.FileRemaining;
-                         CopyTasks[user].TransferDataList[transData.Key].FileSize = transData.Value.FileSize;
-                         CopyTasks[user].TransferDataList[transData.Key].EndTime = transData.Value.EndTime;
-                         CopyTasks[user].TransferDataList[transData.Key].ScheduledTime = transData.Value.ScheduledTime;
-                         CopyTasks[user].TransferDataList[transData.Key].Percentage = transData.Value.Percentage;
-                         CopyTasks[user].TransferDataList[transData.Key].Source = transData.Value.Source;
-                         CopyTasks[user].TransferDataList[transData.Key].Speed = transData.Value.Speed;
-                         CopyTasks[user].TransferDataList[transData.Key].Status = transData.Value.Status;
-                         CopyTasks[user].TransferDataList[transData.Key].StartTime = transData.Value.StartTime;
+                         TransClientData[user].TransferDataList[transData.Key].FileRemaining = transData.Value.FileRemaining;
+                         TransClientData[user].TransferDataList[transData.Key].FileSize = transData.Value.FileSize;
+                         TransClientData[user].TransferDataList[transData.Key].EndTime = transData.Value.EndTime;
+                         TransClientData[user].TransferDataList[transData.Key].ScheduledTime = transData.Value.ScheduledTime;
+                         TransClientData[user].TransferDataList[transData.Key].Percentage = transData.Value.Percentage;
+                         TransClientData[user].TransferDataList[transData.Key].Source = transData.Value.Source;
+                         TransClientData[user].TransferDataList[transData.Key].Speed = transData.Value.Speed;
+                         TransClientData[user].TransferDataList[transData.Key].Status = transData.Value.Status;
+                         TransClientData[user].TransferDataList[transData.Key].StartTime = transData.Value.StartTime;
 
                          ComponentUpdateEvents[user][transData.Key].Invoke();
                      }

@@ -32,10 +32,12 @@ let ReadFile (configFilePath:string)=
                 failwith "failed"
     let yamlData= yamlData2
 
-    
+    let programGroupName=yamlData.ClientName+"Limit"
     let watchDirsExist= Checkers.getValidWatchDirs yamlData.WatchDirs
+    //We preppend ProgramLimit to all groupList list becuase that is the top level group set by "TotalMaxJobs"
+    let watchDirs= watchDirsExist|>List.map (fun wd ->{wd with  GroupList= (programGroupName)::wd.GroupList})
     let groups=
-        watchDirsExist
+        watchDirs
             |>List.map(fun x-> x.GroupList)
 
     let mapping =
@@ -45,15 +47,16 @@ let ReadFile (configFilePath:string)=
                 |> List.mapi (fun i x -> KeyValuePair(x, i))
                 |>Dictionary<string,int> 
     Lginfo "'Config'Mapping: {@mapping}"mapping
-
-    let freeTokens= Checkers.getTokensForGroups yamlData.MaxJobs mapping
+    //Add the 'ProgramLimit' Group that reprents the max concurrent jobs the client is ever able to run
+    let maxJobs= yamlData.GroupMaxJobs.Add(programGroupName,yamlData.TotalMaxJobs)
+    let freeTokens= Checkers.getTokensForGroups maxJobs mapping
         
     let mappedGroups=
         groups
         |> List.map (List.map (fun x ->  mapping.[x]))
 
     let mutable watchDirsData =
-        (mappedGroups, watchDirsExist)||> List.map2 (fun group watchDir ->
+        (mappedGroups, watchDirs)||> List.map2 (fun group watchDir ->
             
             let transData=
                 match watchDir.TranscodeData with 
@@ -79,4 +82,4 @@ let ReadFile (configFilePath:string)=
         )
     
     watchDirsData|>List.iter(fun watchDir->Lginfo "'Config' Sources that will be watched: {@watchdirs}" watchDir.MovementData.DirData.SourceDir )
-    {FFmpegPath=yamlData.FFmpegPath; manIP= yamlData.ManagerIP; ClientName=yamlData.ClientName;FreeTokens=freeTokens;SourceIDMapping= mapping;WatchDirs= watchDirsData}
+    {DisplayPriority=yamlData.DisplayPriority;FFmpegPath=yamlData.FFmpegPath; manIP= yamlData.ManagerIP; ClientName=yamlData.ClientName;FreeTokens=freeTokens;SourceIDMapping= mapping;WatchDirs= watchDirsData}

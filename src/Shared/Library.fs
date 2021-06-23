@@ -47,5 +47,7 @@ module SharedTypes =
         TransferDataList:TransferDataList
         mutable Jobs:UIJobInfo array
         Heirachy:Dictionary<int,List<int>> array
+        ///For ui related things this sets how high up the list that client will be
+        DisplayPriority:int;
     }
-    let UIData mapping heirachy={UIData.Jobs=Array.empty;UIData.TransferDataList=TransferDataList();Mapping=mapping; Heirachy=heirachy; ClientConnected =true; }
+    let UIData displayPriority mapping heirachy={DisplayPriority =displayPriority;UIData.Jobs=Array.empty;UIData.TransferDataList=TransferDataList();Mapping=mapping; Heirachy=heirachy; ClientConnected =true; }
