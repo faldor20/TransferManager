@@ -41,7 +41,7 @@ module Manager =
         Mover.VideoMover.ffmpegPath<- configData.FFmpegPath
         let heirachy=HierarychGenerator.makeHeirachy groups
         //This is the A UIData object with the unchanging parts filled out
-        let baseUIData=(UIData mapping heirachy)
+        let baseUIData=(UIData configData.DisplayPriority mapping heirachy)
         baseUIData
 
     let setupSignalR configData baseUIData=
@@ -86,7 +86,7 @@ module Manager =
     let startUp =
         async {
             //Read config file to get information about transfer source dest pairs
-            let configData = ReadFile "./WatchDirs.json"
+            let configData = ReadFile "./Config-Main.json"
             let mutable watchDirsData = configData.WatchDirs
 
             //Initialises the database and gives us a UIdata with unchanging fields filled.

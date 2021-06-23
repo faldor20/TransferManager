@@ -57,7 +57,7 @@ module Logging=
         {URL=loggingConfig.LokiURL;lables=labels},logPath
     let initLogging lokiAddr=
         
-        let text=  tryCatch (File.ReadAllText) (fun x->x.ToString()) "./logConfig.json"  
+        let text=  tryCatch (File.ReadAllText) (fun x->x.ToString()) "./Config-Logging.json"  
         let res=
             text 
             |> Result.bind getConfig
