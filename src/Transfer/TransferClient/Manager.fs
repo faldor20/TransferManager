@@ -16,7 +16,9 @@ open TransferClient.SignalR.ManagerCalls
 open System.IO;
 open Microsoft.AspNetCore
 open LoggingFsharp
-open ConfigReader
+open ConfigReader.Reader
+open ConfigReader.Types
+
 
 module Manager =
     ///Sets up things like the Jobdatabase and UIdata using the configuration read form the config file
@@ -84,7 +86,7 @@ module Manager =
     let startUp =
         async {
             //Read config file to get information about transfer source dest pairs
-            let configData = ConfigReader.ReadFile "./WatchDirs.json"
+            let configData = ReadFile "./WatchDirs.json"
             let mutable watchDirsData = configData.WatchDirs
 
             //Initialises the database and gives us a UIdata with unchanging fields filled.
