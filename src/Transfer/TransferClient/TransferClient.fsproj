@@ -41,11 +41,11 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="WatchDirs.json">
+    <None Include="Config-Main.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     
-    <None Include="logConfig.json">
+    <None Include="Config-Logging.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
   </ItemGroup>
