@@ -30,6 +30,8 @@ namespace WebUI.Data
         public string transferServerUrl;
         public Status status = Status.Loading;
         public event Action newData;
+        public event Action newConfigData;
+        public UIConfig uiConfig=new UIConfig(ColourScheme.Normal,"Default Jobs:","Default TransferManager");
         public void UpdateData()
         {
             newData.Invoke();
@@ -143,9 +145,17 @@ namespace WebUI.Data
 
 
 
+            
 
-
-             });
+             }
+            );
+            hubConnection.On<UIConfig>("ReceiveUIConfig", (config) =>
+            {
+                Console.WriteLine($"Got UI config : {config}");
+                uiConfig = config;
+                newConfigData.Invoke();
+                newData.Invoke();
+            });
 
 
             hubConnection.On<string>("Testing", confirmed => { Console.WriteLine(confirmed); status = Status.Connected; });
@@ -161,6 +171,8 @@ namespace WebUI.Data
             hubConnection.SendAsync("SwitchJobs", userName, job1, job2);
         Task RequestData() =>
            hubConnection.SendAsync("GetTransferData");
+        Task RequestUIConfig() =>
+           hubConnection.SendAsync("GetUIConfig");
         Task Confirm() =>
            hubConnection.SendAsync("GetConfirmation");
         async Task ContinuousSend()
@@ -182,6 +194,7 @@ namespace WebUI.Data
                         GotFirstConnectData = true;
                         //	await Confirm();
                         await RequestData();
+                        await RequestUIConfig();
                     }
                 }
                 else

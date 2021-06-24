@@ -1,3 +1,4 @@
 Saturn
 TaskBuilder.fs
 Microsoft.AspNetCore.SignalR.Protocols.MessagePack
+Thoth.Json.Net

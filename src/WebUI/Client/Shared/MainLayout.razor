@@ -1,10 +1,15 @@
 ﻿@inherits LayoutComponentBase
 @using WebUI.Data
 @inject DataGetter Getter
+@{
+    void RenderNavMenu(string sideBarClass){
+        <div class=@(sideBar)>
+            <NavMenu/>
+        </div>
+    }
+}
 <div class="page">
-<div class="sidebar">
-    <NavMenu/>
-</div>
+@{RenderNavMenu(sideBar);}
 
 <div class="main">
     <div class="content px-4">
@@ -14,9 +19,15 @@
 </div>
 @code {
     
+    private string sideBar="sidebar";
+    void getSideBarStyle (SharedFs.SharedTypes.ColourScheme style){
+     if(style == 0) sideBar="sidebar"; else sideBar="sidebar2";
+     }
     protected override async Task OnInitializedAsync()
     {
         Console.WriteLine("initialising main Layout");
+        Getter.newConfigData+=(()=>getSideBarStyle(Getter.uiConfig.ColourScheme));
+        Getter.newConfigData += StateHasChanged;
         await Getter.StartService();
     }
 

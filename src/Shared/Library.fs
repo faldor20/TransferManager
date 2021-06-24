@@ -33,6 +33,19 @@ module SharedTypes =
           EndTime: DateTime
           jobID:int
           location:int array}
+
+    type ColourScheme=
+       |Normal=0
+       |Alt=1
+    [<CLIMutable>]
+    type UIConfig=
+        {
+            ColourScheme:ColourScheme
+            Heading:string
+            SideHeading:string
+
+        }
+
 //=========jobDB====
     type SourceID = int
     type JobID = int

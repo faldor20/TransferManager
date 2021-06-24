@@ -48,7 +48,7 @@
     }
     }
 
-<h1>Transfer Monitoring</h1>
+<h2>@(Getter.uiConfig.Heading)</h2>
 <p>Connected to transfer server at: @Getter.transferServerUrl</p>
 
 @if (Getter.status==Status.Loading)
@@ -76,7 +76,7 @@ else
                     <TransferTaskRender index="@task.task" userName="@task.user" > </TransferTaskRender>
                     
                 }  *@
-                <div> please select a group from the left side</div>
+                <div> Please select a group from the left side</div>
             }
             else {
                 var uiData= Getter.TransClientData[User];

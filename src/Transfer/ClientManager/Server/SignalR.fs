@@ -7,11 +7,13 @@ open SharedFs.SharedTypes
 open Microsoft.AspNetCore.Mvc
 open Microsoft.AspNetCore.Http.Features;
 open FSharp.Control.Tasks.V2
+open ClientManager.Config.Reader
 module SignalR=
    (*  type IClientApi = 
       abstract member DataResponse : Dictionary<Guid,TransferData> -> Threading.Tasks.Task *)
 
     
+    let uiConfig= readConfig "./Config-UI.json"
 
     type ITransferClientApi = 
       abstract member CancelTransfer : int -> Task
@@ -41,7 +43,7 @@ module SignalR=
         
         member this.GetTransferData groupName id=
            (groupName,id)||> DataBase.getTransferData
-        
+
         member this.RegisterSelf (userName:string)  =
             printfn "Registering new client. Username: %s connectionID=%s userID=%s" userName this.Context.ConnectionId  this.Context.UserIdentifier 
             
@@ -73,7 +75,8 @@ module SignalR=
                 false
             
     and IFrontendApi = 
-      abstract member ReceiveData :Dictionary<string, UIData> -> Task
+      abstract member ReceiveData :(Dictionary<string, UIData>) -> Task
+      abstract member ReceiveUIConfig :UIConfig -> Task
       abstract member ReceiveDataChange :string->UIData -> Task
       abstract member Testing :string -> Task
     //this apprently needs to be injected
@@ -101,15 +104,21 @@ module SignalR=
         member this.GetTransferData()=
             let data =DataBase.dataBase
             this.Clients.All.ReceiveData(data)
+
+        member this.GetUIConfig()=
+            let config=uiConfig
+            this.Clients.All.ReceiveUIConfig(config)
+
         member this.GetConfirmation()=
             this.Clients.All.Testing("hiya from the other side")
+
         member this.CancelTransfer  user id=
             printfn "recieved Cancellation request for item %i and user %s" id user ;
 
             clientManager.CancelTransfer  user id
         member this.SwitchJobs  (user:string) (job1:int) (job2:int)=
-
             clientManager.SwitchJobs  user job1 job2
+
     and FrontEndManager (hubContext :IHubContext<DataHub,IFrontendApi>) =
         inherit Controller ()
         member this.HubContext :IHubContext<DataHub, IFrontendApi> = hubContext
