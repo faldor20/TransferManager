@@ -59,6 +59,9 @@ Target.create "PubMan-Lin" (fun _ -> buildManager "linux-x64" "./Publish-linux" 
 Target.create "PubClient-Lin" (fun _ -> buildClient "linux-x64" "./Publish-linux" true )
 Target.create "PubWeb-Lin" (fun _ -> buildWebUI "linux-x64" "./Publish-linux" true )
 
+Target.create "PubMan-Win" (fun _ -> buildManager "win-x64" "./Publish-Win" true )
+Target.create "PubClient-Win" (fun _ -> buildClient "win-x64" "./Publish-Win" true )
+Target.create "PubWeb-Win" (fun _ -> buildWebUI "win-x64" "./Publish-Win" true )
 Target.create "PubWin" (fun _ -> buildProjects "win-x64" "./Publish-Win" false)
 
 
