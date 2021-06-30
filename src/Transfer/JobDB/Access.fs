@@ -245,9 +245,12 @@ let makeJobAvailable jobDB id =
     jobDB.JobList.[id].Available <- true
     tryrunJob jobDB id
 
-let cancelJob id (jobDB:JobDataBase)=
-    match JobList.getJob jobDB.JobList id with
-    |Some x-> x.CancelToken.Cancel()
+let cancelJob job =
+    match job with
+    |Some x-> 
+        //An important note. This function does not return untill the cancellation is complete.
+        x.CancelToken.Cancel()
+        Lgdebug "'JobDB' Cancellation performed for job {@id} "id
     |None->Lgwarn "'JobDB' Tried to cancel job {@id} but it did not exist in the joDB" id
 
 type JobListAccess(jobList, req:RequestHandler) =
@@ -281,9 +284,9 @@ type DBAccess(jobDB: JobDataBase) =
     member this.GetUIData() = d getUIData jobDB
     member this.MakeJobFinished id = d (MakeJobFinished jobDB) id
     member this.MakeJobAvailable id = d (makeJobAvailable jobDB) id
-
-    member this.CancelJob id =
-        d (cancelJob id) jobDB
+    //This doesn't and shouldn't be wrapped in he request handler. That is becuase the cancellation request actually hangs untill the ancellation is compete
+    //That would lock up the request handler and prevent the cancellation completing.. thus locking up the entire program.... oof
+    member this.CancelJob id =this.JobListAccess.GetJob id |>cancelJob
 
     member this.AddJob sourceID makeJob transData =
         d (addJob jobDB sourceID makeJob) transData

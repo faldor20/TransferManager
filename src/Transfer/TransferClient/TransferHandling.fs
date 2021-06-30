@@ -20,9 +20,10 @@ module TransferHandling=
         { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
     let cleaupTask (dbAcess:DBAccess)  jobID sourceID transResult delete=
         async{
+            Lgdebug "'Transfer Handling' Finished Job {@job} Starting cleanup" jobID
+            //TODO: This hangs for some reason?
             let transData= dbAcess.TransDataAccess.Get jobID
             let source = transData.Source
-
            //LOGGING: printfn "DB: %A" dataBase
             let dataChange=
                 match transResult with 
@@ -30,6 +31,7 @@ module TransferHandling=
                     |TransferResult.Cancelled-> CancelledCompleteAction transData source
                     |TransferResult.Failed-> FailedCompleteAction transData source
                     |_-> failwith "unknonw enum for transresult"
+            
             dbAcess.TransDataAccess.SetAndSync jobID dataChange
             dbAcess.MakeJobFinished sourceID jobID
            
@@ -41,7 +43,6 @@ module TransferHandling=
                     return ()
                 else
                     try 
-                        
                         File.Delete(path) 
                     with 
                         | :?IOException-> 
@@ -56,12 +57,14 @@ module TransferHandling=
                     return! del source 0 
                 |ftp-> Lgwarnf "Deleting files after transfer that are only acessable via ftp is not currently supported. Pleases set that watchdir to not delete in config"
             else ()
+
         }
     let processTask (dbAcess:DBAccess) sourceID jobID =
         async{
             try
-            let task= (dbAcess.JobListAccess.GetJob jobID).Job
-            let transResult, delete = Async.RunSynchronously task
+            let task= (dbAcess.JobListAccess.GetJob jobID).Value.Job
+            let! transResult, delete =  task
+            
             cleaupTask dbAcess jobID sourceID transResult delete |>Async.Start
             with|e->
                 dbAcess.MakeJobFinished sourceID jobID
