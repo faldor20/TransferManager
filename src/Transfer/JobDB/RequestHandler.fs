@@ -6,14 +6,18 @@ open System.Threading.Channels
 open FSharp.Control
 open LoggingFsharp
 module MessageRequestHandler=
-    type Message<'a> = (unit -> 'a)*AsyncReplyChannel<'a>
+    type Message<'a> = (unit -> 'a)*AsyncReplyChannel<Result<'a,Exception>>
     let inline handler (msg:Message<'a>)=
         let actionToRun,replyChannel = msg
-        let res = actionToRun ()
-        replyChannel.Reply(res)
+        try 
+            let res =
+                actionToRun ()
+            replyChannel.Reply(Ok res)
+        with e->replyChannel.Reply(Error e)
     
     let inline messageLoop(inbox:MailboxProcessor<Message< ^a>>)=
         let rec loop()= async{
+            
             let! msg= inbox.Receive()
             handler msg
             return! loop()
@@ -26,12 +30,21 @@ module MessageRequestHandler=
             async{
             let func= (fun ()-> ((f a) :>obj ) )
             let! res=handlerAgent.PostAndAsyncReply((fun reply->func,reply))
-            return res:?>'c
+            let ret=
+                match res with
+                |Ok(x)->x
+                |Error(e)->raise (exn("'Request handler'Requested function threw exception during execution",e))
+            return ret:?>'c
+            
             }
     let inline doRequestSync (handlerAgent:MailboxProcessor<Message<'g>>) (f:'a->'c) a :'c=
             let func= (fun ()-> (f a :>obj) )
             let res=handlerAgent.PostAndReply((fun reply->func,reply)) 
-            res:?>'c
+            let ret=
+                match res with
+                |Ok(x)->x
+                |Error(e)->raise (exn("'Request Handler'Requested function threw exception during execution",e))
+            ret:?>'c
 (*     module Global=
         let doRequest:('a->'b) ->'a ->Async<'b>= doRequest processor 
         
@@ -49,6 +62,7 @@ type MessageRequestHandler()=
     override x.doSyncReq f a = MessageRequestHandler.doRequestSync processor f a
     override x.doRequest f a = MessageRequestHandler.doRequest processor f a
     override x.handle()=() 
+
 ///DO NOT USE, DOesn't seem to actually work
 module LockingRequestHandler=
     //open System.Reactive.Linq
