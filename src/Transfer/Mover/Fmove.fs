@@ -119,11 +119,11 @@ let FCopy (source: string) destination progress (ct: CancellationToken) =
             if (res = TransferResult.Cancelled
                 || res = TransferResult.Failed) then
                 try
-                    printfn "Cancelled or failed deleting file %s" dest
+                    Lginfo "Cancelled or failed. Deleting output file {@file}" dest
                     File.Delete(dest)
                     res
                 with _ ->
-                    printfn "Cancelled or failed and was unable to delete output file %s" dest
+                    Lgwarn "Cancelled or failed. Was unable to delete output file {@file}" dest
                     TransferResult.Failed
             else
                 res

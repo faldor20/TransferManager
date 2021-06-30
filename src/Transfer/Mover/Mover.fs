@@ -87,7 +87,7 @@ let MoveFile moveData (moveJobData: MoveJobData)   = async {
         |FtpProg _-> "FTP Transfer"
         |FastFileProg _->"File transfer"
         |TranscodeProg _-> "FFmpeg transcode"
-    Lginfo3 " 'Starting' {@type} from {@src} to {@dest}" transType sourceFilePath destination
+    Lginfo3 " 'Mover' Starting {@type} from {@src} to {@dest}" transType sourceFilePath destination
        
     //We have to set the startTime here because we want the sartime to truly be when the task begins
     moveJobData.HandleTransferData {transData with StartTime=DateTime.Now}
@@ -96,6 +96,6 @@ let MoveFile moveData (moveJobData: MoveJobData)   = async {
     //We need to dispose the sourceclient if there is one. If we getrid of this we would endlessly increase our number of active connections
        
 
-    Lginfo2 " 'Finished' copy from {@src} to {@dest}"sourceFilePath destination
+    Lginfo2 " 'Mover' Finished copy from {@src} to {@dest}"sourceFilePath destination
     return (result,moveData.DirData.DeleteCompleted)
 }
