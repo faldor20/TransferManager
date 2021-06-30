@@ -11,7 +11,9 @@ module JobList =
         list.[id] <- (makeJob id)
         id
     ///Returns a refernce to the job whos id is given
-    let getJob (list: JobList) id = list.[id]
+    let getJob (list: JobList) id = 
+        if list.ContainsKey id then Some list.[id]
+        else None
    
     ///Returns a refernce to the job whos id is given
     let removeJob (list: JobList) id= list.Remove id

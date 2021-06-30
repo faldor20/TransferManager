@@ -43,8 +43,9 @@ let removeWaitingJob jobDB (source: Source) sourceID (id: JobID) =
 let tryrunJob (jobDB: JobDataBase) id =
 
     Lgdebug "Trying to run job {@id}" id
-    let job = JobList.getJob jobDB.JobList id
-    if job.TakenTokens.Length > 1 then
+    let maybeJob = JobList.getJob jobDB.JobList id
+    match maybeJob with
+    |Some job when job.TakenTokens.Length > 1 ->
         let sourceID = List.last job.TakenTokens
         let source = jobDB.Sources.[sourceID]
         if source.RequiredTokens = job.TakenTokens then
@@ -68,7 +69,7 @@ let tryrunJob (jobDB: JobDataBase) id =
 
             Lgdebug2 "Running Specifically job {@jobID} from source {@srcID} " id sourceID
             runJob jobDB [ (sourceID, id) ]
-
+    |_->()
 
 
 let tryRunJobs (jobDB: JobDataBase) =
@@ -244,6 +245,10 @@ let makeJobAvailable jobDB id =
     jobDB.JobList.[id].Available <- true
     tryrunJob jobDB id
 
+let cancelJob id (jobDB:JobDataBase)=
+    match JobList.getJob jobDB.JobList id with
+    |Some x-> x.CancelToken.Cancel()
+    |None->Lgwarn "'JobDB' Tried to cancel job {@id} but it did not exist in the joDB" id
 
 type JobListAccess(jobList, req:RequestHandler) =
     let d1 (f: 'a -> 'c) = req.doSyncReq f
@@ -278,7 +283,7 @@ type DBAccess(jobDB: JobDataBase) =
     member this.MakeJobAvailable id = d (makeJobAvailable jobDB) id
 
     member this.CancelJob id =
-        d (fun id -> (JobList.getJob jobDB.JobList id).CancelToken.Cancel()) id
+        d (cancelJob id) jobDB
 
     member this.AddJob sourceID makeJob transData =
         d (addJob jobDB sourceID makeJob) transData
