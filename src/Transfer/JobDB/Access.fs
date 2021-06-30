@@ -167,7 +167,7 @@ let MakeJobFinished jobDB sourceID jobID =
 
     tryRunJobs jobDB
     jobOrderChanged jobDB
-    Lgdebug "Removed job {@id" jobID
+    Lgdebug "Removed job {@id}" jobID
 
 ///Makes the upjob higher up the order of jobs than the downjob
 ///This is done by either reordering source in the joborder or reording jobs within a source

@@ -36,8 +36,8 @@ module Syncer=
                         |>List.map(fun (trans,jobID)-> 
                             KeyValuePair(jobID,trans))
                         |>Dictionary
-                    Lgverbosef "'JobDB Syncer' Sending database update to ClientManager"
                     let latestData={uiData with TransferDataList= transDataList}
+                    Lgverbosef "'JobDB Syncer' Sending database update to ClientManager"
                     syncFunc  latestData
                 )
         let obs2=
