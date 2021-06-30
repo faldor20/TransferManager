@@ -140,6 +140,8 @@ let requestsExecutedInOrder2 (waits:int list) handler=
   let correctlyOrdered= happenedInOrder|>List.tryFind ((=)false) |>Option.isNone
   correctlyOrdered
 let waitList=[1;2;1;100;2;1;1;1;10;1;1;2;]
+
+
 [<Tests>]
 let tests =
   testSequenced<|testList "RequestHandler" [
@@ -148,6 +150,29 @@ let tests =
       
       benchmark<RequesthandlerBenchMark> benchmarkConfig  (fun _-> null) |> ignore
     } *)
+    test "exceptions still allow completion"{
+      let handler= (MessageRequestHandler())
+      let res=
+        async{
+          let! a =handler.doRequest delay 50|>Async.StartChild
+          delay 10
+          let! b= handler.doRequest delay 10|>Async.StartChild
+          let! c= async{
+              try 
+                return!  handler.doRequest (fun x-> delay 10; raise (exn "exception") ) 1
+              with e-> 
+                printfn "Error caught: \n %A" e
+                return async{()}
+              }
+          let! d= handler.doRequest (fun x-> delay x; x) 10|>Async.StartChild
+          do! a
+          do! b
+          do! c
+          let! out=d
+          return true
+        }|>Async.RunSynchronously
+      Expect.isTrue res "The Handler must have broken somehow"
+    }
     test "Message request handler ordered" {
       let correctlyOrdered= requestsExecutedInOrder2 waitList (MessageRequestHandler())
       Expect.isTrue correctlyOrdered "all actions eecuted in order"
