@@ -9,9 +9,44 @@ open FTPMove
 
 open LoggingFsharp
     
-  
-///Calls the appropriate mve function based on the type of progress hanlder and movedata given to it
-///
+let private ffmpegMove ffmpegInfo moveJobData moveData  sourceFilePath destFilePath cb ct=
+    let inType=
+        match moveData.SourceFTPData with
+        | Some(data)->VideoMover.InputType.FTP data
+        |None ->VideoMover.InputType.File
+    let func=
+        match ffmpegInfo.ReceiverData with
+            |Some(_)->
+                match moveJobData.ReceiverFuncs with
+                |Some(recv)->
+                    VideoMover.sendToReceiver inType recv 
+                |None->
+                    Lgwarnf("'Mover' Receiver Funcs have not been set. Cannot communicate with ffmpeg reciver. This is a code issue not a configuration issue.")
+                    failwith ("see above")
+            |None->
+                let outType=
+                    match moveData.DestFTPData with
+                    |Some (data)->VideoMover.OutputType.FTP data 
+                    |None -> VideoMover.OutputType.File
+                VideoMover.basicTranscode outType inType
+
+    func ffmpegInfo cb sourceFilePath destFilePath ct
+
+let private ftpMove moveData sourceFilePath destFilePath cb ct=
+    let ftpFunc=
+        match (moveData.SourceFTPData,moveData.DestFTPData) with
+        |(Some source,Some dest)->
+            FTPtoFTP source dest 
+        |(Some source,None)->
+            downloadFTP  source
+        |(None ,Some dest)->
+            uploadFTP  dest
+        |(source,dest)-> 
+            Lgerror3 "'Mover' Ftp progress handler was given but there is no ftp source of desitination.. SourceFTP: {@source} DestFTP: {@dest} callback : {@cb}"source dest cb
+            failwith "see above"
+    ftpFunc sourceFilePath destFilePath cb ct            
+     
+///Calls the appropriate move function based on the type of progress handler and movedata given to it
 let private doMove (progressHandler:ProgressHandler) moveData (moveJobData:MoveJobData)=async{
     let fileName=IO.Path.GetFileName(moveJobData.SourcePath)
     let destFilePath= moveData.DirData.DestinationDir+fileName
@@ -20,43 +55,19 @@ let private doMove (progressHandler:ProgressHandler) moveData (moveJobData:MoveJ
         //The particular transfer action to take has allready been decided by the progress callback
         match progressHandler  with
             |FtpProg cb->
-                let ftpFunc=
-                    match (moveData.SourceFTPData,moveData.DestFTPData) with
-                    |(Some source,Some dest)->
-                        FTPtoFTP source dest 
-                    |(Some source,None)->
-                        downloadFTP  source
-                    |(None ,Some dest)->
-                        uploadFTP  dest
-                    |(source,dest)-> 
-                        Lgerror3 "'Mover' Ftp progress handler was given but there is no ftp source of desitination.. SourceFTP: {@source} DestFTP: {@dest} callback : {@cb}"source dest cb
-                        failwith "see above"
-                ftpFunc sourceFilePath destFilePath cb ct
+                ftpMove moveData sourceFilePath destFilePath cb ct
             |FastFileProg cb->
                 FCopy sourceFilePath destFilePath cb ct
             |TranscodeProg (cb,ffmpegInfo) ->
-                let transFunc=
-                    match ffmpegInfo.ReceiverData with
-                        |Some(_)->
-                            match moveJobData.ReceiverFuncs with
-                            |Some(recv)->
-                                VideoMover.sendToReceiver recv 
-                            |None->
-                                Lgwarnf("'Mover' Receiver Funcs have not been set. Cannot communicate with ffmpeg reciver. This is a code issue not a configuration issue.")
-                                failwith ("see above")
-                        |None->
-                            match moveData.DestFTPData with
-                            |Some (data)->VideoMover.transcodetoFTP data 
-                            |None -> VideoMover.transcodeFile
-                transFunc  ffmpegInfo cb sourceFilePath destFilePath ct
-
+                ffmpegMove ffmpegInfo moveJobData moveData  sourceFilePath destFilePath cb ct 
             |cb->
                 Lgerror "'Mover' Progress callback not recognised. callback : {@cb}" cb
                 failwith "See above"
             
     return! result 
 }
-
+///Creates a job to process a file using techniques decided apon by the info in moveData and moveJobData
+///
 let MoveFile moveData (moveJobData: MoveJobData)   = async {
     let {SourcePath=sourceFilePath;Transcode=transcode; CT=ct;}=moveJobData
     let {DestinationDir=destination; }=moveData.DirData

@@ -29,7 +29,8 @@ let FTPtoFTP sourceFTPData destFTPData  sourceFilePath destFilePath callBack (ct
     use destStream= destClient.OpenWrite(destFilePath)
 
     try 
-        //We download the file from the server into the local Stream. this needs to be tested with an out stream slower than the in one
+        //We download the file from the server into the local Stream.
+        //TODO this needs to be tested with an out stream slower than the in one
         let! writeResult=Async.AwaitTask<|sourceClient.DownloadAsync(destStream,sourceFilePath,int64 0,callBack,ct)
         destStream.Close()
         let! reply=Async.AwaitTask <|destClient.GetReplyAsync(ct)

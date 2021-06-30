@@ -8,7 +8,7 @@ open FluentFTP
 open FFmpeg.NET
 ///The **TimeSpan** is the duration of the source clip
 ///The **ConversionProgressEventArgs** is what it sounds like :)
-type TranscodeProgress= (TimeSpan->Events.ConversionProgressEventArgs ->unit)
+type TranscodeProgress= (Events.ConversionProgressEventArgs ->unit)
 type ProgressHandler=
     | DoubleFtpProg of (FileMove.ProgressData->unit)*FTPData
     | FtpProg of Progress<FtpProgress>
@@ -54,19 +54,21 @@ let Gethandler moveData transcode currentTransData newDataHandler =
                 if stopWatch.ElapsedMilliseconds>int64 500 then 
                     setData prog.Progress prog.TransferredBytes
     )
-    let transcodeProgress (sourceDuration:TimeSpan)(eventArgs:Events.ConversionProgressEventArgs) = 
+    ///We have had some trouble with the totalDuration/soureDuration being wrong from the eventArgs so you can pass it in manually if you want
+    let transcodeProgress (eventArgs:Events.ConversionProgressEventArgs) = 
         if stopWatch.ElapsedMilliseconds>int64 500 then
             let KBrate= match  Option.ofNullable eventArgs.Bitrate with | Some x-> x / 8.0|None->0.0
             let MBrate= KBrate/1000.0
             //this means MB/s*speed multiplyer(frames per secondof video/number of frames being processed each second)
             let speed= if eventArgs.Fps.HasValue then (MBrate *(eventArgs.Fps.Value/24.0)) else 0.0
-
+            
+            let totalDuration= eventArgs.MediaInfo.TotalDuration
             //let size= if eventArgs.SizeKb.HasValue then float eventArgs.SizeKb.Value/1000.0 else fileSizeMB 
             //we have to sue the expected size beuase otherwise the eta will be wrong.
             //TODO: we could just ahve a different data structutre for transcode jobs and disaly differnet info in the ui.(that would be scary)
-            let expectedSize= (sourceDuration.TotalSeconds*MBrate)
+            let expectedSize= totalDuration.TotalSeconds *MBrate
                 
-            let remaining= MBrate * float (sourceDuration- eventArgs.ProcessedDuration).TotalSeconds
+            let remaining= MBrate * float (totalDuration- eventArgs.ProcessedDuration).TotalSeconds
             //printfn "transferData for %s: %A"(Path.GetFileName filePath) eventArgs
             stopWatch.Reset()
             stopWatch.Start()
@@ -74,7 +76,7 @@ let Gethandler moveData transcode currentTransData newDataHandler =
                 {
                 (lastTransferData) with 
                     Speed=speed
-                    Percentage= (eventArgs.ProcessedDuration/sourceDuration)*100.0
+                    Percentage= (eventArgs.ProcessedDuration/totalDuration)*100.0
                     EndTime=DateTime.Now
                     FileRemaining= remaining
                     FileSize= expectedSize
