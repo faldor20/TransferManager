@@ -141,11 +141,11 @@ let scheduleTransfer (file:FoundFile) (moveData:MovementData) (receiverFuncs:Rec
             
         else if fileAvailable =Availability.Deleted then
             Lgwarn "'Scheduler' File Deleted  while waiting to be available Transfer file at: {@file}" logFilePath 
-            trans|>setStatus TransferStatus.Failed |>getFileData file |>updateTransData
+            trans|>setStatus TransferStatus.Failed  |>updateTransData
             do! TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Failed moveData.DirData.DeleteCompleted
             
         else 
             Lginfo "'Scheduler' File cancelled while waiting to be available Transfer file at: {@file}" logFilePath 
-            trans|>setStatus TransferStatus.Cancelled |>getFileData file |>updateTransData
+            trans|>setStatus TransferStatus.Cancelled |>updateTransData
             do! TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Cancelled moveData.DirData.DeleteCompleted
     }
