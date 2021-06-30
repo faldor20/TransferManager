@@ -128,17 +128,21 @@ module Manager =
             //let res= jobs|>Observable.mergeArray|>Observable.subscribe(fun x->x|>Async.StartImmediate)
             JobManager.Syncer.startSyncer LocalDB.jobDB.SyncEvents  500.0 (fun uiDat ->  Async.RunSynchronously (syncTransferData connection configData.ClientName uiDat)) baseUIData
             try
-            let runJobs = 
-               // jobs|>Observable
-                scheduleJobs|> Observable.map(fun x->x|>Async.Start)
-            runJobs|>Observable.wait
-            with|e->
-                Lgerror
-                    "'Manager' Not Watching any directories. This means no files will be moved. \n
-                     Most likely this is due to a config error, check the rest of the log for config error reports. \n
-                     This could be intentional if you mean for this client to only receive ffmpeg streams. \n
-                     Eception: {@exception}"
-                     e
+                if watchDirsData.Length = 0 then
+                    Lgwarnf
+                        "'Manager' Not Watching any directories. This means no files will be moved. \n
+                         Most likely this is due to a config error, check the rest of the log for config error reports. \n
+                         This could be intentional if you mean for this client to only receive ffmpeg streams. \n"
+                else
+                    let runJobs = 
+                       // jobs|>Observable
+                        scheduleJobs|> Observable.map(fun x->x|>Async.Start)
+                    runJobs|>Observable.wait
+            with | e->
+                Lgerrorf
+                    "'Manager' Error in processing jobs 
+                    Exception: %s | %A"
+                    e.Message e
             return! async {
                         while true do
                             do! Async.Sleep 100000
