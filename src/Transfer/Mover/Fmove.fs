@@ -112,8 +112,13 @@ let FCopy (source: string) destination progress (ct: CancellationToken) =
         let buffLength = int (Math.Pow(2.0, 19.0))
 
         let res =
+            try
             doFileTransfer source dest progress buffLength ct
-
+            with :? System.IO.IOException -> 
+                Lgwarn "'Fmove' IoException accessing {@source}, waiting 1second and trying to access the file again" source
+                Async.Sleep(1000)|>Async.RunSynchronously
+                doFileTransfer source dest progress buffLength ct
+                
         let out =
 
             if (res = TransferResult.Cancelled
