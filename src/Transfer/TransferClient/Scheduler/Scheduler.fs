@@ -92,35 +92,36 @@ let scheduleTransfer (file:FoundFile) (moveData:MovementData) (receiverFuncs:Rec
                  Transcode=transcode
                  CT=ct.Token
                  GetTransferData=(fun ()->dbAccess.TransDataAccess.Get jobID)
-                 HandleTransferData=(fun newData->dbAccess.TransDataAccess.SetAndSync jobID newData)
+                 HandleTransferData=(fun changeFunc->dbAccess.TransDataAccess.UpdateAndSync jobID changeFunc)
                  ReceiverFuncs=receiverFuncs
                  }
             {Job=(Mover.Main.MoveFile moveData moveJobData); SourceID=sourceID; ID=jobID; Available=false; TakenTokens=List.Empty ;CancelToken=ct}
 
-        let jobID= dbAccess.AddJob (sourceID) makeJob makeTrans
+        let! jobID= dbAccess.AddJob (sourceID) makeJob makeTrans
         
         let setStatus status data =
                {data with Status=status} 
         let updateTransData data =
-            dbAccess.TransDataAccess.SetAndSync jobID data
+            dbAccess.TransDataAccess.UpdateAndSync jobID data
         //We register a function that will cancell the job if cancellation is requested while it is waiting to be started
-        let waitingCancel=ct.Token.Register (Action (fun ()-> 
-            if(dbAccess.TransDataAccess.Get(jobID).Status=TransferStatus.Waiting) then
+        (* let waitingCancel=ct.Token.Register (Action (fun ()-> 
+            let transdata=dbAccess.TransDataAccess.Get(jobID)
+            if(transdata.Status=TransferStatus.Waiting) then
                 Lginfo "'Scheduler' File cancelled while waiting to be available Transfer file at: {@file}" logFilePath 
-                updateTransData( setStatus TransferStatus.Cancelled (dbAccess.TransDataAccess.Get jobID))
+                updateTransData( setStatus TransferStatus.Cancelled (transdata))|>Async.RunSynchronously
                 TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Cancelled moveData.DirData.DeleteCompleted
                     |>Async.RunSynchronously
                 ct.Dispose()
-            ))
+            )) *)
         
         let transType=
             ""  |>fun s->if transcode then s+" transcode"else s
                 |>fun s->if moveData.SourceFTPData.IsSome||moveData.DestFTPData.IsSome then s+" ftp" else s
         Lginfof "'Scheduled' %s transfer from %s To-> %s at index:%A" transType logFilePath dest jobID
-
+        
         //This should only be run if reading from growing files is disabled otherwise ignore it.
         //Doesn't work on ftp files
-        let fileAvailable=
+        let! fileAvailable=
             match moveData.SourceFTPData with
                 |Some ftpData-> 
                     let client=Mover.FTPMove.ftpClient ftpData
@@ -129,23 +130,23 @@ let scheduleTransfer (file:FoundFile) (moveData:MovementData) (receiverFuncs:Rec
                 |None-> 
                     let checkFunc=mapAvailabilityTest moveData.DirData.FileAvailableTest
                     isAvailable file.Path ct.Token moveData.SleepTime checkFunc
-            |>Async.RunSynchronously
+            
                 
     
-        let trans= dbAccess.TransDataAccess.Get jobID
         if fileAvailable= Availability.Available then
             Lginfo "'Scheduler' file at: {@file} is available" logFilePath 
-            trans|>setStatus TransferStatus.Waiting |>getFileData file |>updateTransData
-            dbAccess.MakeJobAvailable jobID
+            do! setStatus TransferStatus.Waiting >>getFileData file |>updateTransData
+            do! dbAccess.MakeJobAvailable jobID
             
             
         else if fileAvailable =Availability.Deleted then
             Lgwarn "'Scheduler' File Deleted  while waiting to be available Transfer file at: {@file}" logFilePath 
-            trans|>setStatus TransferStatus.Failed  |>updateTransData
+            do! setStatus TransferStatus.Failed  |>updateTransData
             do! TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Failed moveData.DirData.DeleteCompleted
             
         else 
             Lginfo "'Scheduler' File cancelled while waiting to be available Transfer file at: {@file}" logFilePath 
-            trans|>setStatus TransferStatus.Cancelled |>updateTransData
+            do! setStatus TransferStatus.Cancelled |>updateTransData
             do! TransferHandling.cleaupTask dbAccess jobID sourceID TransferResult.Cancelled moveData.DirData.DeleteCompleted
+        
     }

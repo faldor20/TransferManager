@@ -39,20 +39,23 @@ module JobOrder =
             }|>Seq.toList
         
         //Removes each job from the joborder and removes its associated source instance from the jobOrder
-        jobsToRun|>List.map(fun (source,id)->
-            match jobOrder.Remove(source) with
-            |true->()
-            |false->Lgerrorf "Tried to remove a job that should have been there but wasn't"
+        jobsToRun|>List.choose(fun (source,id)->
             //this removes the job from the source list
           
             let i=sources.[source].Jobs.FindIndex (Predicate( fun x->x.ID=id))
             match  i with
-            |(-1)->Lgerror2 "Tried to remove job {id} from source {src} that should have been there but wasn't" id source
+            |(-1)->
+                Lgerror2 "Tried to remove an instanace of source: {@srcID} from the joborder for job {@job} but it wasn't present"  source id
+                None
             |a->
                 sources.[source].Jobs.RemoveAt a
                 Lgdebug3 "Removed job {id} from source {src} at position {pos} "id source i
             
-            (source,id)
+                match jobOrder.Remove(source) with
+                |true->Some(source,id)
+                |false->
+                    Lgerrorf "Tried to remove a job that should have been there but wasn't"
+                    None
             )
               
 

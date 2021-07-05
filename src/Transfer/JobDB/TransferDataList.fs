@@ -11,10 +11,14 @@ module TransferDataList =
   
     ///This sets the transferData and allso writes it to te UIData. 
     /// This allows for the UIData to only contain changes
-    let setAndSync transDat (syncer:Syncer.SyncEvents) jobID data=
-        set transDat jobID data
-        syncer.UpdateTransData.Trigger (data,jobID)
-       
+    let updateAndSync (transDat:TransferDataList) (syncer:Syncer.SyncEvents) jobID updateFunc=
+        let data=transDat.[jobID] 
+        let newData=(updateFunc data )
+        set transDat jobID newData
+        syncer.UpdateTransData.Trigger (newData,jobID)
+    let setAndSync (transDat:TransferDataList) (syncer:Syncer.SyncEvents) jobID newData=
+        set transDat jobID newData
+        syncer.UpdateTransData.Trigger (newData,jobID) 
     
     let get (transferDataList:TransferDataList) jobID=
         transferDataList.[jobID]

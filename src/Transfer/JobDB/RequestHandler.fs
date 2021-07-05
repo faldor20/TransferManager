@@ -98,7 +98,7 @@ module LockingRequestHandler=
         //Lgdebugf "{Request Handler} Running JobDB Interaction "
         let finished = Channel.CreateUnbounded<Object>() //TODO:This is proabbly very unperforamnt. it may be worth poolnig the channels 
         reqQueue.Trigger ((fun ()-> (f a ):>Object ),finished.Writer)
-        let res= finished.Reader.ReadAsync().AsTask()|>Async.AwaitTask|>Async.RunSynchronously
+        let res= finished.Reader.ReadAsync().Result
         //let res=finished.Publish|>Observable.head|> Observable.wait 
         res :?>'c
 type LockingRequestHandler()=

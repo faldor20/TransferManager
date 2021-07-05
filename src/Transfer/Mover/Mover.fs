@@ -79,7 +79,7 @@ let MoveFile moveData (moveJobData: MoveJobData)   = async {
         
        
 
-    let progressHandler= Gethandler moveData transcode transData moveJobData.HandleTransferData
+    let progressHandler= Gethandler moveData transcode transData (moveJobData.HandleTransferData>>Async.RunSynchronously)
 
     let transType=
         match progressHandler with 
@@ -90,7 +90,7 @@ let MoveFile moveData (moveJobData: MoveJobData)   = async {
     Lginfo3 " 'Mover' Starting {@type} from {@src} to {@dest}" transType sourceFilePath destination
        
     //We have to set the startTime here because we want the sartime to truly be when the task begins
-    moveJobData.HandleTransferData {transData with StartTime=DateTime.Now}
+    do! moveJobData.HandleTransferData (fun x-> {x with StartTime=DateTime.Now})
         
     let! result= doMove progressHandler moveData moveJobData
     //We need to dispose the sourceclient if there is one. If we getrid of this we would endlessly increase our number of active connections

@@ -108,7 +108,7 @@ type MoveJobData={
     Transcode:bool;
     CT:CancellationToken;
     GetTransferData:unit->TransferData
-    HandleTransferData:TransferData->unit
+    HandleTransferData:(TransferData->TransferData)->Async<unit>
     ReceiverFuncs:ReceiverFuncs option
       
 }

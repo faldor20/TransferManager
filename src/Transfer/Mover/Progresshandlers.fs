@@ -40,7 +40,7 @@ let Gethandler moveData transcode currentTransData newDataHandler =
                             FileRemaining=double((fileSize- transferred)/int64 1000)/ 1000.0
                             EndTime=DateTime.Now
                             Status=TransferStatus.Copying}
-        newDataHandler lastTransferData 
+        newDataHandler (fun x->lastTransferData) 
             
 
     let fastFileProgress  = (fun (progress:FileMove.ProgressData )->
@@ -82,7 +82,7 @@ let Gethandler moveData transcode currentTransData newDataHandler =
                     FileSize= expectedSize
                     Status=TransferStatus.Copying
                 }
-            newDataHandler lastTransferData 
+            newDataHandler(fun a-> lastTransferData) 
                 
     //TODO: put another option here for transcode without ftp
     if transcode then (TranscodeProg (transcodeProgress, moveData.TranscodeData.Value))

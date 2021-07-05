@@ -9,30 +9,30 @@ open LoggingFsharp
 module TransferHandling=
   
     
-    let sucessfullCompleteAction transferData source=
+    let sucessfullCompleteAction  source transferData=
         Lginfof "{Successfull} finished cleanup of %s" source
         { (transferData) with Status=TransferStatus.Complete; Percentage=100.0; EndTime=DateTime.Now} 
-    let FailedCompleteAction transferData source=
+    let FailedCompleteAction  source transferData=
         Lgwarnf "{Failed} copying %s" source
         { (transferData) with Status=TransferStatus.Failed; EndTime=DateTime.Now} 
-    let CancelledCompleteAction transferData source=
+    let CancelledCompleteAction  source transferData=
         Lginfof "{Canceled} copying %s" source
         { (transferData) with Status=TransferStatus.Cancelled; EndTime=DateTime.Now}
     let cleaupTask (dbAcess:DBAccess)  jobID sourceID transResult delete=
         async{
             Lgdebug "'Transfer Handling' Finished Job {@job} Starting cleanup" jobID
             //TODO: This hangs for some reason?
-            let transData= dbAcess.TransDataAccess.Get jobID
+            let! transData= dbAcess.TransDataAccess.GetAsync jobID
             let source = transData.Source
            //LOGGING: printfn "DB: %A" dataBase
             let dataChange=
                 match transResult with 
-                    |TransferResult.Success-> sucessfullCompleteAction transData source
-                    |TransferResult.Cancelled-> CancelledCompleteAction transData source
-                    |TransferResult.Failed-> FailedCompleteAction transData source
+                    |TransferResult.Success-> sucessfullCompleteAction  source
+                    |TransferResult.Cancelled-> CancelledCompleteAction  source
+                    |TransferResult.Failed-> FailedCompleteAction source
                     |_-> failwith "unknonw enum for transresult"
             
-            dbAcess.TransDataAccess.SetAndSync jobID dataChange
+            do! dbAcess.TransDataAccess.UpdateAndSync jobID dataChange
             dbAcess.MakeJobFinished sourceID jobID
            
            
@@ -67,11 +67,11 @@ module TransferHandling=
             
             cleaupTask dbAcess jobID sourceID transResult delete |>Async.Start
             with|e->
+                Lgerrorf"Exception thrown while running job %i source: %i \n EX: %A"jobID sourceID e
                 dbAcess.MakeJobFinished sourceID jobID
-                let transdata=dbAcess.TransDataAccess.Get jobID
-                dbAcess.TransDataAccess.SetAndSync jobID (FailedCompleteAction transdata transdata.Source )
+                let! transdata=dbAcess.TransDataAccess.GetAsync jobID
+                do! dbAcess.TransDataAccess.UpdateAndSync jobID (FailedCompleteAction transdata.Source )
 
-                Lgerrorf"Exception throw while running job %i source: %i \n EX: %A"jobID sourceID e
         }
          
         

@@ -18,21 +18,21 @@ open LoggingFsharp
 
 
 let private runJob jobDB jobsToRun =
-    Lgdebug "Running jobs {@jobs}" jobsToRun
+    Lgdebug "'Access' Running jobs {@jobs}" jobsToRun
     jobsToRun
     |> List.iter (fun (x, i) ->
         jobDB.RunningJobs.Add(i)
         jobDB.RunJob x i |> Async.Start)
 
-let removeWaitingJob jobDB (source: Source) sourceID (id: JobID) =
+let private removeWaitingJob jobDB (source: Source) sourceID (id: JobID) =
     match jobDB.JobOrder.Remove(sourceID) with
     | true -> ()
-    | false -> Lgerror2 "Tried to remove job {@id} from source {@srcID} that should have been there but wasn't" id sourceID
+    | false -> Lgerror2 "'RemoveWaitingJob' Tried to remove an instance of source {@srcID} from the jobOrder becuase job {@id} is done but it wasn't there"  sourceID id
     //this removes the job from the source list
     let i =
         source.Jobs.FindIndex(Predicate(fun x -> x.ID = id))
     match i with
-    | (-1) -> Lgerror2 "Tried to remove job {@jobid} from source {@srcid} that should have been there but wasn't" id sourceID
+    | (-1) -> Lgerror2 "'RemoveWaitingJob'Tried to remove job {@jobid} from source {@srcid} that should have been there but wasn't" id sourceID
     | a -> source.Jobs.RemoveAt a
 
 
@@ -40,7 +40,7 @@ let removeWaitingJob jobDB (source: Source) sourceID (id: JobID) =
 ///This will remove the job from it's source, and remove the first instance of the source from the jobOrder.
 ///Then it will add the job to runningjobsList and run the job
 ///Can run a job out of order... but if only called when a job becomes available order should be preserved
-let tryrunJob (jobDB: JobDataBase) id =
+let private tryrunJob (jobDB: JobDataBase) id =
 
     Lgdebug "Trying to run job {@id}" id
     let maybeJob = JobList.getJob jobDB.JobList id
@@ -53,9 +53,9 @@ let tryrunJob (jobDB: JobDataBase) id =
             | true -> ()
             | false ->
                 Lgerror2
-                    "Tried to remove job {@id} from source {@srcID} that should have been there but wasn't"
-                    id
+                    "Tried to remove an instanace of source: {@srcID} from the joborder for job {@job} but it wasn't present"
                     sourceID
+                    id
             //this removes the job from the source list
             let i =
                 source.Jobs.FindIndex(Predicate(fun x -> x.ID = id))
@@ -72,7 +72,7 @@ let tryrunJob (jobDB: JobDataBase) id =
     |_->()
 
 
-let tryRunJobs (jobDB: JobDataBase) =
+let private tryRunJobs (jobDB: JobDataBase) =
     let jobsTorun =
         JobOrder.takeJobsReadyToRun jobDB.JobOrder jobDB.Sources
     runJob jobDB jobsTorun
@@ -82,13 +82,13 @@ let tryRunJobs (jobDB: JobDataBase) =
 
 
 
-let getUIData (jobDB) =
+let private getUIData (jobDB) =
 
 
     let { JobOrder = jobOrder; JobList = jobList; Sources = sources; FinishedJobs = finishedJobs;
           RunningJobs = runningJobs; TransferDataList = transferDataList } =
         jobDB
-
+    let transDataCopy= new TransferDataList(transferDataList)
     let orderdIDs =
         JobOrder.countUp jobOrder
         |> Seq.map (fun (id, index) ->
@@ -106,12 +106,12 @@ let getUIData (jobDB) =
     let jobIDs =
         (convertToOut finishedJobs).Concat(convertToOut runningJobs).Concat(orderdIDs).Reverse()
 
-    (jobIDs.ToArray(), transferDataList)
+    (jobIDs.ToArray(), transDataCopy)
 
-let syncChangeJobOrder jobDB =
+let private syncChangeJobOrder jobDB =
     jobDB.SyncEvents.FullUpdate.Trigger(getUIData jobDB)
 
-let jobOrderChanged jobDB = syncChangeJobOrder jobDB
+let private jobOrderChanged jobDB = syncChangeJobOrder jobDB
 
 
 ///<summary>Called to add a job to the jobdb</summary>
@@ -140,7 +140,7 @@ let private addJob jobDB sourceID makeJob transData =
 
 ///Removes the job from the runningList and moves it to finished. 
 ///Also returns tokens and triggers an attempt to distribute those tokens to other jobs
-let MakeJobFinished jobDB sourceID jobID =
+let private makeJobFinished jobDB sourceID jobID =
     let { FreeTokens = freeTokens; FinishedJobs = finishedList; Sources = sources; JobList = jobList;
           RunningJobs = runningJobs } =
         jobDB
@@ -154,6 +154,7 @@ let MakeJobFinished jobDB sourceID jobID =
         finish ()
     else
         try
+            Lgdebug "'MakeJobFinished' Job {@id} was not running. Now removing the job from the jobOrder" jobID
             removeWaitingJob jobDB (sources.[sourceID]) sourceID jobID
             finish ()
         with a -> Lgerror2 "Job {@ID} failed to be removed. Reason: {@reason}" job a
@@ -165,10 +166,10 @@ let MakeJobFinished jobDB sourceID jobID =
     |> List.iter (fun id ->
         freeTokens.[id]
         |> SourceList.attmeptIssuingToken sources)
-
+    Lgdebug "'MakeJobFinsihed 'Trying to run an available jobs after returning the tokens of job {@id}" jobID
     tryRunJobs jobDB
     jobOrderChanged jobDB
-    Lgdebug "Removed job {@id}" jobID
+    Lgdebug "'MakeJobFinsihed 'Removed job {@id} and started any other jobs that required its tokens" jobID
 
 ///Makes the upjob higher up the order of jobs than the downjob
 ///This is done by either reordering source in the joborder or reording jobs within a source
@@ -241,54 +242,78 @@ let private switch jobDB (downJob: JobID) upJob =
 ///A job being avialable means that anything it has to wait for to complete has completed. 
 ///Currently this means the file it is attempting to move has been written fully. 
 ///Only available jobs can be run.
-let makeJobAvailable jobDB id =
+let private makeJobAvailable jobDB id =
     jobDB.JobList.[id].Available <- true
     tryrunJob jobDB id
 
-let cancelJob job =
+let private cancelJob job =
     match job with
     |Some x-> 
         //An important note. This function does not return untill the cancellation is complete.
         x.CancelToken.Cancel()
         Lgdebug "'JobDB' Cancellation performed for job {@id} "id
     |None->Lgwarn "'JobDB' Tried to cancel job {@id} but it did not exist in the joDB" id
-
+let logFunc name=
+    //Lgverbosef "'JobDB' Running accessfunc: %s " name
+    ()
 type JobListAccess(jobList, req:RequestHandler) =
     let d1 (f: 'a -> 'c) = req.doSyncReq f
-    member this.GetJob id = d1 (JobList.getJob jobList) id
-    member this.RemoveJob id = d1 (JobList.removeJob jobList) id
+    member this.GetJob id = 
+        logFunc "JobList-GetJob"
+        d1 (JobList.getJob jobList) id
+    member this.RemoveJob id = 
+        logFunc "JobList-Removejob"
+        d1 (JobList.removeJob jobList) id
 
 type TransDataAccess(transDataList: TransferDataList, req:RequestHandler, syncer) =
     let d (f: 'a -> 'c) = req.doSyncReq f
-
-    member this.SetAndSync jobID data =
-        d (TransferDataList.setAndSync transDataList syncer jobID) data
-
+    let da (f:'a->'c)= req.doRequest f
+    member this.UpdateAndSync jobID updateFunc =
+        logFunc "TransData-SetAndSync"
+        da (TransferDataList.updateAndSync transDataList syncer jobID) updateFunc
+    (* member this.SetAndSync jobID data =
+        logFunc "TransData-SetAndSync"
+        da (TransferDataList.setAndSync transDataList syncer jobID) data *)
+    member this.GetAsync id =
+        logFunc "TransData-GetAsync"
+        da (TransferDataList.get transDataList) id
     member this.Get id =
+        logFunc "TransData-Get"
         d (TransferDataList.get transDataList) id
-
     member this.Remove id =
+        logFunc "TransData-Remove"
         d (TransferDataList.remove transDataList) id
 ///Allows for access to the job database. All access is single threaded.
 ///Each function call will have to wait for any calls before it to complete before being run.
 type DBAccess(jobDB: JobDataBase) =    
     let handler:RequestHandler= MessageRequestHandler() :>RequestHandler
-
     let d (f:'a->'c)= handler.doSyncReq f
+    let da (f:'a->'c)= handler.doRequest f
     let a x = x :> Object
     member this.JobListAccess = JobListAccess(jobDB.JobList, handler)
 
     member this.TransDataAccess =
         TransDataAccess( jobDB.TransferDataList,handler, jobDB.SyncEvents)
 
-    member this.GetUIData() = d getUIData jobDB
-    member this.MakeJobFinished id = d (MakeJobFinished jobDB) id
-    member this.MakeJobAvailable id = d (makeJobAvailable jobDB) id
+    member this.GetUIData() = 
+        logFunc "GetUiData"
+        d getUIData jobDB
+    member this.MakeJobFinished id  jobID = 
+        logFunc "MakeFinished"
+        d (makeJobFinished jobDB id) jobID
+    member this.MakeJobAvailable id = 
+        logFunc "MakeAvailable"
+        da (makeJobAvailable jobDB) id
     //This doesn't and shouldn't be wrapped in he request handler. That is becuase the cancellation request actually hangs untill the ancellation is compete
     //That would lock up the request handler and prevent the cancellation completing.. thus locking up the entire program.... oof
-    member this.CancelJob id =this.JobListAccess.GetJob id |>cancelJob
-
+    member this.CancelJob id =
+        logFunc "CancelJob"
+        this.JobListAccess.GetJob id |>cancelJob
+        
     member this.AddJob sourceID makeJob transData =
-        d (addJob jobDB sourceID makeJob) transData
+        logFunc "AddJob"
+        da (addJob jobDB sourceID makeJob) transData
 
-    member this.SwitchJobs downJob upJob = d (switch jobDB downJob) upJob
+    member this.SwitchJobs downJob upJob =
+        logFunc "SwitchJobs"
+        d (switch jobDB downJob) upJob
