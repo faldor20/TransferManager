@@ -8,52 +8,77 @@
 @using System.Linq
 @using WebUI.Data
 @inject DataGetter Getter
-@inject NavigationManager UriHelper  
+@inject NavigationManager UriHelper
+@using Microsoft.AspNetCore.Components.Web.Virtualization
+@code {
 
-@code{
     [Parameter]
+
     public UIData UserData { get; set; }
+
     [Parameter]
+
     public int Group { get; set; }
+
     [Parameter]
+
     public string UserName { get; set; }
 
 
+
+
+
     protected override async Task OnInitializedAsync()
+
     {
-        
+
+
+
     }
-        protected override async Task OnParametersSetAsync()
+
+    protected override async Task OnParametersSetAsync()
+
+    {
+        // This event will fire when the parameters change
+
+        // Put your code here.
+        this.StateHasChanged();
+
+    }
+
+}
+
+@{
+    var uiData = Getter.TransClientData[UserName];
+
+    Getter.userUpdates[UserName] = () => { Console.WriteLine($"StateChanged|User|{UserName}"); this.StateHasChanged(); };
+    void thing(UIJobInfo[] jobs)
     {  
-    // This event will fire when the parameters change
-    // Put your code here.  
-    this.StateHasChanged();
+        var lastID = -1;
+        <Virtualize Items="@jobs" OverscanCount="4">
+            @{
+                var data = UserData.TransferDataList[context.JobID];
+            }
+            <TransferTaskRender LastID="@lastID" UserName="@UserName" Task="@data"> </TransferTaskRender>
+            @{lastID=context.JobID;}
+        </Virtualize>
+    
+
     }
-
 }
-
-@{  var uiData= Getter.TransClientData[UserName];
-    Getter.userUpdates[UserName]= ()=>{Console.WriteLine($"StateChanged|User|{UserName}"); this.StateHasChanged();};
-    void thing(IEnumerable<UIJobInfo> jobs){
-        <div>
-        @{var lastID=-1;}
-        @foreach (var task in jobs)
-        {   
-            var data=UserData.TransferDataList[ task.JobID];
-            <TransferTaskRender LastID="@lastID" UserName="@UserName" Task="@data" > </TransferTaskRender>
-            lastID=data.jobID;
-        } 
-        </div>;
-    }}
-@if(Group==-1){
-    thing (UserData.Jobs);
-}
-else
+@if (Group == -1)
 {
-    var jobs=UserData.Jobs.Where(x=> x.RequiredTokens.Contains(Group));
-    thing (jobs);
+
+    thing(UserData.Jobs);
+
 }
 
+else
 
+{
 
+    var jobs = UserData.Jobs.Where(x => x.RequiredTokens.Contains(Group)).ToArray();
 
+    thing(jobs);
+
+}

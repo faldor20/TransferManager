@@ -9,9 +9,10 @@
 @using static SharedFs.SharedTypes;
 @using System.Linq
 @using WebUI.Data
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.AspNetCore.Components.Web.Virtualization
 @inject DataGetter Getter
 @inject NavigationManager UriHelper
-
 @code{
     
     [Parameter]
@@ -65,8 +66,6 @@ else
 {
 <table class="table">
     <div>
-        <ol>
-
             @if (User == "All"||!Getter.TransClientData.ContainsKey(User))
             {  
                 @* var tasks=Getter.TransClientData.SelectMany(user => user.Value.Jobs.Select(task=>(user:user.Key,task:task.JobID,scheduledTime:user.Value.TransferDataList[task.JobID].ScheduledTime))).OrderByDescending(data => data.scheduledTime).ToList();
@@ -83,7 +82,6 @@ else
                 <UserRender UserData="@uiData" Group="@Group" UserName="@User" />
                     
                 }
-        </ol>
     </div>
 </table>
 }

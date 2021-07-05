@@ -32,12 +32,11 @@
             }
         }
         //We skip he first element beuase it is allways the "Clientname+limit" group representing the whole client, which we are technically already in by selecting the clients name.
-        var first= true;
+        
         if (heirachy.Length>0){
-            foreach (var group in heirachy[0])
-            {
-                if(first) {first=false;continue;}
-                ListOp (group.Value,group.Key, 0 );
+            foreach (var group in heirachy[1])
+            {   
+                ListOp (group.Value,group.Key, 1 );
             }
         }
     }
