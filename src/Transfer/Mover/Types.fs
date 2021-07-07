@@ -49,7 +49,7 @@ type ReceiverData=
 type TranscodeData =
     {   
         FfmpegArgs: string option
-        OutputFileExtension: string option
+        OutputFileExtension: string 
         ReceiverData:ReceiverData option 
         TranscodeExtensions: string list
     }

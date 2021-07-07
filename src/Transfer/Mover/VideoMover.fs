@@ -97,35 +97,39 @@ type  OutputType=
 type InputType=
     |FTP of FTPData
     |File 
+///Ensures that the path begins with '/'
+let private ensureAbsPath (filePath:string)=
+    match filePath.StartsWith('/') with
+        | true-> filePath
+        |false -> "/"+filePath
+let private prepOutputArgs outputType outPath=    
+    match outputType with
+    |OutputType.FTP inf-> sprintf " -y \"ftp://%s:%s@%s%s\""  inf.User inf.Password inf.Host (outPath|>ensureAbsPath)
+    |OutputType.File->" \""+outPath+"\""
+    |CustomOutput outArgs->outArgs    
+let private prepArgs (ffmpegArgs:string option) outputExtension (outputType:OutputType) (inputType:InputType) destFilePath (filePath:string)=
     
-let private prepArgs ffmpegArgs outputExtension (outputType:OutputType) (inputType:InputType) destFilePath (filePath:string)=
-    let usedFFmpegArgs=
-        match ffmpegArgs with
-        |Some x->x
-        |None->
+    let ffmpegArgs=
+        ffmpegArgs |>Option.defaultWith((fun _->    
             Logging.Lgerrorf "ffmpeg args empty, cannot run transcode"
-            failwith "No ffmpeg args. cannot continue"
-    let outPath=  
-        match outputExtension with 
-        |Some x->IO.Path.ChangeExtension(destFilePath,x) 
-        |None->IO.Path.ChangeExtension(destFilePath,"mp4")    
+            failwith "No ffmpeg args. cannot continue"))
+    
+    let outPath=IO.Path.ChangeExtension(destFilePath,outputExtension) 
+           
                
-    let outArg=
-            match outputType with
-            |OutputType.FTP inf-> sprintf " -y ftp://%s:%s@%s/%s"  inf.User inf.Password inf.Host outPath
-            |OutputType.File->" \""+outPath+"\""
-            |CustomOutput outArgs->outArgs
+    let outArg=prepOutputArgs outputType outPath
                 
     let args= 
         let inArgs=
             match inputType with
             |File -> sprintf "\"%s\"" filePath   
-            |FTP inf-> sprintf "ftp://%s:%s@%s/%s"  inf.User inf.Password inf.Host filePath
-        sprintf "-i %s %s %s" inArgs usedFFmpegArgs outArg
+            |FTP inf-> 
+                sprintf "\"ftp://%s:%s@%s%s\""  inf.User inf.Password inf.Host (filePath|>ensureAbsPath)
+        sprintf "-i %s %s %s" inArgs ffmpegArgs outArg
         
     args
 
-let runTranscode (transferError:ref<bool>) args (mpeg:Engine) ct=
+let private runTranscode (transferError:ref<bool>) args (mpeg:Engine) ct=
     async{
         Logging.Lginfo "'VideoMover' Calling ffmpeg with args: {@args}" args
         let task=mpeg.ExecuteAsync( args,ct)
@@ -140,7 +144,7 @@ let runTranscode (transferError:ref<bool>) args (mpeg:Engine) ct=
 //=================Main Funcs==============
 //-----------------------------------------
 
-let listen port  =
+let private listen port  =
     async{
         let listener=Sockets.TcpListener.Create(port)
         listener.Start()
@@ -154,7 +158,7 @@ let listen port  =
         return clientStream
     }
 
-let setupPipe (pipeName:string)  =
+let private setupPipe (pipeName:string)  =
     async{
         let pipeServer=new NamedPipeServerStream(pipeName)
 
@@ -164,7 +168,7 @@ let setupPipe (pipeName:string)  =
         return pipeServer
     }
 
-let customTCPSend customTCPData port startReceiver createTranscodeTask =
+let private customTCPSend customTCPData port startReceiver createTranscodeTask =
     async{
         //create a unique name for our pipe
         let id=Guid.NewGuid().ToString("N")
@@ -189,7 +193,7 @@ let customTCPSend customTCPData port startReceiver createTranscodeTask =
         let! out=res
         return out
     }
-let ffmpegProtocolSend (data:ffmpegProtocol) port startReceiver createTranscodeTask=
+let private ffmpegProtocolSend (data:ffmpegProtocol) port startReceiver createTranscodeTask=
     async{
         let outArgs= sprintf "-y %s://0.0.0.0:%i?%s" data.Protocoll port data.ProtocolArgs
         let transcodeTask=createTranscodeTask outArgs
@@ -198,7 +202,7 @@ let ffmpegProtocolSend (data:ffmpegProtocol) port startReceiver createTranscodeT
         return! res
          
     }
-let getFreePort startPort =
+let private getFreePort startPort =
     let port=
         lock portOffset (fun()->
             let port=startPort+(!portOffset%200)
@@ -207,8 +211,8 @@ let getFreePort startPort =
          ) 
     port
     
-let makeReceiverArgs recv outPath port=
-    let args=(recv.ReceivingFFmpegArgs+" \""+outPath+"\"")
+let private  makeReceiverArgs recv outPut port=
+    let args=(recv.ReceivingFFmpegArgs+" "+outPut)
     if recv.DynamicPort then 
         let newargs=args.Replace("##port##",port.ToString())
         if newargs=args then 
@@ -216,19 +220,20 @@ let makeReceiverArgs recv outPath port=
             raise (ArgumentException("DynamicPort is true and ReceiverArgs does not contain '##port##' to be replaced with the port number.  "))
         else newargs
     else args
-let handleTranscodeErrors (prefix:string) (filePath:string) f =
+
+let private handleTranscodeErrors (prefix:string) (filePath:string) f =
    async{
         try
                return! f()
         with
             | :? Tasks.TaskCanceledException as ex->
-                Lgerror3 "{@prefix} from {@path} was canceled {@ex}" prefix filePath ex
+                Lgwarn3 "{@prefix} from {@path} was canceled {@ex}" prefix filePath ex
                 return TransferResult.Cancelled
             |err->
                 Lgerror3 "{@prefix} from {@path} failed {@ex}" prefix filePath err
                 return TransferResult.Failed
     }            
-let sendToReceiver inputType (receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken)=
+let sendToReceiver inputType (outputType:OutputType) (receiverFuncs:ReceiverFuncs) (ffmpegInfo:TranscodeData) progressHandler  (filePath:string) (destFilePath:string) (ct:CancellationToken)=
     handleTranscodeErrors "'Video Mover' SendToReceiver transcode job " filePath (fun()->
             //---check if the receiver is available and get an ip---
             let recv=
@@ -248,9 +253,9 @@ let sendToReceiver inputType (receiverFuncs:ReceiverFuncs) (ffmpegInfo:Transcode
                 if recv.DynamicPort then getFreePort recv.Port
                 else recv.Port
                 
-            let outPath=
-                IO.Path.ChangeExtension( destFilePath,"mxf")
-            let recvArgs= makeReceiverArgs recv outPath port
+            let outPath=IO.Path.ChangeExtension( destFilePath,ffmpegInfo.OutputFileExtension)
+            let receiverOutput=prepOutputArgs outputType outPath
+            let recvArgs= makeReceiverArgs recv receiverOutput port
                
                 
 
@@ -263,7 +268,7 @@ let sendToReceiver inputType (receiverFuncs:ReceiverFuncs) (ffmpegInfo:Transcode
                     
             let transcodeTask outArgs=
                 let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
-                let args=prepArgs ffmpegInfo.FfmpegArgs None (CustomOutput outArgs) inputType destFilePath filePath;
+                let args=prepArgs ffmpegInfo.FfmpegArgs "" (CustomOutput outArgs) inputType destFilePath filePath;
                 //It is importnt to remeber the async job is not actually started here just created ready to be started elsewhere
                 runTranscode transcodeError args mpeg ct
             
@@ -288,11 +293,11 @@ let startReceiving args=
 type sourceFilePath=  string
 type destFilePath=string
 
-let basicTranscode outType inType ffmpegInfo (progressHandler:TranscodeProgress) (filePath:sourceFilePath)   (destDir:destFilePath) (ct:CancellationToken) =
+let basicTranscode (outType:OutputType) inType ffmpegInfo (progressHandler:TranscodeProgress) (filePath:sourceFilePath)   (destDir:destFilePath) (ct:CancellationToken) =
     Lginfo3 "'Video Mover' Setting up basic transcode of InType: {@inType} outType: {@outType} from {@src}" inType outType filePath
     handleTranscodeErrors "'Video Mover' Transcode Job" filePath (fun()->
         let (transcodeError,mpeg)= setupTranscode filePath progressHandler;
-        let args=prepArgs ffmpegInfo.FfmpegArgs None outType inType destDir filePath;
+        let args=prepArgs ffmpegInfo.FfmpegArgs "" outType inType destDir filePath;
         let res=runTranscode transcodeError args mpeg ct
         
         res

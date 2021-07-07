@@ -15,19 +15,19 @@ let private ffmpegMove ffmpegInfo moveJobData moveData  sourceFilePath destFileP
         | Some(data)->VideoMover.InputType.FTP data
         |None ->VideoMover.InputType.File
     let func=
+        let outType=
+            match moveData.DestFTPData with
+            |Some (data)->VideoMover.OutputType.FTP data 
+            |None -> VideoMover.OutputType.File
         match ffmpegInfo.ReceiverData with
             |Some(_)->
                 match moveJobData.ReceiverFuncs with
                 |Some(recv)->
-                    VideoMover.sendToReceiver inType recv 
+                    VideoMover.sendToReceiver inType outType recv 
                 |None->
                     Lgwarnf("'Mover' Receiver Funcs have not been set. Cannot communicate with ffmpeg reciver. This is a code issue not a configuration issue.")
                     failwith ("see above")
             |None->
-                let outType=
-                    match moveData.DestFTPData with
-                    |Some (data)->VideoMover.OutputType.FTP data 
-                    |None -> VideoMover.OutputType.File
                 VideoMover.basicTranscode outType inType
 
     func ffmpegInfo cb sourceFilePath destFilePath ct
