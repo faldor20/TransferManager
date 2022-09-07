@@ -1,4 +1,3 @@
-
 module Mover.VideoMover
 open System
 open FFmpeg.NET
@@ -115,7 +114,6 @@ let private prepArgs (ffmpegArgs:string option) outputExtension (outputType:Outp
             failwith "No ffmpeg args. cannot continue"))
     
     let outPath=IO.Path.ChangeExtension(destFilePath,outputExtension) 
-           
                
     let outArg=prepOutputArgs outputType outPath
                 

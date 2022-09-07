@@ -19,6 +19,10 @@ Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "Mover", "src\Transfer\Mover
 EndProject
 Project("{6EC3EE1D-3C4E-46DD-8F32-0CC8E7565705}") = "LoggingFsharp", "src\Transfer\LoggingFsharp\LoggingFsharp.fsproj", "{4864761F-D97D-4054-A501-ED4BCC1D71FA}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Watcher", "src\Transfer\Watcher\Watcher.fsproj", "{567A9853-B130-4C78-A415-F7C36C38C5C7}"
+EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "JobDB", "src\Transfer\JobDB\JobDB.fsproj", "{A4FE711F-69CE-4358-BECF-452D03F86DFE}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -57,6 +61,14 @@ Global
 		{4864761F-D97D-4054-A501-ED4BCC1D71FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{4864761F-D97D-4054-A501-ED4BCC1D71FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{4864761F-D97D-4054-A501-ED4BCC1D71FA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{567A9853-B130-4C78-A415-F7C36C38C5C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{567A9853-B130-4C78-A415-F7C36C38C5C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{567A9853-B130-4C78-A415-F7C36C38C5C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{567A9853-B130-4C78-A415-F7C36C38C5C7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A4FE711F-69CE-4358-BECF-452D03F86DFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A4FE711F-69CE-4358-BECF-452D03F86DFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A4FE711F-69CE-4358-BECF-452D03F86DFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A4FE711F-69CE-4358-BECF-452D03F86DFE}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

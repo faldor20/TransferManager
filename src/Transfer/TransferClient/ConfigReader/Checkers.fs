@@ -51,11 +51,21 @@ let directoryTest (ftpData) directory errorPrinter =
         | x -> 
             errorPrinter (sprintf "not accessable for an handled reason \n reason: %A"  x.Message)
             false    
+///Ensures that the availability config exists when it is required
+let validateAvailablityConfigs (dirData:DirectoryData)=
+    let usesSizeThresholdAvailability=dirData.FileAvailableTest|>Option.map (List.contains AvailableTest.SizeThreshold)|>Option.defaultValue false
+    if usesSizeThresholdAvailability then
+        if dirData.AvailabilityConfig.IsNone then 
+            Lgerrorf "'Config' No availabilityConfig exists but using SizeThreshold availability(4). Include an availabilityConfig."
+            false
+        else true
+    else true
+
 /// Here we check if the directry exists by getting dir and file info about the source and dest and
 ///filtering by whether it triggers an exception or not
 let getValidWatchDirs (watchDirs:ConfigMovementData list)=
     let validWatchDirs=watchDirs|>List.filter(fun dir->
-
+        let configOkay= validateAvailablityConfigs dir.DirData
         let printDestError error= Lgerror3 "'Config' Watch Destination: {@destDir} for source:{@source} {@error}" dir.DirData.DestinationDir dir.DirData.SourceDir error
         let destOkay= 
             match  dir.TranscodeData|>Option.bind(fun x->x.ReceiverData) with
@@ -65,7 +75,7 @@ let getValidWatchDirs (watchDirs:ConfigMovementData list)=
         let printSourceError error= Lgerror3 "'Config' Watch Source:  {@source} for source:{@dest} {@error}" dir.DirData.SourceDir dir.DirData.DestinationDir error
         let sourceOkay =
             directoryTest dir.SourceFTPData dir.DirData.SourceDir printSourceError
-        (sourceOkay && destOkay)
+        (sourceOkay && destOkay&&configOkay)
     )
     if validWatchDirs.Length=0 then Lgerrorf "'Config' No WatchDirs with valid source and dest could be found in yaml file. The program is usless without one"        
     validWatchDirs

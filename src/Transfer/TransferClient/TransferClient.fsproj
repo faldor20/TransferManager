@@ -36,7 +36,7 @@
     <Compile Include="Scheduler\Scheduler.fs" />
     <Compile Include="HierarchyGenerator.fs" />
     <Compile Include="Manager.fs" />
-    <Compile Include="testing.fsx" />
+    <!-- <Compile Include="testing.fsx" /> -->
     <Compile Include="testing.fs" />
     <Compile Include="Program.fs" />
   </ItemGroup>

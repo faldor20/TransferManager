@@ -9,6 +9,7 @@ type AvailableTest=
     |LastSize=1
     |LastWriteTime=2
     |OpenAsStream=3
+    |SizeThreshold=4
 
 type TransferResult =
     | Success = 0
@@ -69,20 +70,25 @@ let FTPData user password host =
     {   User = user
         Password = password
         Host = host }
-    
+type AvailabilityConfig={
+  ThresholdBytes:int64
+}
 type DirectoryData =
     { 
         SourceDir: string
         DestinationDir: string
         DeleteCompleted: bool
-        FileAvailableTest:AvailableTest list option }
+        FileAvailableTest:AvailableTest list option
+        AvailabilityConfig:AvailabilityConfig option }
 
-let DirectoryData groupName source destination deleteCompleted availableTest =
+let DirectoryData groupName source destination deleteCompleted availableTest availabilityConfig =
     {
         SourceDir = source
         DestinationDir = destination
         DeleteCompleted = deleteCompleted
-        FileAvailableTest=availableTest }
+        FileAvailableTest=availableTest
+        AvailabilityConfig=availabilityConfig
+         }
 
 type MovementData =
     {   GroupList: int list
