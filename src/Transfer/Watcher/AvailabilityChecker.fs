@@ -57,7 +57,8 @@ module Checks=
             Lgdebugf "'Availability Checker' File is available. Returning"
             Some Availability.Available
         else None
-    let checkMinFileSize threshold (_) (currentFile:StaticFileInfo)=
+
+    let checkFileSizeThreshold threshold (_) (currentFile:StaticFileInfo)=
         Lgdebug3 "'Availability checker' {@file} currentSize={@size} threshold={@threshold}" currentFile.Name currentFile.Length threshold
         if currentFile.Length> threshold then
             Lgdebug2 "'Availability checker' File '{@file}' is avaliable due to reaching size threshold:{@threshold} " currentFile.Name threshold

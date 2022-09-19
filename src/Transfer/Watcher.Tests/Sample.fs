@@ -7,28 +7,41 @@ open System.Runtime
 open System.IO
 open System.Threading
 open FileWatcher.AvailabilityChecker
+open FileWatcher.AvailabilityChecker.Checks
 
 let runintestEnv fn=
-    let a=Directory.CreateDirectory ("./testDir")
-    Directory.SetCurrentDirectory("./testDir")
+    let dir=Path.GetFullPath(sprintf "./testDir%A" (Guid.NewGuid()))
+    printfn "The testing dir is %A" dir
+    let a=Directory.CreateDirectory (dir)
+    Directory.SetCurrentDirectory(dir)
     try
         fn()
     finally
         Async.RunSynchronously (Async.Sleep 100) //we have a delay to make sure all files are released and   with
         Directory.SetCurrentDirectory("../")
-        Directory.Delete( "./testDir",true)
+        Directory.Delete( dir,true)
+let doIntermittently(interval:int) numtimes res (fn:unit->'b)  =
+    async{
+        let mutable res:'b= res
+        for i in 0..numtimes do
+            res<-(fn())
+            do! Async.Sleep(interval)
+        return res
+    }
 ///Writes to the stream for an amount of tie and then disposes it
 let writeIntermittently (file:string) (interval:int) numtimes=
     async{
         use a = File.AppendText(file)
         printfn "about to start writing"
-        for i in 0..numtimes do
-            a.WriteLine "heyy"
-            a.Flush()
-            do! Async.Sleep(interval)
-        return System.Diagnostics.Stopwatch.GetTimestamp()
+        return! doIntermittently interval numtimes 0L 
+                (fun ()->
+                    a.WriteLine "heyy"
+                    a.Flush()
+                    System.Diagnostics.Stopwatch.GetTimestamp()
+                )
+            
+         
     }
-    
 (* let simplecheck name (time:int)=
     let mutable cont=true
     let mutable lastInfo=new FileInfo(name)
@@ -101,6 +114,36 @@ let test=
             writer.Dispose()
             Expect.isTrue(true) "hi"
         } *)
+        test "availablility size threshold"{
+            let res= 
+                async{
+                    let! task=writeIntermittently "./test.test" 10 1000 |>Async.StartChild
+                    do! Async.Sleep 1000
+                    let token= new CancellationTokenSource()
+                    let! avail=checkAvailability (Checks.checkFileSizeThreshold 1000) "./test.test" token.Token 10
+                    token.CancelAfter (TimeSpan.FromSeconds 20 )
+                    let! res= task
+                    return avail
+                }
+                |>Async.RunSynchronously
+
+            Expect.isTrue ((runintestEnv (fun x->res))=Availability.Available) "File execeded size but threshold did not trigger"
+        }
+        test "availablility size threshold not surpassed"{
+            let res= 
+                async{
+                    let! task=writeIntermittently "./test.test" 1000 100|>Async.StartChild
+                    do! Async.Sleep 1000
+                    let token= new CancellationTokenSource()
+                    let! avail=checkAvailability (Checks.checkFileSizeThreshold 10000) "./test.test" token.Token 10
+                    token.CancelAfter (TimeSpan.FromSeconds 50 )
+                    let! res= task
+                    return avail
+                }
+                |>Async.RunSynchronously
+
+            Expect.isTrue ((runintestEnv (fun x->res))=Availability.Cancelled) "File execeded size but threshold did not trigger"
+        }
         test "availability file size check correct interval"{
             let res=  (fun ()-> testCorrectInterval checkFileSize)
                 
@@ -121,9 +164,9 @@ let test=
         
             Expect.isTrue(runintestEnv res) "File Stream check not effectedbyt to small interval"
         };
-        test "availability size and write time"{
-            let res=  (fun ()-> testCorrectInterval checkSizeandWriteTime)
+        // test "availability size and write time"{
+        //     let res=  (fun ()-> testCorrectInterval checksi)
         
-            Expect.isTrue(runintestEnv res) "File Stream check not effectedbyt to small interval"
-        }
+        //     Expect.isTrue(runintestEnv res) "File Stream check not effectedbyt to small interval"
+        // }
     ]

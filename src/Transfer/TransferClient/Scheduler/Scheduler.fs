@@ -32,7 +32,7 @@ let mapAvailabilityTest (availabilityConfig:AvailabilityConfig option) (availabi
         |AvailableTest.LastSize->Checks.checkFileSize
         |AvailableTest.OpenAsStream->Checks.checkFileStream
         |AvailableTest.LastWriteTime->Checks.checkFileWriteTime
-        |AvailableTest.SizeThreshold->Checks.checkMinFileSize availabilityConfig.Value.ThresholdBytes 
+        |AvailableTest.SizeThreshold->Checks.checkFileSizeThreshold availabilityConfig.Value.ThresholdBytes 
         |_->raise (ArgumentException (sprintf"enum val %A is not supported" availabilityTest))
 
     availabilityTest
